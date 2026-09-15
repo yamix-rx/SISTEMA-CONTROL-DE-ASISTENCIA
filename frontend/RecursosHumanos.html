@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/session.css">
+    <script src="js/navigation.js"></script>
+    <script src="js/session.js"></script>
+    <title>SBSS · Recursos Humanos</title>
+    <link rel="stylesheet" href="css/recursos-humanos.css">
+    <script src="js/recursos-humanos.js" defer></script>
+    <link rel="stylesheet" href="css/navigation.css">
+</head>
+<body>
+    <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+        <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-3a7 7 0 0 1 14 0v3m0-18a4 4 0 0 1 0 8m4 10v-3a7 7 0 0 0-3-5"/></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-13 5 3 3 5-5"/></symbol>
+        <symbol id="icon-report" viewBox="0 0 24 24"><path d="M14 2H5a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8Zm0 0v6h6M8 17v-3m4 3v-6m4 6v-3"/></symbol>
+        <symbol id="icon-document" viewBox="0 0 24 24"><path d="M14 2H5a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8Zm0 0v6h6M8 12h8m-8 4h6"/></symbol>
+        <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+        <symbol id="icon-exit" viewBox="0 0 24 24"><path d="M9 3H4v18h5m5-15 6 6-6 6m-5-6h11"/></symbol>
+    </svg>
+    <a class="skip-link" href="#contenido">Ir al contenido</a>
+    <div class="sbss-app">
+        <header class="hr-header sbss-header">
+            <a class="brand sbss-brand" href="RecursosHumanos.html" aria-label="SBSS, inicio de Recursos Humanos"><span class="brand-star" aria-hidden="true">✦</span> SBSS</a>
+            <span class="header-context">Gestión de personal</span>
+            <div class="user-session">
+                <span class="avatar" id="avatarLetra" aria-hidden="true">U</span>
+                <div class="user-details"><strong id="nombreUsuarioSesion">Mi cuenta</strong><span id="rolUsuarioSesion">Recursos Humanos</span></div>
+                <button class="logout" id="btnCerrarSesion" type="button" aria-label="Cerrar sesión" title="Cerrar sesión"><svg aria-hidden="true"><use href="#icon-exit"/></svg></button>
+            </div>
+        </header>
+        <div class="sbss-navigation-layout">
+<button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+<aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+        <main class="hr-main" id="contenido" tabindex="-1">
+            <section class="welcome" aria-labelledby="saludo">
+                <div><p class="eyebrow">Panel de Recursos Humanos</p><h1 id="saludo">Hola, bienvenido</h1><p class="welcome-description">Consulta la actividad de hoy y gestiona el personal, sus horarios y asistencias.</p></div>
+                <time id="fechaHoy" class="today"></time>
+            </section>
+            <div class="data-status" id="estadoCarga" role="status" aria-live="polite"><span id="mensajeCarga">Cargando el resumen de hoy…</span><button type="button" id="btnReintentar" hidden>Volver a intentar</button></div>
+            <section class="kpi-grid" aria-label="Resumen de hoy" id="resumenHoy" aria-busy="true">
+                <article class="kpi-card green"><div class="kpi-heading"><h2>En turno hoy</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-people"/></svg></span></div><p class="kpi-value" id="kpiTurno">—</p><p class="kpi-caption">Colaboradores programados</p></article>
+                <article class="kpi-card blue"><div class="kpi-heading"><h2>Asistencia hoy</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-calendar"/></svg></span></div><p class="kpi-value" id="kpiAsistencia">—</p><p class="kpi-caption">Asistencia registrada</p></article>
+                <article class="kpi-card amber"><div class="kpi-heading"><h2>Tardanzas hoy</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-clock"/></svg></span></div><p class="kpi-value" id="kpiTardanzas">—</p><p class="kpi-caption">Registros con tardanza</p></article>
+                <article class="kpi-card rose"><div class="kpi-heading"><h2>Documentos pendientes</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-document"/></svg></span></div><p class="kpi-value" id="kpiDocumentos">—</p><p class="kpi-caption">Pendientes en el resumen</p></article>
+            </section>
+            <section class="work-section" aria-labelledby="tituloGestion">
+                <div class="section-heading"><div><h2 id="tituloGestion">Gestiona tu equipo</h2><p>Accede a tus herramientas de trabajo.</p></div></div>
+                <div class="shortcut-grid">
+                    <a class="shortcut" href="FichaIndividual.html"><span class="shortcut-icon"><svg aria-hidden="true"><use href="#icon-people"/></svg></span><h3>Personal</h3><p>Consulta las fichas y el expediente de los colaboradores.</p><span class="shortcut-action">Ver personal <svg aria-hidden="true"><use href="#icon-arrow"/></svg></span></a>
+                    <a class="shortcut" href="Horarios.html"><span class="shortcut-icon"><svg aria-hidden="true"><use href="#icon-clock"/></svg></span><h3>Horarios</h3><p>Organiza los turnos y revisa la programación del equipo.</p><span class="shortcut-action">Ver horarios <svg aria-hidden="true"><use href="#icon-arrow"/></svg></span></a>
+                    <a class="shortcut" href="Registros.html"><span class="shortcut-icon"><svg aria-hidden="true"><use href="#icon-calendar"/></svg></span><h3>Asistencia</h3><p>Revisa entradas, salidas y novedades de asistencia.</p><span class="shortcut-action">Ver asistencia <svg aria-hidden="true"><use href="#icon-arrow"/></svg></span></a>
+                    <a class="shortcut" href="Reportes.html"><span class="shortcut-icon"><svg aria-hidden="true"><use href="#icon-report"/></svg></span><h3>Reportes</h3><p>Consulta la información consolidada para el seguimiento del personal.</p><span class="shortcut-action">Ver reportes <svg aria-hidden="true"><use href="#icon-arrow"/></svg></span></a>
+                </div>
+            </section>
+            <section class="document-panel" aria-labelledby="tituloDocumentos">
+                <div class="section-heading"><div><h2 id="tituloDocumentos">Documentación por completar</h2><p>Hasta 10 documentos pendientes de entrega.</p></div><a class="text-link" href="Documentos.html?estado=sin_entregar">Ver documentos <svg aria-hidden="true"><use href="#icon-arrow"/></svg></a></div>
+                <p class="document-state" id="estadoDocumentos">Cargando documentos pendientes…</p>
+                <div class="table-wrap" id="tablaDocumentos" hidden tabindex="0" role="region" aria-label="Documentos pendientes por colaborador">
+                    <table><thead><tr><th scope="col">Colaborador</th><th scope="col">Empresa</th><th scope="col">Documento pendiente</th></tr></thead><tbody id="documentosPendientes"></tbody></table>
+                </div>
+            </section>
+        </main>
+        </div>
+    </div>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

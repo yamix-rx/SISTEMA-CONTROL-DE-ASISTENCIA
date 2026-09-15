@@ -1,0 +1,35 @@
+/* Estilos de FichaIndividual.html */
+
+/* Bloque de estilos 1 extraído de FichaIndividual.html */
+:root{--line:#d7e5ee;--ink:#174b70}
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-serif}
+.app{min-width:1180px}
+.top{background:linear-gradient(105deg,#174d73,#075d91 58%,#063e65)}
+.active{background:linear-gradient(#2a97dd,#147bc0)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 5px rgba(14,65,98,.06)}
+.section-title{height:36px;border-bottom:1px solid #dce8f0;background:linear-gradient(to right,#f8fbfd,#fff);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:11px;font-weight:800;color:#174d72}
+.control{height:38px;border:1px solid #cedfe9;border-radius:6px;background:#fff;padding:0 11px;font-size:10px;color:#245575;width:100%;outline:none}
+.control:focus{border-color:#2890d0;box-shadow:0 0 0 2px rgba(40,144,208,.12)}
+.alert-card{height:78px;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.docrow{height:40px;border-bottom:1px solid #e2ebf1;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:9px}
+.btn{height:28px;border-radius:5px;padding:0 13px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.blue{background:#0b7ec5;color:white}
+.red{background:#f14955;color:white}
+.green{background:#14a46e;color:white}
+.toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:white;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+
+/* Bloque de estilos 2 extraído de FichaIndividual.html */
+html.sbss-embedded,html.sbss-embedded body{height:100%;}
+html.sbss-embedded body{margin:0!important;background:#f3f7fa!important;}
+html.sbss-embedded .app > header,
+html.sbss-embedded body > header{display:none!important;}
+html.sbss-embedded body > .flex > aside:first-child,
+html.sbss-embedded .app > .flex > aside:first-child{display:none!important;}
+html.sbss-embedded body > .flex,
+html.sbss-embedded .app > .flex{min-height:100vh!important;}
+html.sbss-embedded body > .flex > main,
+html.sbss-embedded .app > .flex > main{width:100%!important;max-width:none!important;}
+
+/* Estado inicial de la barra de progreso; JavaScript actualiza este ancho dinámicamente. */
+#progress{width:0%;}

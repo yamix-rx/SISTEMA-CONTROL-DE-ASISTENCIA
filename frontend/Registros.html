@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+<title>SBSS - Registro de Asistencia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/estilos.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--line:#d8e6ef;--blue:#075985;--blue2:#0b75b5}
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-serif}
+.app{
+    min-width:0;
+}
+.top{background:linear-gradient(105deg,#174d73,#075d91 58%,#063e65)}
+.active{background:linear-gradient(180deg,#2a97dd,#147bc0)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 5px rgba(14,65,98,.06)}
+.control{height:32px;border:1px solid #cee0ea;border-radius:5px;background:#fff;padding:0 9px;font-size:10px;outline:none;width:100%}
+.control:focus{border-color:#2b8ccd;box-shadow:0 0 0 2px rgba(43,140,205,.1)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:linear-gradient(#0d6fa9,#075b8d);color:white;font-size:9px;padding:8px 7px;text-align:left;border-right:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.tbl td{font-size:9px;padding:7px;color:#275675;border-right:1px solid #e1eaf0;border-bottom:1px solid #e3ecf2;white-space:nowrap}
+.tbl tbody tr:hover td{background:#f7fbfe}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:8px;font-weight:700}
+.ok{background:#d7f6e8;color:#19855c}
+.late{background:#fff0c5;color:#b67706}
+.no{background:#ffe0e3;color:#c73b49}
+.info{background:#dbefff;color:#1673aa}
+.seg{height:31px;border:1px solid #d5e4ed;background:#fff;color:#1d5e84;font-size:9px;font-weight:700}
+.seg.on{background:linear-gradient(#178bd6,#0870b6);color:#fff}
+.toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:#fff;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.modalbg{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
+</style>
+<link rel="stylesheet" href="css/navigation.css">
+</head>
+<body>
+<div class="app min-h-screen">
+<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+  <div class="h-full flex items-center">
+    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]"><span class="text-sky-300 text-3xl">✦</span>SBSS</div>
+    <div class="ml-auto pr-5 flex gap-4 items-center">
+      <label class="h-9 min-w-[215px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[10px] cursor-pointer">
+        <i data-lucide="building-2" class="w-4 h-4"></i><b>Empresa:</b>
+        <select id="empresaGlobal" class="bg-transparent outline-none flex-1 text-white font-semibold cursor-pointer">
+          <option value="" class="bg-slate-800">Todas las Empresas</option>
+        </select>
+      </label>
+      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
+        <div class="flex flex-col text-left">
+          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+        </div>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="sbss-navigation-layout">
+  <!-- Botón pestaña flotante para abrir el sidebar -->
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+
+  <!-- Sidebar Lateral Colapsable -->
+  <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+  <!-- Contenido Principal -->
+  <main class="flex-1 p-3 bg-[#f8fbfd] space-y-3 transition-all duration-300">
+    <section class="panel overflow-hidden">
+      <div class="px-4 py-3 border-b border-[#dce8f0] flex gap-3 items-start">
+        <div class="w-9 h-9 rounded bg-[#0c78bb] text-white grid place-items-center"><i data-lucide="calendar-days" class="w-6 h-6"></i></div>
+        <div>
+          <h1 class="text-[17px] font-extrabold text-[#174d72]">REGISTRO DE ASISTENCIA</h1>
+          <p class="text-[10px] text-[#3c718f]">Registre diariamente la asistencia de su personal. El sistema calculará automáticamente las horas trabajadas y controlará las tardanzas.</p>
+        </div>
+      </div>
+      <div class="p-3 grid grid-cols-12 gap-4 items-end">
+        <label class="col-span-2 text-[9px] font-bold">Fecha<input id="fFecha" type="date" class="control mt-1"></label>
+        <label class="col-span-2 text-[9px] font-bold">Empresa<select id="fEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="tardanza">Tardanza</option><option value="falta">Falta</option></select></label>
+        <div class="col-span-2"><input id="fBuscar" class="control" placeholder="Buscar trabajador..."></div>
+        <button id="btnNuevaAsistencia" class="col-span-2 h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-[10px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Registrar Asistencia</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr><th>☐</th><th>N°</th><th>Trabajador</th><th>Empresa</th><th>Área</th><th>Cargo</th><th>Hora Programada</th><th>Hora Ingreso</th><th>Hora Salida</th><th>Horas Trabajadas</th><th>Estado</th><th>Tardanzas</th><th>Observación</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="14" class="!bg-[#edf7fc] !font-bold !text-[10px] !text-[#154f73]"><i data-lucide="calendar-days" class="inline w-4 h-4 mr-2"></i><span id="fechaGrupo">Fecha seleccionada</span></td></tr>
+          </tbody>
+          <tbody id="tbodyAsistencia">
+            <tr><td colspan="14" class="text-center py-5 text-slate-400">Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-2 gap-3">
+      <section class="panel overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#dce8f0]">
+          <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="clock-3" class="w-6 h-6 text-[#0b72ad]"></i>CONTROL DE TARDANZAS</h2>
+          <p class="text-[9px] ml-8 text-[#49758f]">Visualice el acumulado de tardanzas por trabajador en diferentes periodos.</p>
+        </div>
+        <div class="p-3">
+          <div class="grid grid-cols-4 gap-3 items-end">
+            <label class="text-[9px] font-bold">Empresa<select id="tEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+            <label class="text-[9px] font-bold">Área<select id="tArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+            <label class="text-[9px] font-bold">Trabajador<select id="tTrabajador" class="control mt-1"><option value="">Todos</option></select></label>
+            <button id="btnVerReporte" class="h-8 rounded-md bg-[#0b78ba] text-white text-[9px] font-bold flex justify-center gap-2 items-center"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>Actualizar</button>
+          </div>
+          <div class="grid grid-cols-4 mt-3">
+            <button class="seg on rounded-l-md" data-period="diario">▣ Diario</button>
+            <button class="seg" data-period="semanal">▣ Semanal</button>
+            <button class="seg" data-period="mensual">▣ Mensual</button>
+            <button class="seg rounded-r-md" data-period="trimestral">▦ Trimestral</button>
+          </div>
+          <div class="mt-3 overflow-hidden rounded-md border border-[#d9e7f0]">
+            <table class="tbl">
+              <thead>
+                <tr><th>Trabajador</th><th>Área</th><th>Tardanzas (N°)</th><th>Minutos Acumulados</th><th>Última Tardanza</th><th>Estado</th></tr>
+              </thead>
+              <tbody id="tbodyTardanzas">
+                <tr><td colspan="6" class="text-center py-4 text-slate-400">Cargando tardanzas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="calendar-clock" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">Total de tardanzas (todos)</span><strong id="kTard" class="block text-[15px]">0</strong></div>
+            </div>
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="clock-4" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">Total de minutos acumulados</span><strong id="kMin" class="block text-[15px]">0 min</strong></div>
+            </div>
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="users" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">% Personal con tardanzas</span><strong id="kPct" class="block text-[15px]">0%</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#dce8f0]">
+          <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="file-text" class="w-6 h-6 text-[#0b72ad]"></i>MÓDULO DE PERMISOS</h2>
+          <p class="text-[9px] ml-8 text-[#49758f]">Registre, gestione y consulte los permisos del personal. Mantenga el historial completo por trabajador.</p>
+        </div>
+        <div class="p-3">
+          <div class="grid grid-cols-5 gap-3 items-end">
+            <label class="text-[8px] font-bold">Fecha desde<input id="pDesde" type="date" class="control mt-1"></label>
+            <label class="text-[8px] font-bold">Fecha hasta<input id="pHasta" type="date" class="control mt-1"></label>
+            <label class="text-[8px] font-bold">Empresa<select id="pEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+            <label class="text-[8px] font-bold">Área<select id="pArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+            <button id="btnNuevoPermiso" class="h-8 rounded-md bg-[#0a7bc2] text-white text-[9px] font-bold flex gap-2 justify-center items-center"><i data-lucide="plus" class="w-4 h-4"></i>Nuevo Permiso</button>
+          </div>
+          <div class="mt-3 overflow-x-auto rounded-md border border-[#d9e7f0]">
+            <table class="tbl">
+              <thead>
+                <tr><th>N°</th><th>Trabajador</th><th>Fecha</th><th>Hora Desde</th><th>Hora Hasta</th><th>Tipo de Permiso</th><th>Motivo</th><th>Estado</th><th>Documento</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="tbodyPermisos">
+                <tr><td colspan="10" class="text-center py-4 text-slate-400">Cargando permisos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2 flex justify-between items-center text-[8px] text-slate-500">
+            <span id="pCount">Mostrando 0 registros</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Modal Asistencia -->
+<div id="modalAsistencia" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
+  <form id="formAsistencia" class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden">
+    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Registrar Asistencia</b><button type="button" data-close="modalAsistencia">✕</button></div>
+    <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
+      <label class="col-span-2">Trabajador<select id="aTrabajador" class="control mt-1" required></select></label>
+      <label>Hora Ingreso<input id="aIngreso" type="time" class="control mt-1" required></label>
+      <label>Hora Salida<input id="aSalida" type="time" class="control mt-1"></label>
+      <label class="col-span-2">Observación<input id="aObs" class="control mt-1" placeholder="Opcional"></label>
+    </div>
+    <div class="px-5 pb-5 flex justify-end gap-2">
+      <button type="button" data-close="modalAsistencia" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
+      <button type="submit" id="btnGuardarAsist" class="bg-[#0a78b9] text-white rounded px-4 py-2 text-[11px] font-bold">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script>
+  lucide.createIcons();
+
+  const token = localStorage.getItem('sbss_token');
+  const $ = id => document.getElementById(id);
+
+  // 2. Variables de datos
+  let listaAsistencias = [];
+  let periodoTardanzasActual = 'diario';
+
+  function toast(m) {
+    let x = document.createElement('div');
+    x.className = 'toast';
+    x.textContent = m;
+    document.body.appendChild(x);
+    setTimeout(() => x.remove(), 2500);
+  }
+
+  function pill(e) {
+    const val = (e || '').toLowerCase();
+    const cls = (val === 'presente' || val === 'aprobado') ? 'ok' : (val === 'tardanza') ? 'late' : (val === 'rechazado' || val === 'falta') ? 'no' : 'info';
+    return `<span class="pill ${cls}">● ${e || 'Pendiente'}</span>`;
+  }
+
+  function fdate(s) {
+    if (!s) return '-';
+    let d = new Date(s);
+    return isNaN(d) ? s : d.toISOString().split('T')[0];
+  }
+
+  // 3. Consumir API Asistencias
+  async function cargarAsistencias() {
+    const fecha = $('fFecha').value;
+    const empresa_id = $('fEmpresa').value || $('empresaGlobal').value;
+    const area_id = $('fArea').value;
+    const estado = $('fEstado').value;
+    const buscar = $('fBuscar').value.trim();
+
+    $('fechaGrupo').textContent = fecha ? `Fecha: ${fecha}` : 'Hoy';
+
+    try {
+      let params = new URLSearchParams();
+      if (fecha) params.append('fecha', fecha);
+      if (empresa_id) params.append('empresa_id', empresa_id);
+      if (area_id) params.append('area_id', area_id);
+      if (estado) params.append('estado', estado);
+      if (buscar) params.append('buscar', buscar);
+
+      const res = await fetch(`http://localhost:3000/api/asistencias?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const resp = await res.json();
+      if (!resp.ok) return;
+
+      listaAsistencias = resp.data || [];
+      renderTablaAsistencias();
+      llenarSelectTrabajadores();
+
+    } catch (e) {
+      console.error(e);
+      $('tbodyAsistencia').innerHTML = '<tr><td colspan="14" class="text-center py-5 text-rose-500">Error al conectar con la API</td></tr>';
+    }
+  }
+
+  function renderTablaAsistencias() {
+    if (listaAsistencias.length === 0) {
+      $('tbodyAsistencia').innerHTML = '<tr><td colspan="14" class="text-center py-5">Sin registros de asistencia para esta fecha</td></tr>';
+      return;
+    }
+
+    $('tbodyAsistencia').innerHTML = listaAsistencias.map((x, i) => `
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>${i + 1}</td>
+        <td><strong>${x.colaborador}</strong></td>
+        <td>${x.empresa}</td>
+        <td>${x.area}</td>
+        <td>${x.cargo}</td>
+        <td>${x.hora_programada || '-'}</td>
+        <td class="font-bold text-sky-800">${x.hora_ingreso || '-'}</td>
+        <td>${x.hora_salida || '-'}</td>
+        <td>${x.horas_trabajadas ? x.horas_trabajadas + ' hrs' : '-'}</td>
+        <td>${pill(x.estado)}</td>
+        <td class="text-center font-bold ${x.minutos_tardanza > 0 ? 'text-amber-600' : ''}">
+          ${x.minutos_tardanza > 0 ? x.minutos_tardanza + ' min' : '0'}
+        </td>
+        <td>${x.observacion || '-'}</td>
+        <td class="text-center">
+          <button class="text-[#0870ad] font-bold p-1 editA" data-empid="${x.id}">✎</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.editA').forEach(b => {
+      b.onclick = () => {
+        $('aTrabajador').value = b.dataset.empid;
+        openM('modalAsistencia');
+      };
+    });
+  }
+
+  // 4. Consumir API Tardanzas
+  async function cargarTardanzas() {
+    try {
+      const res = await fetch(`http://localhost:3000/api/asistencias/tardanzas?periodo=${periodoTardanzasActual}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const resp = await res.json();
+      if (!resp.ok) return;
+
+      const tard = resp.data || [];
+      $('kTard').textContent = resp.kpis.totalTardanzas;
+      $('kMin').textContent = `${resp.kpis.minutosAcumulados} min`;
+      $('kPct').textContent = resp.kpis.porcentajeConTardanzas;
+
+      if (tard.length === 0) {
+        $('tbodyTardanzas').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">Sin tardanzas en este periodo</td></tr>';
+        return;
+      }
+
+      $('tbodyTardanzas').innerHTML = tard.map(x => `
+        <tr>
+          <td><strong>${x.colaborador}</strong></td>
+          <td>${x.area}</td>
+          <td class="text-center font-bold text-amber-700">${x.total_tardanzas}</td>
+          <td class="text-center">${x.minutos_acumulados} min</td>
+          <td class="text-center">${fdate(x.ultima_tardanza)}</td>
+          <td class="text-center">${pill(x.total_tardanzas == 0 ? 'Sin tardanzas' : x.total_tardanzas >= 3 ? 'Alerta' : 'Con tardanzas')}</td>
+        </tr>
+      `).join('');
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // 5. Consumir API Permisos
+  async function cargarPermisos() {
+    try {
+      const res = await fetch('http://localhost:3000/api/asistencias/permisos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const resp = await res.json();
+      if (!resp.ok) return;
+
+      const p = resp.data || [];
+      $('pCount').textContent = `Mostrando ${p.length} registros`;
+
+      if (p.length === 0) {
+        $('tbodyPermisos').innerHTML = '<tr><td colspan="10" class="text-center py-4 text-slate-400">No hay permisos registrados</td></tr>';
+        return;
+      }
+
+      $('tbodyPermisos').innerHTML = p.map((x, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${x.colaborador}</strong></td>
+          <td>${fdate(x.fecha_inicio)}</td>
+          <td>${x.hora_desde || '-'}</td>
+          <td>${x.hora_hasta || '-'}</td>
+          <td>${x.tipo_permiso}</td>
+          <td>${x.motivo}</td>
+          <td>${pill(x.estado)}</td>
+          <td>${x.archivo_sustento ? '▧ Documento' : '-'}</td>
+          <td class="text-center">
+            <button class="text-[#0870ad] font-bold p-1">◉</button>
+          </td>
+        </tr>
+      `).join('');
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function llenarSelectTrabajadores() {
+    if (listaAsistencias.length > 0) {
+      $('aTrabajador').innerHTML = listaAsistencias.map(x => `<option value="${x.id}">${x.colaborador}</option>`).join('');
+      $('tTrabajador').innerHTML = '<option value="">Todos</option>' + listaAsistencias.map(x => `<option value="${x.id}">${x.colaborador}</option>`).join('');
+    }
+  }
+
+  // 6. Guardar Marcación Manual (POST API)
+  $('formAsistencia').onsubmit = async e => {
+    e.preventDefault();
+    const btn = $('btnGuardarAsist');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const payload = {
+      empleado_id: $('aTrabajador').value,
+      fecha: $('fFecha').value,
+      hora_ingreso: $('aIngreso').value,
+      hora_salida: $('aSalida').value || null,
+      observacion: $('aObs').value || null
+    };
+
+    try {
+      const res = await fetch('http://localhost:3000/api/asistencias/marcar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resp = await res.json();
+      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'Error al guardar');
+
+      toast('Marcación registrada con cálculo automático');
+      closeM('modalAsistencia');
+      $('formAsistencia').reset();
+      cargarAsistencias();
+      cargarTardanzas();
+
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
+    }
+  };
+
+  // Modales
+  function openM(id) { $(id).classList.remove('hidden'); $(id).classList.add('flex'); }
+  function closeM(id) { $(id).classList.add('hidden'); $(id).classList.remove('flex'); }
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeM(b.dataset.close));
+  $('btnNuevaAsistencia').onclick = () => openM('modalAsistencia');
+
+  const hoy = new Date().toISOString().split('T')[0];
+  $('fFecha').value = hoy;
+
+  ['fFecha', 'fEmpresa', 'fArea', 'fEstado', 'fBuscar', 'empresaGlobal'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', cargarAsistencias);
+  });
+
+  document.querySelectorAll('.seg').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.seg').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      periodoTardanzasActual = b.dataset.period;
+      cargarTardanzas();
+    };
+  });
+
+  $('btnVerReporte').onclick = () => {
+    cargarTardanzas();
+    toast('Tardanzas actualizadas');
+  };
+
+  cargarAsistencias();
+  cargarTardanzas();
+  cargarPermisos();
+</script>
+</body>
+</html>

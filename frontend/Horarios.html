@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+  <title>Sistema Web SBSS - Registro de Horarios</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --sbss-blue: #0b5487;
+      --sbss-blue-2: #1578b8;
+      --sbss-border: #d9e6ef;
+      --sbss-soft: #f4f8fb;
+    }
+
+    body { background: #eef4f8; }
+
+    .app-shell {
+    min-width: 0;
+}
+    .soft-shadow { box-shadow: 0 2px 8px rgba(15, 58, 86, .08); }
+    .panel-border { border: 1px solid var(--sbss-border); }
+    .top-gradient { background: linear-gradient(105deg, #164b71 0%, #0e5e92 55%, #063b5f 100%); }
+    .active-nav { background: linear-gradient(180deg, #2f9ade 0%, #1680c5 100%); }
+    .area-btn.active { color: white; background: linear-gradient(180deg, #2586c6 0%, #0c68a8 100%); border-color: #0b679f; }
+    .area-btn.active svg { color: white; }
+    .area-btn { transition: all .15s ease; }
+    .area-btn:hover { transform: translateY(-1px); }
+
+    .schedule-table { min-width: 1250px; border-collapse: separate; border-spacing: 0; }
+    .schedule-table th, .schedule-table td { border-right: 1px solid #dfeaf1; border-bottom: 1px solid #e6eef4; }
+    .schedule-table th:last-child, .schedule-table td:last-child { border-right: 0; }
+    .schedule-table thead th { background: linear-gradient(180deg, #176da5 0%, #0d5b91 100%); color: white; }
+    .schedule-table .hour-cell { background: #f8fbfd; color: #36576e; font-weight: 700; }
+    .schedule-table .turn-row td { background: #edf4f8; color: #335a73; font-weight: 800; letter-spacing: .04em; }
+    .schedule-table .slot-cell { min-height: 44px; vertical-align: middle; background: #fff; }
+    .schedule-table .slot-cell:hover { background: #f8fbfe; }
+
+    .person-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 62px;
+      padding: 4px 8px;
+      margin: 2px 3px 2px 0;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .chip-green { background:#d8f5e7; color:#21885e; border-color:#c9ebdd; }
+    .chip-blue { background:#dceeff; color:#2472b3; border-color:#cbe2f7; }
+    .chip-purple { background:#eee4fa; color:#7451a7; border-color:#e1d4f2; }
+    .chip-pink { background:#fde5ef; color:#b84370; border-color:#f7d6e3; }
+    .chip-red { background:#ffdfe3; color:#c33f4e; border-color:#f7ccd2; }
+    .chip-cyan { background:#d8f4f6; color:#1d8792; border-color:#c7eaed; }
+    .chip-yellow { background:#fff0cc; color:#b87c13; border-color:#f5e2b8; }
+    .chip-slate { background:#e4edf4; color:#58728a; border-color:#d4e0e9; }
+
+    .legend-dot { width: 11px; height: 11px; border-radius: 999px; display:inline-block; }
+    .modal-backdrop { background: rgba(15, 23, 42, .58); backdrop-filter: blur(2px); }
+    .toast { animation: slideIn .2s ease-out; }
+    @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+ 
+  </style>
+<link rel="stylesheet" href="css/navigation.css">
+</head>
+<body class="text-slate-800 font-sans antialiased min-h-screen">
+<div class="app-shell min-h-screen">
+  <!-- TOPBAR -->
+  <header class="sbss-header top-gradient text-white sticky top-0 z-40 shadow-md h-[54px]">
+    <div class="h-full flex items-center">
+      <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px] tracking-wide">
+        <span class="text-sky-300 text-3xl leading-none" aria-hidden="true">✦</span>
+        <span>SBSS</span>
+      </div>
+
+      <div class="ml-auto h-full flex items-center gap-4 pr-5">
+        <label class="h-9 min-w-[205px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[11px]">
+          <i data-lucide="building-2" class="w-4 h-4"></i>
+          <span class="font-bold">Empresa:</span>
+          <select id="empresaGlobal" class="bg-transparent outline-none cursor-pointer flex-1 text-white font-semibold">
+            <option value="todas" class="text-slate-800">Todas las Empresas</option>
+          </select>
+        </label>
+        <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+          <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white">U</div>
+          <div class="flex flex-col text-left">
+            <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
+            <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+          </div>
+          <button id="btnCerrarSesion" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sbss-navigation-layout">
+<button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    <!-- SIDEBAR -->
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+    <!-- CONTENT -->
+    <main class="flex-1 p-4 bg-[#f7fafc]">
+      <section class="bg-white rounded-lg panel-border soft-shadow p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 text-[#174e75]">
+            <div class="w-9 h-9 rounded-lg bg-sky-50 border border-sky-100 grid place-items-center"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
+            <h1 class="font-extrabold text-[17px] tracking-tight">REGISTRO DE HORARIOS POR EMPRESA Y ÁREA</h1>
+          </div>
+          <button id="btnAbrirModal" class="h-9 px-5 rounded-lg bg-[#1479b9] hover:bg-[#0e689f] text-white text-[12px] font-bold shadow-sm flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Registrar horario
+          </button>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="rounded-lg panel-border overflow-hidden">
+          <div class="h-9 px-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center gap-2 text-[#234f6d] text-[12px] font-extrabold">
+            <i data-lucide="filter" class="w-4 h-4"></i> FILTROS DE VISUALIZACIÓN
+          </div>
+          <div class="p-3">
+            <div class="grid grid-cols-[1fr_1fr_1fr_1fr_230px] gap-4 items-end">
+              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Empresa
+                <select id="filtroEmpresa" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+                  <option value="todas">Todas las empresas</option>
+                </select>
+              </label>
+
+              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Área
+                <select id="filtroArea" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+                  <option value="General">Horario General</option>
+                </select>
+              </label>
+
+              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Semana
+                <select id="filtroSemana" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+                  <option value="-1">Semana anterior</option>
+                  <option value="0" selected>Semana actual</option>
+                  <option value="1">Semana siguiente</option>
+                </select>
+              </label>
+
+              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Vista
+                <select id="filtroVista" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+                  <option value="semanal">Horario semanal</option>
+                  <option value="manana">Solo turno mañana</option>
+                  <option value="tarde">Solo turno tarde</option>
+                </select>
+              </label>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-sky-700"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente.</p>
+          </div>
+        </div>
+
+        <!-- AREAS TABS DINÁMICAS -->
+        <div id="areaTabs" class="grid grid-cols-7 gap-2"></div>
+
+        <div class="h-8 px-3 rounded-md bg-[#eef6fb] border border-[#d5e8f4] flex items-center text-[10px] text-[#41637a]">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-sky-700 mr-2"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente desde la base de datos.
+        </div>
+
+        <!-- HORARIO TABLE -->
+        <div class="rounded-lg panel-border overflow-hidden">
+          <div class="h-12 px-4 flex items-center justify-between bg-white border-b border-slate-200">
+            <div class="flex items-center gap-2 text-[#174e75]">
+              <i data-lucide="calendar-days" class="w-4 h-4"></i>
+              <h2 id="tituloHorario" class="font-extrabold text-[14px]">HORARIO SEMANAL — GENERAL</h2>
+              <span id="rangoSemana" class="ml-2 text-[10px] font-semibold text-slate-400"></span>
+            </div>
+            <div class="flex items-center gap-5 text-[10px] font-semibold text-[#365b73]">
+              <span class="flex items-center gap-1.5"><i class="legend-dot bg-emerald-400"></i>Asignado</span>
+              <span class="flex items-center gap-1.5"><i class="legend-dot bg-slate-400"></i>Descanso</span>
+              <span class="flex items-center gap-1.5"><i class="legend-dot bg-white border border-slate-300"></i>Sin horario</span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="schedule-table w-full text-[10px]">
+              <thead>
+                <tr>
+                  <th class="h-8 w-[82px] text-center font-extrabold">HORA</th>
+                  <th class="h-8 text-center font-extrabold">LUNES</th>
+                  <th class="h-8 text-center font-extrabold">MARTES</th>
+                  <th class="h-8 text-center font-extrabold">MIÉRCOLES</th>
+                  <th class="h-8 text-center font-extrabold">JUEVES</th>
+                  <th class="h-8 text-center font-extrabold">VIERNES</th>
+                  <th class="h-8 text-center font-extrabold">SÁBADO</th>
+                  <th class="h-8 text-center font-extrabold">DOMINGO</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleBody">
+                <tr><td colspan="8" class="h-24 text-center text-slate-400">Cargando malla de turnos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- KPIS INFERIORES -->
+        <div class="grid grid-cols-[1.25fr_1.15fr_1.15fr_1fr] gap-3 pt-1">
+          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="refresh-cw" class="w-5 h-5"></i></div>
+            <div><p class="text-[10px] font-extrabold text-[#315b76]">CONEXIÓN EN TIEMPO REAL</p><p class="text-[9px] leading-4 text-slate-500">Malla de horarios vinculada a la base de datos MySQL.</p></div>
+          </div>
+          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="building-2" class="w-5 h-5"></i></div>
+            <div><p class="text-[10px] font-extrabold text-[#315b76]">FILTRO POR EMPRESA</p><p class="text-[9px] leading-4 text-slate-500">Visualice únicamente el personal de la empresa seleccionada.</p></div>
+          </div>
+          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="users" class="w-5 h-5"></i></div>
+            <div><p class="text-[10px] font-extrabold text-[#315b76]">FILTRO POR ÁREA</p><p class="text-[9px] leading-4 text-slate-500">Filtrado rápido con pestañas interactivas.</p></div>
+          </div>
+          <div class="rounded-lg panel-border bg-white h-[72px] px-4 grid grid-cols-2 divide-x divide-slate-200">
+            <div class="flex items-center gap-2 pr-3"><div class="w-9 h-9 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="users" class="w-5 h-5"></i></div><div><p class="text-[9px] text-slate-500">Personal programado</p><strong id="kpiPersonal" class="text-[18px] leading-5 text-[#174e75]">0</strong></div></div>
+            <div class="flex items-center gap-2 pl-3"><div class="w-9 h-9 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="building-2" class="w-5 h-5"></i></div><div><p class="text-[9px] text-slate-500">Áreas activas</p><strong id="kpiAreas" class="text-[18px] leading-5 text-[#174e75]">0</strong></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR HORARIO -->
+<div id="modalHorario" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+  <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
+    <div class="h-14 px-5 top-gradient text-white flex items-center justify-between">
+      <div class="flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5"></i><h3 class="font-extrabold text-sm">REGISTRAR HORARIO</h3></div>
+      <button id="btnCerrarModal" class="p-1.5 rounded-lg hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="formHorario" class="p-5 space-y-4">
+      <input type="hidden" id="editHorarioId">
+      <div class="grid grid-cols-2 gap-4">
+        <label class="text-xs font-bold text-slate-600 space-y-1">Trabajador
+          <select id="empleadoSelect" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500"></select>
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Empresa
+          <input id="modalEmpresa" readonly class="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium outline-none">
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Área
+          <input id="modalArea" readonly class="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium outline-none">
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Día
+          <select id="modalDia" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500">
+            <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="7">Domingo</option>
+          </select>
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Hora de entrada
+          <input id="modalEntrada" type="time" min="07:00" max="20:00" value="08:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Hora de salida
+          <input id="modalSalida" type="time" min="08:00" max="22:00" value="17:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Tolerancia entrada (minutos)
+          <input id="modalTolerancia" type="number" value="0" disabled title="La tardanza se calcula desde la hora de entrada." class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-slate-100 text-slate-500">
+        </label>
+        <label class="text-xs font-bold text-slate-600 space-y-1">Estado
+          <select id="modalEstado" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500">
+            <option value="asignado">Asignado</option>
+            <option value="descanso">Descanso</option>
+          </select>
+        </label>
+      </div>
+      <div class="rounded-lg bg-sky-50 border border-sky-100 p-3 text-[11px] text-sky-800 flex gap-2">
+        <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+        <p>Los cambios se guardan directamente en la tabla <strong>horarios</strong> de la base de datos MySQL.</p>
+      </div>
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button id="btnEliminar" type="button" class="hidden h-9 px-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100">
+          <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Eliminar turno
+        </button>
+        <div class="ml-auto flex gap-2">
+          <button id="btnCancelar" type="button" class="h-9 px-4 rounded-lg border border-slate-300 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50">Cancelar</button>
+          <button type="submit" id="btnSubmitForm" class="h-9 px-5 rounded-lg bg-[#1479b9] hover:bg-[#0e689f] text-white text-xs font-extrabold">
+            <i data-lucide="save" class="w-4 h-4 inline mr-1"></i>Guardar horario
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed right-5 bottom-5 z-[60] toast bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold"></div>
+
+<script>
+  const token = localStorage.getItem('sbss_token');
+  const HOURS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+  const CHIP_CLASSES = ['chip-green','chip-blue','chip-purple','chip-pink','chip-red','chip-cyan','chip-yellow','chip-slate'];
+
+  let schedulesRaw = []; // De la API
+  let employeesList = []; // Empleados con chips asignados
+  let areasDisponibles = ['General'];
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => toast.classList.add('hidden'), 2400);
+  }
+
+  function getMonday(offsetWeeks = 0) {
+    const d = new Date();
+    const day = d.getDay() || 7;
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - day + 1 + (Number(offsetWeeks) * 7));
+    return d;
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'}).replace('.', '');
+  }
+
+  function isHourWithin(hour, start, end) {
+    const h = parseInt(hour.split(':')[0], 10);
+    const s = parseInt(start.split(':')[0], 10);
+    const e = parseInt(end.split(':')[0], 10);
+    return h >= s && h < e;
+  }
+
+  // 1. Cargar Empresas
+  async function cargarEmpresas() {
+    try {
+      const res = await fetch('http://localhost:3000/api/empresas', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const empFilter = document.getElementById('filtroEmpresa');
+        const empGlobal = document.getElementById('empresaGlobal');
+        data.data.forEach(e => {
+          const opt1 = new Option(e.razon_social, e.razon_social);
+          const opt2 = new Option(e.razon_social, e.razon_social);
+          empFilter.appendChild(opt1);
+          empGlobal.appendChild(opt2);
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // 2. Cargar Datos de la API de Horarios
+  async function cargarDatosAPI() {
+    try {
+      const res = await fetch('http://localhost:3000/api/horarios', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        window.location.href = 'login.html';
+        return;
+      }
+      const json = await res.json();
+      if (!json.ok) return;
+
+      const raw = json.data || [];
+      
+      // Mapear empleados y colores
+      employeesList = raw.map((r, i) => ({
+        id: r.empleado_id,
+        name: r.colaborador,
+        shortName: r.colaborador.split(' ')[0] + ' ' + (r.colaborador.split(' ')[2] || ''),
+        company: r.empresa,
+        area: r.area,
+        chip: CHIP_CLASSES[i % CHIP_CLASSES.length]
+      }));
+
+      // Extraer áreas únicas para las pestañas
+      const areasSet = new Set(raw.map(r => r.area));
+      areasDisponibles = ['General', ...Array.from(areasSet)];
+      renderAreaTabs();
+      poblarSelectAreas();
+
+      // Transformar en formato plano de turnos
+      schedulesRaw = [];
+      raw.forEach(colab => {
+        colab.malla_horarios.forEach(h => {
+          schedulesRaw.push({
+            id: h.id,
+            employeeId: colab.empleado_id,
+            company: colab.empresa,
+            area: colab.area,
+            day: h.dia_semana,
+            start: h.hora_entrada.slice(0, 5),
+            end: h.hora_salida.slice(0, 5),
+            tolerancia: h.tolerancia_minutos,
+            status: h.activo ? 'asignado' : 'descanso'
+          });
+        });
+      });
+
+      populateModalSelect();
+      renderSchedule();
+    } catch (e) {
+      console.error(e);
+      showToast('Error de conexión con la API');
+    }
+  }
+
+  function renderAreaTabs() {
+    const tabsCont = document.getElementById('areaTabs');
+    const iconos = {
+      'General': 'users',
+      'Recursos Humanos': 'user-check',
+      'Tecnología y Sistemas': 'monitor',
+      'Logística y Almacén': 'box',
+      'Comercial y Ventas': 'megaphone',
+      'Administración y Finanzas': 'scale',
+      'Operaciones y Servicios': 'building-2'
+    };
+
+    tabsCont.innerHTML = areasDisponibles.map((area, idx) => `
+      <button data-area="${area}" class="area-btn ${idx === 0 ? 'active' : ''} h-10 rounded-md panel-border bg-white text-[10px] font-extrabold text-[#315b76] flex items-center justify-center gap-1.5 px-2">
+        <i data-lucide="${iconos[area] || 'briefcase'}" class="w-3.5 h-3.5 text-sky-700"></i>
+        <span class="truncate">${area.toUpperCase()}</span>
+      </button>
+    `).join('');
+
+    document.querySelectorAll('.area-btn').forEach(btn => {
+      btn.onclick = () => setArea(btn.dataset.area);
+    });
+    lucide.createIcons();
+  }
+
+  function poblarSelectAreas() {
+    const select = document.getElementById('filtroArea');
+    select.innerHTML = areasDisponibles.map(a => `<option value="${a}">${a === 'General' ? 'Horario General' : a}</option>`).join('');
+  }
+
+  function activeFilter() {
+    return {
+      company: document.getElementById('filtroEmpresa').value,
+      area: document.getElementById('filtroArea').value,
+      week: Number(document.getElementById('filtroSemana').value),
+      view: document.getElementById('filtroVista').value
+    };
+  }
+
+  function filteredSchedules() {
+    const f = activeFilter();
+    return schedulesRaw.filter(s => {
+      const companyOk = f.company === 'todas' || s.company === f.company;
+      const areaOk = f.area === 'General' || s.area === f.area;
+      return companyOk && areaOk;
+    });
+  }
+
+  function renderSchedule() {
+    const body = document.getElementById('scheduleBody');
+    const f = activeFilter();
+    const filtered = filteredSchedules();
+    const hoursToRender = HOURS.filter(h => f.view === 'manana' ? h < '14:00' : f.view === 'tarde' ? h >= '14:00' : true);
+
+    body.innerHTML = '';
+
+    function addTurnRow(label) {
+      const tr = document.createElement('tr');
+      tr.className = 'turn-row';
+      tr.innerHTML = `<td class="h-6"></td><td colspan="7" class="h-6 text-center">${label}</td>`;
+      body.appendChild(tr);
+    }
+
+    hoursToRender.forEach(hour => {
+      if (hour === '08:00' && f.view !== 'tarde') addTurnRow('TURNO MAÑANA');
+      if (hour === '14:00' && f.view !== 'manana') addTurnRow('TURNO TARDE');
+
+      const tr = document.createElement('tr');
+      let html = `<td class="hour-cell h-10 text-center">${hour}</td>`;
+
+      for (let day = 1; day <= 7; day++) {
+        const items = filtered.filter(s => s.day === day && isHourWithin(hour, s.start, s.end));
+        const chips = items.map(s => {
+          const emp = employeesList.find(e => e.id === Number(s.employeeId));
+          if (!emp) return '';
+          const stateClass = s.status === 'descanso' ? 'chip-slate' : emp.chip;
+          return `<button class="person-chip ${stateClass}" data-schedule-id="${s.id}" title="${emp.name} · ${s.start}-${s.end} · ${s.area}">
+            ${emp.shortName}
+          </button>`;
+        }).join('');
+        html += `<td class="slot-cell px-3 py-1 text-center">${chips || '<span class="text-slate-300">—</span>'}</td>`;
+      }
+      tr.innerHTML = html;
+      body.appendChild(tr);
+    });
+
+    // Eventos a las fichas
+    document.querySelectorAll('[data-schedule-id]').forEach(btn => {
+      btn.onclick = () => openEdit(Number(btn.dataset.scheduleId));
+    });
+
+    const areaLabel = f.area === 'General' ? 'GENERAL' : f.area.toUpperCase();
+    document.getElementById('tituloHorario').textContent = `HORARIO SEMANAL — ${areaLabel}`;
+
+    const monday = getMonday(f.week);
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+    document.getElementById('rangoSemana').textContent = `${fmtDate(monday)} — ${fmtDate(sunday)}`;
+
+    const uniqueEmployees = new Set(filtered.map(s => s.employeeId));
+    document.getElementById('kpiPersonal').textContent = uniqueEmployees.size;
+
+    const companyFiltered = schedulesRaw.filter(s => f.company === 'todas' || s.company === f.company);
+    document.getElementById('kpiAreas').textContent = new Set(companyFiltered.map(s => s.area)).size;
+
+    lucide.createIcons();
+  }
+
+  function setArea(area) {
+    document.getElementById('filtroArea').value = area;
+    document.querySelectorAll('.area-btn').forEach(b => b.classList.toggle('active', b.dataset.area === area));
+    renderSchedule();
+  }
+
+  function syncCompany(sourceValue) {
+    document.getElementById('filtroEmpresa').value = sourceValue;
+    document.getElementById('empresaGlobal').value = sourceValue;
+    renderSchedule();
+  }
+
+  function populateModalSelect() {
+    const empSel = document.getElementById('empleadoSelect');
+    empSel.innerHTML = '<option value="">Seleccione un colaborador...</option>' + 
+      employeesList.map(e => `<option value="${e.id}">${e.name} (${e.area})</option>`).join('');
+  }
+
+  function syncEmployeeMetadata() {
+    const emp = employeesList.find(e => e.id === Number(document.getElementById('empleadoSelect').value));
+    if (!emp) {
+      document.getElementById('modalEmpresa').value = '';
+      document.getElementById('modalArea').value = '';
+      return;
+    }
+    document.getElementById('modalEmpresa').value = emp.company;
+    document.getElementById('modalArea').value = emp.area;
+  }
+
+  function openCreate() {
+    document.getElementById('formHorario').reset();
+    document.getElementById('editHorarioId').value = '';
+    document.getElementById('modalEntrada').value = '08:00';
+    document.getElementById('modalSalida').value = '17:00';
+    document.getElementById('modalTolerancia').value = '0';
+    document.getElementById('btnEliminar').classList.add('hidden');
+    if (employeesList.length > 0) {
+      document.getElementById('empleadoSelect').value = employeesList[0].id;
+      syncEmployeeMetadata();
+    }
+    showModal();
+  }
+
+  function openEdit(scheduleId) {
+    const s = schedulesRaw.find(x => Number(x.id) === Number(scheduleId));
+    if (!s) return;
+    document.getElementById('editHorarioId').value = s.id;
+    document.getElementById('empleadoSelect').value = s.employeeId;
+    document.getElementById('modalEmpresa').value = s.company;
+    document.getElementById('modalArea').value = s.area;
+    document.getElementById('modalDia').value = s.day;
+    document.getElementById('modalEntrada').value = s.start;
+    document.getElementById('modalSalida').value = s.end;
+    document.getElementById('modalTolerancia').value = '0';
+    document.getElementById('modalEstado').value = s.status;
+    document.getElementById('btnEliminar').classList.remove('hidden');
+    showModal();
+  }
+
+  function showModal() {
+    const modal = document.getElementById('modalHorario');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    lucide.createIcons();
+  }
+
+  function hideModal() {
+    const modal = document.getElementById('modalHorario');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  // Guardar en Backend MySQL
+  document.getElementById('formHorario').onsubmit = async (e) => {
+    e.preventDefault();
+    const start = document.getElementById('modalEntrada').value;
+    const end = document.getElementById('modalSalida').value;
+    if (end <= start) {
+      showToast('La hora de salida debe ser mayor a la de entrada');
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitForm');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const payload = {
+      empleado_id: Number(document.getElementById('empleadoSelect').value),
+      dias: [Number(document.getElementById('modalDia').value)],
+      hora_entrada: start,
+      hora_salida: end,
+      tolerancia_minutos: Number(document.getElementById('modalTolerancia').value)
+    };
+
+    try {
+      const res = await fetch('http://localhost:3000/api/horarios/asignar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar');
+
+      hideModal();
+      await cargarDatosAPI();
+      showToast('Horario actualizado en MySQL');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-1"></i>Guardar horario';
+      lucide.createIcons();
+    }
+  };
+
+  // Eliminar en Backend MySQL
+  document.getElementById('btnEliminar').onclick = async () => {
+    const id = document.getElementById('editHorarioId').value;
+    if (!id || !confirm('¿Desea eliminar este turno asignado?')) return;
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/horarios/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al eliminar');
+
+      hideModal();
+      await cargarDatosAPI();
+      showToast('Turno eliminado correctamente');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  document.getElementById('btnAbrirModal').onclick = openCreate;
+  document.getElementById('btnCerrarModal').onclick = hideModal;
+  document.getElementById('btnCancelar').onclick = hideModal;
+  document.getElementById('modalHorario').onclick = e => { if (e.target.id === 'modalHorario') hideModal(); };
+  document.getElementById('empleadoSelect').onchange = syncEmployeeMetadata;
+document.getElementById('filtroArea').onchange = e => setArea(e.target.value);
+  document.getElementById('filtroEmpresa').onchange = e => syncCompany(e.target.value);
+  document.getElementById('empresaGlobal').onchange = e => syncCompany(e.target.value);
+  document.getElementById('filtroSemana').onchange = renderSchedule;
+  document.getElementById('filtroVista').onchange = renderSchedule;
+
+  // Inicializar
+  cargarEmpresas();
+  cargarDatosAPI();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>
