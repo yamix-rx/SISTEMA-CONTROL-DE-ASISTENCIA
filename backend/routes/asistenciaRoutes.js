@@ -10,5 +10,7 @@ router.get('/', asistenciaController.listarAsistencias);
 router.post('/marcar', asistenciaController.registrarMarcacion);
 router.get('/tardanzas', asistenciaController.acumuladoTardanzas);
 router.get('/permisos', asistenciaController.listarPermisos);
+router.post('/permisos', asistenciaController.crearPermiso);
+router.patch('/permisos/:id/estado', asistenciaController.actualizarEstadoPermiso);
 
 module.exports = router;

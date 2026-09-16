@@ -85,7 +85,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         <label class="col-span-2 text-[9px] font-bold">Fecha<input id="fFecha" type="date" class="control mt-1"></label>
         <label class="col-span-2 text-[9px] font-bold">Empresa<select id="fEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
         <label class="col-span-2 text-[9px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
-        <label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="tardanza">Tardanza</option><option value="falta">Falta</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
         <div class="col-span-2"><input id="fBuscar" class="control" placeholder="Buscar trabajador..."></div>
         <button id="btnNuevaAsistencia" class="col-span-2 h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-[10px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Registrar Asistencia</button>
       </div>
@@ -189,13 +189,38 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Registrar Asistencia</b><button type="button" data-close="modalAsistencia">✕</button></div>
     <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
       <label class="col-span-2">Trabajador<select id="aTrabajador" class="control mt-1" required></select></label>
-      <label>Hora Ingreso<input id="aIngreso" type="time" class="control mt-1" required></label>
-      <label>Hora Salida<input id="aSalida" type="time" class="control mt-1"></label>
+      <label>Hora de ingreso<input id="aIngreso" type="time" class="control mt-1"></label>
+      <label>Hora de salida<input id="aSalida" type="time" class="control mt-1"></label>
+      <label class="col-span-2">Estado<select id="aEstado" class="control mt-1" required>
+        <option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option>
+        <option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option>
+        <option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option>
+      </select></label>
       <label class="col-span-2">Observación<input id="aObs" class="control mt-1" placeholder="Opcional"></label>
     </div>
     <div class="px-5 pb-5 flex justify-end gap-2">
       <button type="button" data-close="modalAsistencia" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
       <button type="submit" id="btnGuardarAsist" class="bg-[#0a78b9] text-white rounded px-4 py-2 text-[11px] font-bold">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Permiso -->
+<div id="modalPermiso" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
+  <form id="formPermiso" class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden">
+    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Nuevo Permiso</b><button type="button" data-close="modalPermiso">✕</button></div>
+    <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
+      <label class="col-span-2">Trabajador<select id="pTrabajador" class="control mt-1" required></select></label>
+      <label>Tipo de permiso<select id="pTipo" class="control mt-1"><option>Personal</option><option>Salud</option><option>Estudios</option><option>Familiar</option><option>Otro</option></select></label>
+      <label>Motivo<input id="pMotivo" class="control mt-1" required></label>
+      <label>Fecha inicio<input id="pInicio" type="date" class="control mt-1" required></label>
+      <label>Fecha fin<input id="pFin" type="date" class="control mt-1" required></label>
+      <label>Hora desde<input id="pDesde" type="time" class="control mt-1"></label>
+      <label>Hora hasta<input id="pHasta" type="time" class="control mt-1"></label>
+    </div>
+    <div class="px-5 pb-5 flex justify-end gap-2">
+      <button type="button" data-close="modalPermiso" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
+      <button type="submit" id="btnGuardarPermiso" class="bg-[#0a78b9] text-white rounded px-4 py-2 text-[11px] font-bold">Guardar</button>
     </div>
   </form>
 </div>
@@ -295,14 +320,19 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         </td>
         <td>${x.observacion || '-'}</td>
         <td class="text-center">
-          <button class="text-[#0870ad] font-bold p-1 editA" data-empid="${x.id}">✎</button>
+          <button class="text-[#0870ad] font-bold p-1 editA" data-empid="${x.empleado_id}">✎</button>
         </td>
       </tr>
     `).join('');
 
     document.querySelectorAll('.editA').forEach(b => {
       b.onclick = () => {
+        const item = listaAsistencias.find(x => String(x.empleado_id) === String(b.dataset.empid));
         $('aTrabajador').value = b.dataset.empid;
+        $('aIngreso').value = item?.hora_ingreso || '';
+        $('aSalida').value = item?.hora_salida || '';
+        $('aEstado').value = item?.estado || 'presente';
+        $('aObs').value = item?.observacion || '';
         openM('modalAsistencia');
       };
     });
@@ -384,8 +414,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
   function llenarSelectTrabajadores() {
     if (listaAsistencias.length > 0) {
-      $('aTrabajador').innerHTML = listaAsistencias.map(x => `<option value="${x.id}">${x.colaborador}</option>`).join('');
-      $('tTrabajador').innerHTML = '<option value="">Todos</option>' + listaAsistencias.map(x => `<option value="${x.id}">${x.colaborador}</option>`).join('');
+      $('aTrabajador').innerHTML = listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
+      $('tTrabajador').innerHTML = '<option value="">Todos</option>' + listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
     }
   }
 
@@ -401,6 +431,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       fecha: $('fFecha').value,
       hora_ingreso: $('aIngreso').value,
       hora_salida: $('aSalida').value || null,
+      estado: $('aEstado').value,
       observacion: $('aObs').value || null
     };
 
@@ -436,6 +467,45 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
   function closeM(id) { $(id).classList.add('hidden'); $(id).classList.remove('flex'); }
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeM(b.dataset.close));
   $('btnNuevaAsistencia').onclick = () => openM('modalAsistencia');
+
+  $('btnNuevoPermiso').onclick = () => {
+    const opts = listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
+    $('pTrabajador').innerHTML = opts;
+    $('pInicio').value = $('fFecha').value || new Date().toISOString().split('T')[0];
+    $('pFin').value = $('pInicio').value;
+    openM('modalPermiso');
+  };
+
+  $('formPermiso').onsubmit = async e => {
+    e.preventDefault();
+    const btn = $('btnGuardarPermiso');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    try {
+      const payload = {
+        empleado_id: $('pTrabajador').value,
+        tipo_permiso: $('pTipo').value,
+        fecha_inicio: $('pInicio').value,
+        fecha_fin: $('pFin').value,
+        hora_desde: $('pDesde').value || null,
+        hora_hasta: $('pHasta').value || null,
+        motivo: $('pMotivo').value.trim()
+      };
+      const res = await fetch('http://localhost:3000/api/asistencias/permisos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const resp = await res.json();
+      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'Error al guardar permiso');
+      toast('Permiso registrado correctamente');
+      closeM('modalPermiso');
+      $('formPermiso').reset();
+      cargarPermisos();
+    } catch (err) { alert(err.message); }
+    finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+  };
+
 
   const hoy = new Date().toISOString().split('T')[0];
   $('fFecha').value = hoy;

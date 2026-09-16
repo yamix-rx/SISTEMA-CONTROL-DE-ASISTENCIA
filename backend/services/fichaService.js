@@ -5,8 +5,9 @@ async function obtenerFicha(id) {
   const [empleadoRows] = await pool.query(`
     SELECT e.id, e.tipo_documento, e.numero_documento, e.nombres, e.apellidos,
            CONCAT(e.nombres, ' ', e.apellidos) AS colaborador_completo,
-           e.tipo_vinculo, COALESCE(pd.horas_meta, 0) AS horas_totales_asignadas,
-           e.fecha_ingreso, e.estado,
+           e.tipo_vinculo, COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_totales_asignadas,
+           e.fecha_nacimiento, e.telefono, e.correo_personal, e.direccion, e.carrera, e.institucion_educativa,
+           e.fecha_ingreso, e.fecha_finalizacion, e.estado, e.observaciones_rrhh,
            emp.id AS empresa_id, emp.razon_social AS empresa,
            ar.id AS area_id, ar.nombre AS area, c.id AS cargo_id, c.nombre AS cargo
     FROM empleados e
@@ -43,15 +44,19 @@ async function obtenerFicha(id) {
   const horasMeta = Number(empleado.horas_totales_asignadas || 0);
   const horasPendientes = horasMeta > 0 ? Math.max(0, horasMeta - horasRealizadas) : 0;
   const porcentajeAvance = horasMeta > 0 ? Math.min(100, Math.round(horasRealizadas / horasMeta * 100)) : 0;
+  const esPracticante = String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante');
+  const horasCompletadas = esPracticante && horasMeta > 0 && horasRealizadas >= horasMeta;
 
   return {
     empleado,
     progresoHoras: {
-      esPracticante: String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante'),
+      esPracticante,
       horasMeta,
       horasRealizadas: Number(horasRealizadas.toFixed(2)),
       horasPendientes: Number(horasPendientes.toFixed(2)),
-      porcentajeAvance: `${porcentajeAvance}%`
+      porcentajeAvance: `${porcentajeAvance}%`,
+      horasCompletadas,
+      estado: horasCompletadas ? 'HORAS DE PRÁCTICAS COMPLETADAS' : 'EN PROGRESO'
     },
     horarios,
     legajoDigital

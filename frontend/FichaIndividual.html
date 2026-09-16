@@ -130,7 +130,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     <!-- Ficha del Colaborador y Control de Horas -->
     <div class="grid grid-cols-12 gap-3">
       <section class="panel col-span-7 overflow-hidden">
-        <div class="section-title"><i data-lucide="user" class="w-5 h-5"></i>EXPEDIENTE DIGITAL Y FICHA INDIVIDUAL</div>
+        <div class="section-title"><i data-lucide="user" class="w-5 h-5"></i>EXPEDIENTE DIGITAL Y FICHA INDIVIDUAL <button id="btnNuevoPersonal" class="btn blue ml-auto">＋ Nuevo personal</button><button id="btnEditarPersonal" class="btn ml-1" style="background:#e8f2f8;color:#075d91">✎ Editar</button></div>
         <div class="p-3">
           <div class="flex gap-5 items-center">
             <div id="avatarBig" class="w-[90px] h-[90px] rounded-full bg-[#0b659b] text-white flex items-center justify-center text-3xl font-extrabold shadow border-2 border-sky-200 shrink-0">
@@ -223,6 +223,42 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     </section>
   </main>
 </div>
+</div>
+
+<!-- Modal de registro/edición de personal -->
+<div id="modalPersonal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-900/50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-auto">
+    <div class="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between z-10">
+      <div><h3 id="modalTitulo" class="font-extrabold text-[15px] text-[#123f5e]">Registrar personal</h3><p class="text-[10px] text-slate-500">Complete la ficha requerida por Recursos Humanos.</p></div>
+      <button id="btnCerrarModal" class="text-slate-500 text-xl">×</button>
+    </div>
+    <form id="formPersonal" class="p-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <input type="hidden" id="pId">
+      <label>Tipo documento<select id="pTipoDocumento" class="control mt-1"><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></label>
+      <label>Número de documento *<input id="pDocumento" class="control mt-1" required maxlength="15"></label>
+      <label>Nombres *<input id="pNombres" class="control mt-1" required maxlength="100"></label>
+      <label>Apellidos *<input id="pApellidos" class="control mt-1" required maxlength="100"></label>
+      <label>Fecha de nacimiento<input id="pNacimiento" type="date" class="control mt-1"></label>
+      <label>Teléfono<input id="pTelefono" class="control mt-1" maxlength="20"></label>
+      <label>Correo personal<input id="pCorreo" type="email" class="control mt-1"></label>
+      <label class="md:col-span-2">Dirección<input id="pDireccion" class="control mt-1"></label>
+      <label>Carrera<input id="pCarrera" class="control mt-1"></label>
+      <label class="md:col-span-2">Universidad / Instituto<input id="pInstitucion" class="control mt-1"></label>
+      <label>Empresa *<select id="pEmpresa" class="control mt-1" required></select></label>
+      <label>Área *<select id="pArea" class="control mt-1" required></select></label>
+      <label>Cargo / Puesto *<select id="pCargo" class="control mt-1" required></select></label>
+      <label>Tipo de vínculo *<select id="pVinculo" class="control mt-1" required><option value="trabajador">Trabajador</option><option value="practicante preprofesional">Practicante preprofesional</option><option value="practicante profesional">Practicante profesional</option><option value="voluntario">Voluntario</option><option value="otro">Otro</option></select></label>
+      <label>Estado *<select id="pEstado" class="control mt-1" required><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="finalizado">Finalizado</option><option value="suspendido">Suspendido</option></select></label>
+      <label>Fecha de ingreso *<input id="pIngreso" type="date" class="control mt-1" required></label>
+      <label>Fecha de finalización<input id="pFinalizacion" type="date" class="control mt-1"></label>
+      <label id="horasPracticasField">Horas de prácticas a cumplir *<input id="pHorasPracticas" type="number" min="1" step="1" value="320" class="control mt-1"><span class="text-[8px] text-slate-500">Por defecto: 320. Puede ingresar otra cantidad.</span></label>
+      <label class="md:col-span-2">Observaciones internas de RR. HH.<textarea id="pObservaciones" class="control mt-1" style="height:80px;padding-top:9px"></textarea></label>
+      <div class="md:col-span-3 flex justify-end gap-2 pt-2 border-t">
+        <button type="button" id="btnCancelarModal" class="btn" style="background:#eef3f6;color:#31566d">Cancelar</button>
+        <button type="submit" class="btn blue">Guardar ficha</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script src="js/sidebar.js"></script>
@@ -336,9 +372,14 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       $('hPend').textContent = `${prog.horasPendientes} hrs`;
       $('hPct').textContent = prog.porcentajeAvance;
       $('progress').style.width = prog.porcentajeAvance;
-      $('progressText').textContent = `${prog.horasRealizadas} / ${prog.horasMeta} Horas (${prog.porcentajeAvance})`;
+      $('progressText').textContent = prog.horasCompletadas
+        ? 'HORAS DE PRÁCTICAS COMPLETADAS'
+        : `${prog.horasRealizadas} / ${prog.horasMeta} Horas (${prog.porcentajeAvance})`;
+      $('lblProgresoStatus').textContent = `Estado: ${prog.estado || 'EN PROGRESO'}`;
       $('alertName1').textContent = emp.nombres.split(' ')[0] + ':';
-      $('alertHorasText').textContent = `${prog.horasRealizadas} hrs cumplidas de ${prog.horasMeta} hrs`;
+      $('alertHorasText').textContent = prog.horasCompletadas
+        ? 'HORAS DE PRÁCTICAS COMPLETADAS'
+        : `${prog.horasRealizadas} hrs cumplidas de ${prog.horasMeta} hrs`;
     } else {
       $('hMeta').textContent = 'N/A';
       $('hReal').textContent = `${prog.horasRealizadas} hrs`;
@@ -346,6 +387,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       $('hPct').textContent = '100%';
       $('progress').style.width = '100%';
       $('progressText').textContent = `Personal Regular (${prog.horasRealizadas} hrs acumuladas)`;
+      $('lblProgresoStatus').textContent = 'Estado: NO APLICA';
       $('alertHorasText').textContent = 'Jornada laboral ordinaria';
     }
 
@@ -487,6 +529,97 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       toast('Observación guardada');
     }
   };
+
+  const catalogosPersonal = { empresas: [], areas: [], cargos: [] };
+  const modalPersonal = $('modalPersonal');
+
+  async function cargarCatalogosPersonal() {
+    const res = await fetch('http://localhost:3000/api/personal/catalogos', { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.mensaje || 'No se pudieron cargar los catálogos');
+    Object.assign(catalogosPersonal, data.data);
+    $('pEmpresa').innerHTML = '<option value="">Seleccione empresa</option>' + catalogosPersonal.empresas.map(x => `<option value="${x.id}">${x.razon_social}</option>`).join('');
+    actualizarAreas();
+  }
+
+  function actualizarAreas(areaId = '') {
+    const empresaId = Number($('pEmpresa').value);
+    const areas = catalogosPersonal.areas.filter(x => Number(x.empresa_id) === empresaId);
+    $('pArea').innerHTML = '<option value="">Seleccione área</option>' + areas.map(x => `<option value="${x.id}">${x.nombre}</option>`).join('');
+    if (areaId) $('pArea').value = String(areaId);
+    actualizarCargos();
+  }
+  function actualizarCargos(cargoId = '') {
+    const areaId = Number($('pArea').value);
+    const cargos = catalogosPersonal.cargos.filter(x => Number(x.area_id) === areaId);
+    $('pCargo').innerHTML = '<option value="">Seleccione cargo</option>' + cargos.map(x => `<option value="${x.id}">${x.nombre}</option>`).join('');
+    if (cargoId) $('pCargo').value = String(cargoId);
+  }
+
+  function actualizarVisibilidadHorasPracticas() {
+    const esPracticante = String($('pVinculo').value || '').toLowerCase().startsWith('practicante');
+    $('horasPracticasField').hidden = !esPracticante;
+    $('pHorasPracticas').required = esPracticante;
+  }
+
+  function abrirModalPersonal(data = null) {
+    $('formPersonal').reset(); $('pId').value = data?.empleado?.id || '';
+    $('modalTitulo').textContent = data ? 'Editar personal' : 'Registrar personal';
+    if (data) {
+      const e = data.empleado;
+      $('pTipoDocumento').value = e.tipo_documento || 'DNI'; $('pDocumento').value = e.numero_documento || '';
+      $('pNombres').value = e.nombres || ''; $('pApellidos').value = e.apellidos || '';
+      $('pNacimiento').value = e.fecha_nacimiento ? e.fecha_nacimiento.split('T')[0] : '';
+      $('pTelefono').value = e.telefono || ''; $('pCorreo').value = e.correo_personal || '';
+      $('pDireccion').value = e.direccion || ''; $('pCarrera').value = e.carrera || '';
+      $('pInstitucion').value = e.institucion_educativa || '';
+      $('pEmpresa').value = String(e.empresa_id || ''); actualizarAreas(e.area_id); actualizarCargos(e.cargo_id);
+      $('pVinculo').value = (e.tipo_vinculo || 'trabajador').toLowerCase(); $('pEstado').value = e.estado || 'activo';
+      $('pIngreso').value = e.fecha_ingreso ? e.fecha_ingreso.split('T')[0] : '';
+      $('pFinalizacion').value = e.fecha_finalizacion ? e.fecha_finalizacion.split('T')[0] : '';
+      $('pHorasPracticas').value = e.horas_totales_asignadas || 320;
+      $('pObservaciones').value = e.observaciones_rrhh || '';
+    } else {
+      $('pHorasPracticas').value = 320;
+    }
+    actualizarVisibilidadHorasPracticas();
+    modalPersonal.classList.remove('hidden'); modalPersonal.classList.add('flex');
+  }
+  function cerrarModalPersonal() { modalPersonal.classList.add('hidden'); modalPersonal.classList.remove('flex'); }
+
+  async function guardarPersonal(ev) {
+    ev.preventDefault();
+    const id = $('pId').value;
+    const payload = {
+      tipo_documento: $('pTipoDocumento').value, numero_documento: $('pDocumento').value,
+      nombres: $('pNombres').value, apellidos: $('pApellidos').value, fecha_nacimiento: $('pNacimiento').value,
+      telefono: $('pTelefono').value, correo_personal: $('pCorreo').value, direccion: $('pDireccion').value,
+      carrera: $('pCarrera').value, institucion_educativa: $('pInstitucion').value,
+      empresa_id: $('pEmpresa').value, area_id: $('pArea').value, cargo_id: $('pCargo').value,
+      tipo_vinculo: $('pVinculo').value, estado: $('pEstado').value, fecha_ingreso: $('pIngreso').value,
+      fecha_finalizacion: $('pFinalizacion').value, horas_totales_asignadas: $('pHorasPracticas').value,
+      observaciones_rrhh: $('pObservaciones').value
+    };
+    try {
+      const res = await fetch(id ? `http://localhost:3000/api/personal/${id}` : 'http://localhost:3000/api/personal', {
+        method: id ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.ok) return toast(data.mensaje || 'No se pudo guardar');
+      toast(data.mensaje); cerrarModalPersonal(); await cargarColaboradores();
+      if (data.id) await cargarFicha(data.id); else if (id) await cargarFicha(id);
+    } catch (e) { console.error(e); toast('Error al guardar la ficha'); }
+  }
+
+  $('pEmpresa').onchange = () => actualizarAreas();
+  $('pArea').onchange = () => actualizarCargos();
+  $('pVinculo').onchange = actualizarVisibilidadHorasPracticas;
+  $('btnNuevoPersonal').onclick = () => abrirModalPersonal();
+  $('btnEditarPersonal').onclick = () => colaboradorActual ? abrirModalPersonal(colaboradorActual) : toast('Seleccione un colaborador');
+  $('btnCerrarModal').onclick = cerrarModalPersonal; $('btnCancelarModal').onclick = cerrarModalPersonal;
+  $('formPersonal').onsubmit = guardarPersonal;
+
+  cargarCatalogosPersonal().catch(e => { console.error(e); toast('No se pudieron cargar empresas, áreas y cargos'); });
 
   // Inicializar
   cargarColaboradores();

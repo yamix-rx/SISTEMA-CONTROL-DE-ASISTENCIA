@@ -19,9 +19,9 @@ exports.obtenerMiPanel = async (req, res) => {
         FROM asistencias WHERE empleado_id = ? ORDER BY fecha DESC, id DESC LIMIT 30
       `, [empleadoId]),
       pool.query(`
-        SELECT p.fecha, tp.nombre AS tipo_permiso, p.motivo, p.estado
-        FROM permisos p INNER JOIN tipo_permisos tp ON p.tipo_permiso_id = tp.id
-        WHERE p.empleado_id = ? ORDER BY p.fecha DESC, p.id DESC LIMIT 20
+        SELECT p.fecha_inicio, p.fecha_fin, p.tipo_permiso, p.motivo, p.estado
+        FROM permisos p
+        WHERE p.empleado_id = ? ORDER BY p.fecha_inicio DESC, p.id DESC LIMIT 20
       `, [empleadoId])
     ]);
     return res.json({ ok: true, data: { ...ficha, asistencias, permisos } });

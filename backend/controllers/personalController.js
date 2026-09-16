@@ -43,6 +43,20 @@ exports.listarColaboradores = async (req, res) => {
 };
 
 // 2. Obtener el expediente del colaborador desde el servicio compartido.
+exports.obtenerCatalogos = async (req, res) => {
+  try {
+    const [[empresas], [areas], [cargos]] = await Promise.all([
+      pool.query(`SELECT id, razon_social FROM empresas WHERE estado = 'activo' ORDER BY razon_social`),
+      pool.query(`SELECT id, nombre, empresa_id FROM areas ORDER BY nombre`),
+      pool.query(`SELECT id, nombre, area_id FROM cargos ORDER BY nombre`)
+    ]);
+    return res.status(200).json({ ok: true, data: { empresas, areas, cargos } });
+  } catch (error) {
+    console.error('Error al obtener catálogos de personal:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error al cargar catálogos.' });
+  }
+};
+
 exports.obtenerFichaColaborador = async (req, res) => {
   try {
     const ficha = await require('../services/fichaService').obtenerFicha(req.params.id);
@@ -53,5 +67,180 @@ exports.obtenerFichaColaborador = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener ficha de colaborador:', error.code || error.name);
     return res.status(500).json({ ok: false, mensaje: 'Error al consultar ficha individual.' });
+  }
+};
+
+function validarFecha(valor) {
+  if (valor === undefined || valor === null || valor === '') return null;
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? null : valor;
+}
+
+const VINCULOS_VALIDOS = new Set([
+  'trabajador',
+  'practicante preprofesional',
+  'practicante profesional',
+  'voluntario',
+  'otro'
+]);
+const ESTADOS_VALIDOS = new Set(['activo', 'inactivo', 'finalizado', 'suspendido']);
+
+function normalizarPayload(body) {
+  return {
+    tipo_documento: body.tipo_documento || 'DNI',
+    numero_documento: String(body.numero_documento || '').trim(),
+    nombres: String(body.nombres || '').trim(),
+    apellidos: String(body.apellidos || '').trim(),
+    fecha_nacimiento: validarFecha(body.fecha_nacimiento),
+    telefono: body.telefono ? String(body.telefono).trim() : null,
+    correo_personal: body.correo_personal ? String(body.correo_personal).trim() : null,
+    direccion: body.direccion ? String(body.direccion).trim() : null,
+    carrera: body.carrera ? String(body.carrera).trim() : null,
+    institucion_educativa: body.institucion_educativa ? String(body.institucion_educativa).trim() : null,
+    empresa_id: Number(body.empresa_id),
+    area_id: Number(body.area_id),
+    cargo_id: Number(body.cargo_id),
+    tipo_vinculo: String(body.tipo_vinculo || 'trabajador').trim().toLowerCase(),
+    estado: String(body.estado || 'activo').trim().toLowerCase(),
+    fecha_ingreso: validarFecha(body.fecha_ingreso),
+    fecha_finalizacion: validarFecha(body.fecha_finalizacion),
+    horas_totales_asignadas: body.horas_totales_asignadas === '' || body.horas_totales_asignadas == null ? 0 : Number(body.horas_totales_asignadas),
+    observaciones_rrhh: body.observaciones_rrhh ? String(body.observaciones_rrhh).trim() : null
+  };
+}
+
+async function validarRelacionOrganizacional(payload) {
+  const [rows] = await pool.query(`
+    SELECT a.id AS area_id, a.empresa_id, c.id AS cargo_id, c.area_id AS cargo_area_id
+    FROM areas a
+    INNER JOIN cargos c ON c.id = ?
+    WHERE a.id = ? AND a.empresa_id = ? AND c.area_id = a.id
+    LIMIT 1
+  `, [payload.cargo_id, payload.area_id, payload.empresa_id]);
+  return rows.length > 0;
+}
+
+exports.crearColaborador = async (req, res) => {
+  const p = normalizarPayload(req.body || {});
+  try {
+    if (!p.numero_documento || !p.nombres || !p.apellidos || !p.empresa_id || !p.area_id || !p.cargo_id || !p.fecha_ingreso) {
+      return res.status(400).json({ ok: false, mensaje: 'Complete DNI, nombres, apellidos, empresa, área, cargo y fecha de ingreso.' });
+    }
+    if (!VINCULOS_VALIDOS.has(p.tipo_vinculo)) return res.status(400).json({ ok: false, mensaje: 'Tipo de vínculo no válido.' });
+    if (!ESTADOS_VALIDOS.has(p.estado)) return res.status(400).json({ ok: false, mensaje: 'Estado no válido.' });
+    if (p.fecha_nacimiento === null && req.body.fecha_nacimiento) return res.status(400).json({ ok: false, mensaje: 'Fecha de nacimiento no válida.' });
+    if (p.fecha_finalizacion === null && req.body.fecha_finalizacion) return res.status(400).json({ ok: false, mensaje: 'Fecha de finalización no válida.' });
+    if (!Number.isFinite(p.horas_totales_asignadas) || p.horas_totales_asignadas < 0) return res.status(400).json({ ok: false, mensaje: 'Las horas asignadas deben ser un número mayor o igual a 0.' });
+    if (!(await validarRelacionOrganizacional(p))) return res.status(400).json({ ok: false, mensaje: 'La empresa, área y cargo seleccionados no corresponden entre sí.' });
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [result] = await connection.query(`
+        INSERT INTO empleados
+        (tipo_documento, numero_documento, nombres, apellidos, fecha_nacimiento, telefono, correo_personal,
+         direccion, carrera, institucion_educativa, empresa_id, area_id, cargo_id, tipo_vinculo,
+         horas_totales_asignadas, horas_completadas, estado, fecha_ingreso, fecha_finalizacion, observaciones_rrhh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+      `, [p.tipo_documento, p.numero_documento, p.nombres, p.apellidos, p.fecha_nacimiento, p.telefono,
+        p.correo_personal, p.direccion, p.carrera, p.institucion_educativa, p.empresa_id, p.area_id, p.cargo_id,
+        p.tipo_vinculo, p.horas_totales_asignadas, p.estado, p.fecha_ingreso, p.fecha_finalizacion, p.observaciones_rrhh]);
+
+      if (p.tipo_vinculo.startsWith('practicante')) {
+        const horasMeta = p.horas_totales_asignadas > 0 ? p.horas_totales_asignadas : 320;
+        await connection.query(`
+          INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
+          VALUES (?, ?, FALSE)
+        `, [result.insertId, horasMeta]);
+      }
+      await connection.commit();
+      return res.status(201).json({ ok: true, mensaje: 'Personal registrado correctamente.', id: result.insertId });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
+    console.error('Error al crear colaborador:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error al registrar personal.' });
+  }
+};
+
+exports.actualizarColaborador = async (req, res) => {
+  const p = normalizarPayload(req.body || {});
+  const id = Number(req.params.id);
+  try {
+    if (!id || !p.numero_documento || !p.nombres || !p.apellidos || !p.empresa_id || !p.area_id || !p.cargo_id || !p.fecha_ingreso) {
+      return res.status(400).json({ ok: false, mensaje: 'Complete los campos obligatorios.' });
+    }
+    if (!VINCULOS_VALIDOS.has(p.tipo_vinculo)) return res.status(400).json({ ok: false, mensaje: 'Tipo de vínculo no válido.' });
+    if (!ESTADOS_VALIDOS.has(p.estado)) return res.status(400).json({ ok: false, mensaje: 'Estado no válido.' });
+    if (!(await validarRelacionOrganizacional(p))) return res.status(400).json({ ok: false, mensaje: 'La empresa, área y cargo seleccionados no corresponden entre sí.' });
+
+    const [result] = await pool.query(`
+      UPDATE empleados SET tipo_documento=?, numero_documento=?, nombres=?, apellidos=?, fecha_nacimiento=?,
+      telefono=?, correo_personal=?, direccion=?, carrera=?, institucion_educativa=?, empresa_id=?, area_id=?,
+      cargo_id=?, tipo_vinculo=?, horas_totales_asignadas=?, estado=?, fecha_ingreso=?, fecha_finalizacion=?,
+      observaciones_rrhh=? WHERE id=?
+    `, [p.tipo_documento, p.numero_documento, p.nombres, p.apellidos, p.fecha_nacimiento, p.telefono,
+      p.correo_personal, p.direccion, p.carrera, p.institucion_educativa, p.empresa_id, p.area_id, p.cargo_id,
+      p.tipo_vinculo, p.horas_totales_asignadas, p.estado, p.fecha_ingreso, p.fecha_finalizacion,
+      p.observaciones_rrhh, id]);
+
+    if (!result.affectedRows) return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' });
+
+    if (p.tipo_vinculo.startsWith('practicante')) {
+      const horasMeta = p.horas_totales_asignadas > 0 ? p.horas_totales_asignadas : 320;
+      await pool.query(`
+        INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
+        VALUES (?, ?, FALSE)
+        ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)
+      `, [id, horasMeta]);
+    } else {
+      await pool.query(`DELETE FROM practicante_detalles WHERE empleado_id = ?`, [id]);
+    }
+
+    return res.status(200).json({ ok: true, mensaje: 'Datos del personal actualizados correctamente.' });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
+    console.error('Error al actualizar colaborador:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error al actualizar personal.' });
+  }
+};
+
+
+exports.actualizarHorasPracticas = async (req, res) => {
+  const empleadoId = Number(req.params.id);
+  const horasMeta = Number(req.body?.horas_meta);
+
+  if (!Number.isInteger(empleadoId) || empleadoId <= 0) {
+    return res.status(400).json({ ok: false, mensaje: 'Colaborador no válido.' });
+  }
+  if (!Number.isFinite(horasMeta) || horasMeta <= 0) {
+    return res.status(400).json({ ok: false, mensaje: 'La meta de horas debe ser mayor a 0.' });
+  }
+
+  try {
+    const [empleadoRows] = await pool.query(`
+      SELECT id, tipo_vinculo FROM empleados WHERE id = ? LIMIT 1
+    `, [empleadoId]);
+    if (!empleadoRows.length) return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' });
+    if (!String(empleadoRows[0].tipo_vinculo || '').toLowerCase().startsWith('practicante')) {
+      return res.status(400).json({ ok: false, mensaje: 'El colaborador seleccionado no es practicante.' });
+    }
+
+    await pool.query(`
+      INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
+      VALUES (?, ?, FALSE)
+      ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)
+    `, [empleadoId, horasMeta]);
+    await pool.query(`UPDATE empleados SET horas_totales_asignadas = ? WHERE id = ?`, [horasMeta, empleadoId]);
+
+    return res.status(200).json({ ok: true, mensaje: 'Meta de horas de prácticas actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error al actualizar horas de prácticas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error al actualizar la meta de horas.' });
   }
 };

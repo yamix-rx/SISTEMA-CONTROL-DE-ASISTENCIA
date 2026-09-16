@@ -55,7 +55,40 @@ exports.obtenerDatosDashboard = async (req, res) => {
       ? Math.round(((totalPresentes + totalTardanzas) / totalEnTurno) * 100) 
       : 0;
 
-    // 4. El contador incluye todos los faltantes; la lista de alertas muestra hasta 10.
+    // 4. Seguimiento de horas de practicantes próximos a completar.
+    // El requerimiento no fija un umbral; para V1 se considera "próximo" desde 80%.
+    const filtroEmpresaPracticas = empresa_id ? 'AND e.empresa_id = ?' : '';
+    const [practicantesProximos] = await pool.query(`
+      SELECT
+        e.id AS empleado_id,
+        CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
+        emp.razon_social AS empresa,
+        ar.nombre AS area,
+        c.nombre AS cargo,
+        COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta,
+        ROUND(COALESCE(SUM(a.horas_trabajadas), 0), 2) AS horas_realizadas,
+        ROUND(GREATEST(COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) - COALESCE(SUM(a.horas_trabajadas), 0), 0), 2) AS horas_pendientes,
+        LEAST(100, ROUND(
+          CASE WHEN COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) > 0
+            THEN (COALESCE(SUM(a.horas_trabajadas), 0) / COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0)) * 100
+            ELSE 0 END, 1
+        )) AS porcentaje_avance
+      FROM empleados e
+      INNER JOIN empresas emp ON e.empresa_id = emp.id
+      INNER JOIN areas ar ON e.area_id = ar.id
+      INNER JOIN cargos c ON e.cargo_id = c.id
+      LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
+      LEFT JOIN asistencias a ON a.empleado_id = e.id
+      WHERE e.estado = 'activo'
+        AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
+        ${filtroEmpresaPracticas}
+      GROUP BY e.id, e.nombres, e.apellidos, emp.razon_social, ar.nombre, c.nombre, pd.horas_meta, e.horas_totales_asignadas
+      HAVING horas_meta > 0 AND porcentaje_avance >= 80 AND porcentaje_avance < 100
+      ORDER BY porcentaje_avance DESC, horas_pendientes ASC, e.apellidos ASC
+      LIMIT 10
+    `, paramsEmpresa);
+
+    // 5. El contador incluye todos los faltantes; la lista de alertas muestra hasta 10.
     const faltantesBase = `
       FROM empleados e
       INNER JOIN empresas emp ON e.empresa_id = emp.id
@@ -85,7 +118,8 @@ exports.obtenerDatosDashboard = async (req, res) => {
         documentosPendientes: Number(totalFaltantes[0]?.total || 0)
       },
       personalEnTurno: filasEnTurno,
-      alertasDocumentos: documentosPendientes
+      alertasDocumentos: documentosPendientes,
+      practicantesProximos
     });
 
   } catch (error) {
