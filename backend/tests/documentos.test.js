@@ -6,6 +6,7 @@ const express = require('express');
 const { ROLES } = require('../config/accessPolicy');
 const archivos = require('../services/documentoArchivoService');
 const { migrar } = require('../scripts/migrar-documentos');
+const { PARTES_DOCX, crearZip, crearDoc } = require('./helpers/wordFixtures');
 
 // Pruebas HTTP con SQL simulado y archivos temporales reales. No conecta a MySQL.
 process.env.JWT_SECRET = 'clave-aislada-para-pruebas-de-documentos';
@@ -178,6 +179,68 @@ test('subir crea una versión pendiente y conserva la anterior; descarga autoriz
   const descarga = await request(`/${documento.id}/descargar`);
   assert.match(descarga.headers.get('content-disposition'), /^attachment;/);
   assert.match(descarga.headers.get('content-disposition'), /filename\*=UTF-8''Identificaci%C3%B3n.pdf/);
+});
+
+test('Word DOC y DOCX conservan formato, bytes y versiones en carga, vista y descarga', async () => {
+  const anteriores = registros.filter(r => r.empleado_id === 101 && r.tipo_documento_id === 1).map(r => ({ ...r }));
+  const ejemplos = [
+    { nombre: 'Convenio de prácticas.DOCX', contenido: crearZip(), extension: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    { nombre: 'Convenio sin compresión.docx', contenido: crearZip(PARTES_DOCX, { comprimir: false }), extension: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    { nombre: 'Convenio anterior.doc', contenido: crearDoc(), extension: '.doc', mime: 'application/msword' }
+  ];
+  for (const [indice, ejemplo] of ejemplos.entries()) {
+    const subida = await request('', { usuario: 2, method: 'POST', body: carga({ nombre_archivo: ejemplo.nombre, contenido_base64: ejemplo.contenido.toString('base64') }) });
+    assert.equal(subida.status, 201, `${ejemplo.nombre}: ${JSON.stringify(subida.body)}`);
+    const documento = registros.find(r => r.id === subida.body.documento_id);
+    assert.equal(documento.nombre_archivo, ejemplo.nombre);
+    assert.equal(documento.estado, 'pendiente');
+    assert.equal(documento.mime_type, ejemplo.mime);
+    assert.ok(documento.ruta_archivo.endsWith(ejemplo.extension));
+    assert.equal(subida.body.ruta_archivo, undefined);
+    assert.equal(registros.filter(r => r.empleado_id === 101 && r.tipo_documento_id === 1).length, anteriores.length + indice + 1);
+    assert.deepEqual(registros.filter(r => anteriores.some(anterior => anterior.id === r.id)), anteriores);
+    const listado = await request('?empleado_id=101');
+    const vigente = listado.body.documentos.find(d => d.clave === '101-1');
+    assert.equal(vigente.documento_id, documento.id);
+    assert.equal(vigente.estado, 'pendiente');
+    documento.mime_type = 'text/html';
+    for (const [ruta, disposicion] of [['archivo', 'inline'], ['descargar', 'attachment']]) {
+      const result = await request(`/${documento.id}/${ruta}`, { usuario: 2 });
+      assert.equal(result.status, 200);
+      assert.equal(result.headers.get('content-type'), ejemplo.mime);
+      assert.ok(result.headers.get('content-disposition').startsWith(disposicion + ';'));
+      assert.ok(result.headers.get('content-disposition').includes(`filename*=UTF-8''${encodeURIComponent(ejemplo.nombre)}`));
+      assert.equal(result.headers.get('x-content-type-options'), 'nosniff');
+      assert.deepEqual(result.body, ejemplo.contenido);
+    }
+  }
+});
+
+test('rechaza documentos Word renombrados, contenedores ajenos y archivos truncados antes de insertar', async () => {
+  const docx = crearZip();
+  const doc = crearDoc();
+  const casos = [
+    ['pdf.docx', Buffer.from('%PDF-1.4\nDocumento\n%%EOF')],
+    ['zip.docx', crearZip([['notas.txt', 'Archivo ZIP ajeno a Word']])],
+    ['macros-renombradas.docx', crearZip(PARTES_DOCX.map(([nombre, contenido]) => [nombre, nombre === '[Content_Types].xml' ? contenido.replace('application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml', 'application/vnd.ms-word.document.macroEnabled.main+xml') : contenido]))],
+    ['sin-documento.docx', crearZip(PARTES_DOCX.filter(([nombre]) => nombre !== 'word/document.xml'))],
+    ['sin-tipos.docx', crearZip(PARTES_DOCX.filter(([nombre]) => nombre !== '[Content_Types].xml'))],
+    ['sin-relaciones.docx', crearZip(PARTES_DOCX.filter(([nombre]) => nombre !== '_rels/.rels'))],
+    ['truncado.docx', docx.subarray(0, docx.length - 8)],
+    ['solo-firma.docx', Buffer.from('504b0304', 'hex')],
+    ['excel.doc', crearDoc('Workbook')],
+    ['truncado.doc', doc.subarray(0, 600)],
+    ['solo-firma.doc', doc.subarray(0, 8)],
+    ['doc-renombrado.docx', doc],
+    ['docx-renombrado.doc', docx]
+  ];
+  for (const [nombre, contenido] of casos) {
+    const result = await request('', { method: 'POST', body: carga({ nombre_archivo: nombre, contenido_base64: contenido.toString('base64') }) });
+    assert.equal(result.status, 400, `${nombre}: ${JSON.stringify(result.body)}`);
+  }
+  assert.equal(registros.length, 5);
+  assert.equal(creados.size, 0);
+  assert.ok(consultas.every(q => !/INSERT INTO documentos_empleado/.test(q.sql)));
 });
 
 test('rechaza extensión falsa, base64 inválido, nombres con rutas y tamaños superiores a 5 MB', async () => {

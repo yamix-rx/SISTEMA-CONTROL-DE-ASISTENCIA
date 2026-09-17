@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { esDoc, esDocx } = require('./documentoWordService');
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const DIRECTORIO = path.resolve(__dirname, '../uploads/documentos');
@@ -35,7 +36,8 @@ function validarArchivo(nombre, base64) {
   const esPDF = contenido.subarray(0, 5).toString('ascii') === '%PDF-';
   const esPNG = contenido.length >= 8 && contenido.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   const esJPEG = contenido.length >= 3 && contenido[0] === 255 && contenido[1] === 216 && contenido[2] === 255;
-  if (!(extension === '.pdf' && esPDF || extension === '.png' && esPNG || ['.jpg', '.jpeg'].includes(extension) && esJPEG)) {
+  if (!(extension === '.pdf' && esPDF || extension === '.png' && esPNG || ['.jpg', '.jpeg'].includes(extension) && esJPEG
+    || extension === '.doc' && esDoc(contenido) || extension === '.docx' && esDocx(contenido))) {
     throw errorArchivo('El contenido del archivo no coincide con su extensión.');
   }
   return { contenido, nombre_archivo: nombre.trim(), extension, mime_type: FORMATOS[extension] };

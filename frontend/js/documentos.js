@@ -425,7 +425,8 @@
       formError('errorSubir', 'Selecciona colaborador, tipo de documento y archivo.');
       return;
     }
-    if (!/\.(pdf|jpe?g|png|docx|doc)$/i.test(file.name) || (file.type && !ALLOWED_MIME.has(file.type))) {
+    // El MIME que informa el navegador puede ser genérico; el servidor verifica el contenido.
+    if (!/\.(pdf|jpe?g|png|docx|doc)$/i.test(file.name)) {
       formError('errorSubir', 'Selecciona un archivo PDF, Word (DOC/DOCX), JPG o PNG.');
       return;
     }
