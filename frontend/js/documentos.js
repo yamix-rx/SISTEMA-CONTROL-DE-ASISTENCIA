@@ -7,7 +7,11 @@
     sin_entregar: 'Sin entregar', pendiente: 'Por revisar',
     validado: 'Validado', rechazado: 'Observado'
   };
-  const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+  const ALLOWED_MIME = new Set([
+    'application/pdf', 'image/jpeg', 'image/png',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]);
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   const initialEmployee = new URLSearchParams(location.search).get('empleado_id');
   const state = {
@@ -348,12 +352,15 @@
         preview.addEventListener('error', () => {
           if (revision === state.previewRevision) previewFailure(row, 'El navegador no pudo mostrar la imagen. Puedes descargarla para revisarla.');
         }, { once: true });
-      } else {
+      } else if (blob.type === 'application/pdf') {
         preview = node('object');
         preview.type = 'application/pdf';
         preview.data = `${state.previewUrl}#toolbar=0&navpanes=0&view=FitH`;
         preview.setAttribute('aria-label', `Vista previa de ${row.nombre_archivo}`);
         preview.appendChild(node('p', '', 'Tu navegador no muestra PDF aquí. Usa el botón Descargar documento.'));
+      } else {
+        preview = node('div', 'preview-empty');
+        preview.append(icon('file-text'), node('h3', '', 'Archivo de Word'), node('p', '', 'Los archivos DOC y DOCX se almacenan en el expediente y pueden descargarse para su revisión.'));
       }
       $('archivoVista').replaceChildren(preview);
     } catch (error) {
@@ -418,8 +425,8 @@
       formError('errorSubir', 'Selecciona colaborador, tipo de documento y archivo.');
       return;
     }
-    if (!/\.(pdf|jpe?g|png)$/i.test(file.name) || (file.type && !ALLOWED_MIME.has(file.type))) {
-      formError('errorSubir', 'Selecciona un archivo PDF, JPG o PNG.');
+    if (!/\.(pdf|jpe?g|png|docx|doc)$/i.test(file.name) || (file.type && !ALLOWED_MIME.has(file.type))) {
+      formError('errorSubir', 'Selecciona un archivo PDF, Word (DOC/DOCX), JPG o PNG.');
       return;
     }
     if (file.size === 0 || file.size > MAX_FILE_SIZE) {

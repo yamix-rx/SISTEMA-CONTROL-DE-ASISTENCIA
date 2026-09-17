@@ -4,8 +4,15 @@ const { randomUUID } = require('node:crypto');
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const DIRECTORIO = path.resolve(__dirname, '../uploads/documentos');
-const FORMATOS = Object.freeze({ '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' });
-const ARCHIVO_PRIVADO = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|png|jpe?g)$/i;
+const FORMATOS = Object.freeze({
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+});
+const ARCHIVO_PRIVADO = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|png|jpe?g|docx|doc)$/i;
 
 function errorArchivo(mensaje, status = 400) {
   return Object.assign(new Error(mensaje), { status });
@@ -16,7 +23,7 @@ function validarArchivo(nombre, base64) {
     throw errorArchivo('El nombre del archivo no es válido (máximo 200 caracteres, sin rutas).');
   }
   const extension = path.extname(nombre).toLowerCase();
-  if (!FORMATOS[extension]) throw errorArchivo('Seleccione un archivo PDF, PNG, JPG o JPEG.');
+  if (!FORMATOS[extension]) throw errorArchivo('Seleccione un archivo PDF, Word (DOC/DOCX), PNG o JPG/JPEG.');
   if (typeof base64 !== 'string' || !base64.length) throw errorArchivo('Debe adjuntar el contenido del archivo.');
   if (base64.length > Math.ceil(MAX_BYTES / 3) * 4) throw errorArchivo('El archivo supera el máximo de 5 MB.', 413);
   if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
