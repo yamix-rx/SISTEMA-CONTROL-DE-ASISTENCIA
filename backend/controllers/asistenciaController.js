@@ -277,6 +277,7 @@ exports.listarPermisos = async (req, res) => {
         p.hora_hasta,
         p.tipo_permiso,
         p.motivo,
+        p.observaciones,
         p.estado,
         p.archivo_sustento
       FROM permisos p
@@ -297,6 +298,10 @@ exports.listarPermisos = async (req, res) => {
       query += ` AND e.empresa_id = ?`;
       params.push(empresa_id);
     }
+    if (req.query.area_id) {
+      query += ` AND e.area_id = ?`;
+      params.push(req.query.area_id);
+    }
     if (estado) {
       query += ` AND p.estado = ?`;
       params.push(estado);
@@ -315,7 +320,7 @@ exports.listarPermisos = async (req, res) => {
 exports.crearPermiso = async (req, res) => {
   const {
     empleado_id, tipo_permiso, fecha_inicio, fecha_fin,
-    hora_desde, hora_hasta, motivo, archivo_sustento
+    hora_desde, hora_hasta, motivo, observaciones, archivo_sustento
   } = req.body;
 
   if (!empleado_id || !fecha_inicio || !fecha_fin || !motivo) {
@@ -337,8 +342,8 @@ exports.crearPermiso = async (req, res) => {
 
     const [result] = await pool.query(`
       INSERT INTO permisos
-        (empleado_id, tipo_permiso, fecha_inicio, fecha_fin, hora_desde, hora_hasta, motivo, estado, archivo_sustento)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'Solicitado', ?)
+        (empleado_id, tipo_permiso, fecha_inicio, fecha_fin, hora_desde, hora_hasta, motivo, observaciones, estado, archivo_sustento)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', ?)
     `, [
       empleado_id,
       tipo_permiso || 'Personal',
@@ -347,6 +352,7 @@ exports.crearPermiso = async (req, res) => {
       hora_desde || null,
       hora_hasta || null,
       motivo,
+      observaciones || null,
       archivo_sustento || null
     ]);
 

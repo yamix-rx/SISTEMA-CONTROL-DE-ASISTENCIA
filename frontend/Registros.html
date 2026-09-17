@@ -156,20 +156,21 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <p class="text-[9px] ml-8 text-[#49758f]">Registre, gestione y consulte los permisos del personal. Mantenga el historial completo por trabajador.</p>
         </div>
         <div class="p-3">
-          <div class="grid grid-cols-5 gap-3 items-end">
+          <div class="grid grid-cols-6 gap-3 items-end">
             <label class="text-[8px] font-bold">Fecha desde<input id="pDesde" type="date" class="control mt-1"></label>
             <label class="text-[8px] font-bold">Fecha hasta<input id="pHasta" type="date" class="control mt-1"></label>
             <label class="text-[8px] font-bold">Empresa<select id="pEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
             <label class="text-[8px] font-bold">Área<select id="pArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+            <label class="text-[8px] font-bold">Estado<select id="pEstado" class="control mt-1"><option value="">Todos</option><option>Solicitado</option><option>Aprobado</option><option>Rechazado</option></select></label>
             <button id="btnNuevoPermiso" class="h-8 rounded-md bg-[#0a7bc2] text-white text-[9px] font-bold flex gap-2 justify-center items-center"><i data-lucide="plus" class="w-4 h-4"></i>Nuevo Permiso</button>
           </div>
           <div class="mt-3 overflow-x-auto rounded-md border border-[#d9e7f0]">
             <table class="tbl">
               <thead>
-                <tr><th>N°</th><th>Trabajador</th><th>Fecha</th><th>Hora Desde</th><th>Hora Hasta</th><th>Tipo de Permiso</th><th>Motivo</th><th>Estado</th><th>Documento</th><th>Acciones</th></tr>
+                <tr><th>N°</th><th>Trabajador</th><th>Fecha</th><th>Hora Desde</th><th>Hora Hasta</th><th>Tipo de Permiso</th><th>Motivo</th><th>Observaciones</th><th>Estado</th><th>Documento</th><th>Acciones</th></tr>
               </thead>
               <tbody id="tbodyPermisos">
-                <tr><td colspan="10" class="text-center py-4 text-slate-400">Cargando permisos...</td></tr>
+                <tr><td colspan="11" class="text-center py-4 text-slate-400">Cargando permisos...</td></tr>
               </tbody>
             </table>
           </div>
@@ -215,8 +216,10 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       <label>Motivo<input id="pMotivo" class="control mt-1" required></label>
       <label>Fecha inicio<input id="pInicio" type="date" class="control mt-1" required></label>
       <label>Fecha fin<input id="pFin" type="date" class="control mt-1" required></label>
-      <label>Hora desde<input id="pDesde" type="time" class="control mt-1"></label>
-      <label>Hora hasta<input id="pHasta" type="time" class="control mt-1"></label>
+      <label>Hora desde<input id="pHoraDesde" type="time" class="control mt-1"></label>
+      <label>Hora hasta<input id="pHoraHasta" type="time" class="control mt-1"></label>
+      <label>Observaciones<input id="pObservaciones" class="control mt-1" placeholder="Observaciones adicionales"></label>
+      <label>Documento sustentatorio<input id="pDocumento" class="control mt-1" placeholder="Nombre del documento"></label>
     </div>
     <div class="px-5 pb-5 flex justify-end gap-2">
       <button type="button" data-close="modalPermiso" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
@@ -376,7 +379,13 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
   // 5. Consumir API Permisos
   async function cargarPermisos() {
     try {
-      const res = await fetch('http://localhost:3000/api/asistencias/permisos', {
+      const params = new URLSearchParams();
+      if ($('pDesde').value) params.set('fecha_desde', $('pDesde').value);
+      if ($('pHasta').value) params.set('fecha_hasta', $('pHasta').value);
+      if ($('pEmpresa').value) params.set('empresa_id', $('pEmpresa').value);
+      if ($('pArea').value) params.set('area_id', $('pArea').value);
+      if ($('pEstado').value) params.set('estado', $('pEstado').value);
+      const res = await fetch(`http://localhost:3000/api/asistencias/permisos?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const resp = await res.json();
@@ -386,7 +395,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       $('pCount').textContent = `Mostrando ${p.length} registros`;
 
       if (p.length === 0) {
-        $('tbodyPermisos').innerHTML = '<tr><td colspan="10" class="text-center py-4 text-slate-400">No hay permisos registrados</td></tr>';
+        $('tbodyPermisos').innerHTML = '<tr><td colspan="11" class="text-center py-4 text-slate-400">No hay permisos registrados</td></tr>';
         return;
       }
 
@@ -399,11 +408,10 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <td>${x.hora_hasta || '-'}</td>
           <td>${x.tipo_permiso}</td>
           <td>${x.motivo}</td>
+          <td>${x.observaciones || '-'}</td>
           <td>${pill(x.estado)}</td>
-          <td>${x.archivo_sustento ? '▧ Documento' : '-'}</td>
-          <td class="text-center">
-            <button class="text-[#0870ad] font-bold p-1">◉</button>
-          </td>
+          <td>${x.archivo_sustento ? '▧ ' + x.archivo_sustento : '-'}</td>
+          <td class="text-center">${x.estado === 'Solicitado' ? `<button onclick="cambiarEstadoPermiso(${x.id}, 'Aprobado')" class="text-emerald-700 font-bold mr-2">Aprobar</button><button onclick="cambiarEstadoPermiso(${x.id}, 'Rechazado')" class="text-rose-600 font-bold">Rechazar</button>` : '-'}</td>
         </tr>
       `).join('');
 
@@ -476,6 +484,21 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     openM('modalPermiso');
   };
 
+  window.cambiarEstadoPermiso = async (id, estado) => {
+    if (!confirm(`¿Desea marcar el permiso como ${estado.toLowerCase()}?`)) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/asistencias/permisos/${id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ estado })
+      });
+      const resp = await res.json();
+      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'No se pudo actualizar el permiso');
+      toast(`Permiso ${estado.toLowerCase()} correctamente`);
+      cargarPermisos();
+    } catch (err) { alert(err.message); }
+  };
+
   $('formPermiso').onsubmit = async e => {
     e.preventDefault();
     const btn = $('btnGuardarPermiso');
@@ -487,9 +510,11 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         tipo_permiso: $('pTipo').value,
         fecha_inicio: $('pInicio').value,
         fecha_fin: $('pFin').value,
-        hora_desde: $('pDesde').value || null,
-        hora_hasta: $('pHasta').value || null,
-        motivo: $('pMotivo').value.trim()
+        hora_desde: $('pHoraDesde').value || null,
+        hora_hasta: $('pHoraHasta').value || null,
+        motivo: $('pMotivo').value.trim(),
+        observaciones: $('pObservaciones').value.trim() || null,
+        archivo_sustento: $('pDocumento').value.trim() || null
       };
       const res = await fetch('http://localhost:3000/api/asistencias/permisos', {
         method: 'POST',
@@ -510,9 +535,9 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
   const hoy = new Date().toISOString().split('T')[0];
   $('fFecha').value = hoy;
 
-  ['fFecha', 'fEmpresa', 'fArea', 'fEstado', 'fBuscar', 'empresaGlobal'].forEach(id => {
+  ['fFecha', 'fEmpresa', 'fArea', 'fEstado', 'fBuscar', 'empresaGlobal', 'pDesde', 'pHasta', 'pEmpresa', 'pArea', 'pEstado'].forEach(id => {
     const el = $(id);
-    if (el) el.addEventListener('input', cargarAsistencias);
+    if (el) el.addEventListener('input', id.startsWith('p') ? cargarPermisos : cargarAsistencias);
   });
 
   document.querySelectorAll('.seg').forEach(b => {
