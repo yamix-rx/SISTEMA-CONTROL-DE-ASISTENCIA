@@ -3,8 +3,10 @@ const router = express.Router();
 const capacitacionController = require('../controllers/capacitacionController');
 const { verificarToken, autorizarRoles } = require('../middlewares/authMiddleware');
 const { ROLES } = require('../config/accessPolicy');
+const auditoriaMiddleware = require('../middlewares/auditoriaMiddleware');
 
 router.use(verificarToken, autorizarRoles(ROLES.ADMIN, ROLES.RRHH));
+router.use(auditoriaMiddleware);
 
 router.get('/catalogos', capacitacionController.catalogos);
 router.get('/resumen', capacitacionController.resumen);

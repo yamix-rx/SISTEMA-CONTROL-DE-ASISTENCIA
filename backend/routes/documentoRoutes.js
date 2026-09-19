@@ -2,10 +2,12 @@ const express = require('express');
 const controller = require('../controllers/documentoController');
 const { verificarToken, autorizarRoles } = require('../middlewares/authMiddleware');
 const { ROLES } = require('../config/accessPolicy');
+const auditoriaMiddleware = require('../middlewares/auditoriaMiddleware');
 const router = express.Router();
 
 // Autenticar y autorizar antes de leer el cuerpo de cargas grandes.
 router.use(verificarToken, autorizarRoles(ROLES.ADMIN, ROLES.RRHH));
+router.use(auditoriaMiddleware);
 router.use(express.json({ limit: '8mb' }));
 router.use((req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
 router.get('/catalogos', controller.catalogos);

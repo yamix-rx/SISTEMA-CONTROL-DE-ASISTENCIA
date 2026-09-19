@@ -3,8 +3,10 @@ const router = express.Router();
 const asistenciaController = require('../controllers/asistenciaController');
 const { verificarToken, autorizarRoles } = require('../middlewares/authMiddleware');
 const { ROLES } = require('../config/accessPolicy');
+const auditoriaMiddleware = require('../middlewares/auditoriaMiddleware');
 
 router.use(verificarToken, autorizarRoles(ROLES.ADMIN, ROLES.RRHH));
+router.use(auditoriaMiddleware);
 
 router.get('/', asistenciaController.listarAsistencias);
 router.post('/marcar', asistenciaController.registrarMarcacion);

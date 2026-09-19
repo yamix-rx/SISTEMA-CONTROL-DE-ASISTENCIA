@@ -12,6 +12,7 @@
     horarios: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     asistencia: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
     reportes: '<path d="M4 20V10m5 10V6m5 14v-7m5 7V3M3 20h18"/>',
+    auditoria: '<path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/>',
     cerrar: '<path d="m14 6-6 6 6 6"/>',
     abrir: '<path d="M4 6h16M4 12h16M4 18h16"/>'
   };
@@ -53,7 +54,8 @@
       { label: 'Control y reportes', id: 'sbss-menu-control', links: [
         { label: 'Horarios', href: 'Horarios.html', icon: 'horarios', module: 'horarios', primary: true },
         { label: 'Asistencia', href: 'Registros.html', icon: 'asistencia', module: 'asistencia', primary: true },
-        { label: 'Reportes', href: 'Reportes.html', icon: 'reportes', module: 'reportes', primary: true }
+        { label: 'Reportes', href: 'Reportes.html', icon: 'reportes', module: 'reportes', primary: true },
+        { label: 'Auditoría', href: 'Auditoria.html', icon: 'auditoria', module: 'auditoria', primary: true }
       ] }
     ];
     const heading = document.createElement('div');

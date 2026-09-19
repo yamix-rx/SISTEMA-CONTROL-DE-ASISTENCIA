@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { buscarPorEmail, usuarioPublico } = require('../services/usuarioService');
 const { obtenerAcceso } = require('../config/accessPolicy');
+const { registrarAuditoria } = require('../services/auditoriaService');
 
 exports.login = async (req, res) => {
   const { email, password } = req.body || {};
@@ -13,9 +14,25 @@ exports.login = async (req, res) => {
   try {
     const usuario = await buscarPorEmail(email.trim());
     if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+      await registrarAuditoria({
+        usuario_id: usuario?.usuario_id || null,
+        tabla_afectada: 'sesiones',
+        registro_id: usuario?.usuario_id || 0,
+        accion: 'LOGIN_FALLIDO',
+        datos_nuevos: { email: email.trim(), motivo: 'Credenciales inválidas' },
+        ip_origen: req.ip
+      });
       return res.status(401).json({ ok: false, mensaje: 'Credenciales inválidas.' });
     }
     if (Number(usuario.activo) !== 1) {
+      await registrarAuditoria({
+        usuario_id: usuario.usuario_id,
+        tabla_afectada: 'sesiones',
+        registro_id: usuario.usuario_id,
+        accion: 'LOGIN_FALLIDO',
+        datos_nuevos: { email: email.trim(), motivo: 'Cuenta inactiva' },
+        ip_origen: req.ip
+      });
       return res.status(403).json({ ok: false, mensaje: 'La cuenta se encuentra inactiva. Contacte a Recursos Humanos.' });
     }
 
@@ -27,6 +44,15 @@ exports.login = async (req, res) => {
     // El token identifica la cuenta. Rol y empleado se consultan en cada petición.
     const token = jwt.sign({ usuario_id: usuario.usuario_id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || '8h', algorithm: 'HS256'
+    });
+
+    await registrarAuditoria({
+      usuario_id: usuario.usuario_id,
+      tabla_afectada: 'sesiones',
+      registro_id: usuario.usuario_id,
+      accion: 'LOGIN',
+      datos_nuevos: { email: usuario.email, rol: usuario.rol_nombre },
+      ip_origen: req.ip
     });
 
     return res.status(200).json({

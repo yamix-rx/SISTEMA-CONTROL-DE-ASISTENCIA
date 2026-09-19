@@ -280,7 +280,7 @@ CREATE TABLE historial_cambios (
     usuario_id INT NULL,
     tabla_afectada VARCHAR(60) NOT NULL,
     registro_id INT NOT NULL,
-    accion ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    accion ENUM('INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGIN_FALLIDO') NOT NULL,
     datos_anteriores JSON NULL,
     datos_nuevos JSON NULL,
     ip_origen VARCHAR(45) NULL,

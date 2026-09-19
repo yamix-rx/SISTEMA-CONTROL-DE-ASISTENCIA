@@ -14,6 +14,7 @@ const miPanelRoutes = require('./routes/miPanelRoutes');
 const documentoRoutes = require('./routes/documentoRoutes');
 const contratoRoutes = require('./routes/contratoRoutes');
 const capacitacionRoutes = require('./routes/capacitacionRoutes');
+const auditoriaRoutes = require('./routes/auditoriaRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/auditoria', auditoriaRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/asistencias', asistenciaRoutes); 
 app.use('/api/empresas', empresaRoutes);

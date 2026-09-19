@@ -12,7 +12,7 @@
     'empresas.html': 'empresas', 'fichaindividual.html': 'personal',
     'documentos.html': 'documentos', 'contratos.html': 'contratos',
     'capacitaciones.html': 'capacitaciones', 'horarios.html': 'horarios', 'registros.html': 'asistencia',
-    'reportes.html': 'reportes', 'mipanel.html': 'mi-panel'
+    'reportes.html': 'reportes', 'auditoria.html': 'auditoria', 'mipanel.html': 'mi-panel'
   };
   const currentPage = decodeURIComponent(location.pathname.split('/').pop() || 'index.html').toLowerCase();
   let verifiedSession = null;
