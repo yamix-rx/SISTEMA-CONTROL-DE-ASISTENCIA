@@ -1,389 +1,142 @@
-const pool = require('../config/database');
-
-// 1. Listar asistencias por fecha y filtros
+﻿const pool = require('../config/database');
+const r = require('../services/asistenciaReglas');
+const archivos = require('../services/documentoArchivoService');
+const { sanitizar } = require('../services/auditoriaService');
+const { ROLES } = require('../config/accessPolicy');
+function fallo(res, error) {
+  if (!error.status) console.error('Error de asistencia:', error.code || error.name);
+  return res.status(error.status || 500).json({ ok: false, mensaje: error.status ? error.message : 'No se pudo completar la operación.' });
+}
+function auditar(res, tabla, registroId, accion, anterior, nuevos) {
+  res.locals ||= {};
+  res.locals.auditoria = { tabla, registroId, accion, anterior, nuevos };
+}
 exports.listarAsistencias = async (req, res) => {
-  const { fecha, empresa_id, area_id, estado, buscar } = req.query;
-  const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
-
   try {
-    let query = `
-      SELECT 
-        a.id AS asistencia_id,
-        e.id AS empleado_id,
-        a.fecha,
-        a.hora_ingreso,
-        a.hora_salida,
-        a.hora_programada_entrada,
-        a.hora_programada_salida,
-        a.minutos_tardanza,
-        a.horas_trabajadas,
-        a.estado,
-        a.observacion,
-        CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
-        e.numero_documento,
-        emp.razon_social AS empresa,
-        ar.nombre AS area,
-        c.nombre AS cargo,
-        COALESCE(a.hora_programada_entrada, h.hora_entrada) AS hora_programada,
-        COALESCE(a.hora_programada_salida, h.hora_salida) AS hora_programada_salida
-      FROM empleados e
-      INNER JOIN empresas emp ON e.empresa_id = emp.id
-      INNER JOIN areas ar ON e.area_id = ar.id
-      INNER JOIN cargos c ON e.cargo_id = c.id
-      LEFT JOIN horarios h ON h.empleado_id = e.id 
-        AND h.dia_semana = (WEEKDAY(?) + 1) AND h.activo = TRUE
-      LEFT JOIN asistencias a ON a.empleado_id = e.id AND a.fecha = ?
-      WHERE e.estado = 'activo'
-    `;
-
-    const params = [fechaConsulta, fechaConsulta];
-
-    if (empresa_id) {
-      query += ` AND e.empresa_id = ?`;
-      params.push(empresa_id);
-    }
-    if (area_id) {
-      query += ` AND e.area_id = ?`;
-      params.push(area_id);
-    }
-    if (estado) {
-      query += ` AND a.estado = ?`;
-      params.push(estado);
-    }
-    if (buscar) {
-      query += ` AND (e.nombres LIKE ? OR e.apellidos LIKE ? OR e.numero_documento LIKE ?)`;
-      params.push(`%${buscar}%`, `%${buscar}%`, `%${buscar}%`);
-    }
-
-    query += ` ORDER BY e.apellidos ASC`;
-
-    const [rows] = await pool.query(query, params);
-    return res.status(200).json({ ok: true, fecha: fechaConsulta, data: rows });
-  } catch (error) {
-    console.error('Error al listar asistencias:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al consultar asistencias.' });
-  }
+    const fecha = r.fecha(req.query.fecha || r.hoy()), f = r.filtrosPersonal(req.query), estado = req.query.estado;
+    if (estado && !r.ESTADOS.includes(estado)) throw r.error('Estado no válido.');
+    const [rows] = await pool.query(`SELECT a.id AS asistencia_id,e.id AS empleado_id,COALESCE(a.fecha,?) AS fecha,
+      a.hora_ingreso,a.hora_salida,a.tolerancia_minutos,
+      CASE WHEN a.id IS NULL THEN h.hora_entrada ELSE a.hora_programada_entrada END AS hora_programada,
+      CASE WHEN a.id IS NULL THEN h.hora_entrada ELSE a.hora_programada_entrada END AS hora_programada_entrada,
+      CASE WHEN a.id IS NULL THEN h.hora_salida ELSE a.hora_programada_salida END AS hora_programada_salida,
+      a.minutos_tardanza,a.horas_trabajadas,a.estado,a.observacion,
+      CONCAT(e.nombres,' ',e.apellidos) AS colaborador,e.numero_documento,e.empresa_id,e.area_id,e.cargo_id,
+      emp.razon_social AS empresa,ar.nombre AS area,c.nombre AS cargo
+      FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
+      LEFT JOIN horarios h ON h.empleado_id=e.id AND h.dia_semana=WEEKDAY(?)+1 AND h.activo=TRUE
+      LEFT JOIN asistencias a ON a.empleado_id=e.id AND a.fecha=?
+      WHERE (e.estado='activo' OR a.id IS NOT NULL) AND ${f.where} ${estado ? 'AND a.estado=?' : ''}
+      ORDER BY e.apellidos,e.nombres,e.id`, [fecha,fecha,fecha,...f.params,...(estado ? [estado] : [])]);
+    return res.json({ ok:true,fecha,data:rows });
+  } catch (error) { return fallo(res,error); }
 };
-
-// 2. Registrar o Actualizar Marcación con Cálculo de Tardanza
-exports.registrarMarcacion = async (req, res) => {
-  const {
-    empleado_id,
-    fecha,
-    hora_ingreso,
-    hora_salida,
-    estado: estadoSolicitado,
-    observacion
-  } = req.body;
-
-  const ESTADOS = ['presente', 'falta', 'tardanza', 'permiso', 'descanso', 'feriado', 'vacaciones', 'justificado'];
-  if (!empleado_id || !fecha) {
-    return res.status(400).json({ ok: false, mensaje: 'Empleado y fecha son obligatorios.' });
-  }
-  if (estadoSolicitado && !ESTADOS.includes(estadoSolicitado)) {
-    return res.status(400).json({ ok: false, mensaje: 'Estado de asistencia no válido.' });
-  }
-  if (['presente', 'tardanza'].includes(estadoSolicitado || 'presente') && !hora_ingreso) {
-    return res.status(400).json({ ok: false, mensaje: 'La hora de ingreso es obligatoria para una asistencia presente o tardanza.' });
-  }
-
+exports.registrarMarcacion = async (req,res) => {
+  let connection;
   try {
-    const [empleadoRows] = await pool.query(
-      `SELECT id FROM empleados WHERE id = ? AND estado = 'activo' LIMIT 1`,
-      [empleado_id]
-    );
-    if (!empleadoRows.length) {
-      return res.status(404).json({ ok: false, mensaje: 'El trabajador no existe o no está activo.' });
+    const empleadoId=r.entero(req.body.empleado_id,'Trabajador'),fecha=r.fecha(req.body.fecha);
+    if (fecha>r.hoy()) throw r.error('No puede registrar asistencia de una fecha futura.');
+    const observacion=r.texto(req.body.observacion,'Observación',255);
+    connection=await pool.getConnection(); await connection.beginTransaction();
+    // Serializa las altas diarias del mismo empleado, incluida la primera marcación.
+    const [[empleado]]=await connection.query('SELECT id,estado FROM empleados WHERE id=? FOR UPDATE',[empleadoId]);
+    if (!empleado) throw Object.assign(r.error('Trabajador no encontrado.'),{status:404});
+    const [[anterior]]=await connection.query('SELECT * FROM asistencias WHERE empleado_id=? AND fecha=? FOR UPDATE',[empleadoId,fecha]);
+    if (!anterior && empleado.estado!=='activo') throw r.error('Solo puede agregar asistencia a un trabajador activo.');
+    let horario=null;
+    if (!anterior) {
+      const [horarios]=await connection.query('SELECT hora_entrada,hora_salida,tolerancia_minutos FROM horarios WHERE empleado_id=? AND dia_semana=WEEKDAY(?)+1 AND activo=TRUE',[empleadoId,fecha]);
+      horario=horarios[0]||null;
     }
-
-    // El horario se obtiene del día registrado y queda también guardado en la asistencia
-    // para conservar exactamente la programación usada al momento de registrar.
-    const [horarioRows] = await pool.query(`
-      SELECT hora_entrada, hora_salida, tolerancia_minutos
-      FROM horarios
-      WHERE empleado_id = ? AND dia_semana = (WEEKDAY(?) + 1) AND activo = TRUE
-      LIMIT 1
-    `, [empleado_id, fecha]);
-
-    const horario = horarioRows[0] || null;
-    const horaProgramadaEntrada = horario?.hora_entrada || null;
-    const horaProgramadaSalida = horario?.hora_salida || null;
-    let minutosTardanza = 0;
-    let estado = estadoSolicitado || 'presente';
-
-    // Para estados administrativos (falta, permiso, descanso, feriado, vacaciones, justificado),
-    // no se fuerza una marcación de ingreso. Para presente/tardanza sí se calcula automáticamente.
-    if (hora_ingreso && ['presente', 'tardanza'].includes(estado)) {
-      if (horario) {
-        const [hProg, mProg] = String(horario.hora_entrada).split(':').map(Number);
-        const [hIng, mIng] = String(hora_ingreso).split(':').map(Number);
-        const diferencia = ((hIng * 60) + mIng) - ((hProg * 60) + mProg);
-        const tolerancia = Number(horario.tolerancia_minutos || 0);
-
-        if (diferencia > tolerancia) {
-          minutosTardanza = diferencia;
-          estado = 'tardanza';
-        } else if (estado === 'tardanza') {
-          // Si RR. HH. selecciona tardanza pero el cálculo no la confirma, prevalece el cálculo automático.
-          estado = 'presente';
-        }
-      }
+    const confirmacion = req.body.programacion_historica === undefined ? null : r.confirmarProgramacionHistorica(req.body.programacion_historica, anterior);
+    const programacion=confirmacion || (anterior ? {hora_entrada:anterior.hora_programada_entrada,hora_salida:anterior.hora_programada_salida,tolerancia_minutos:anterior.tolerancia_minutos??0} : horario||null);
+    const datos=r.calcularMarcacion(req.body,programacion,confirmacion ? null : anterior);
+    const guardado={...datos,empleado_id:empleadoId,fecha,observacion,hora_programada_entrada:programacion?.hora_entrada||null,hora_programada_salida:programacion?.hora_salida||null,tolerancia_minutos:confirmacion?confirmacion.tolerancia_minutos:anterior?anterior.tolerancia_minutos:Number(programacion?.tolerancia_minutos||0),registrado_por_usuario_id:req.usuario.id};
+    let id=anterior?.id;
+    if (anterior) {
+      const snapshotSQL = confirmacion ? ',hora_programada_entrada=?,hora_programada_salida=?,tolerancia_minutos=?' : '';
+      const snapshotParams = confirmacion ? [confirmacion.hora_entrada,confirmacion.hora_salida,confirmacion.tolerancia_minutos] : [];
+      await connection.query(`UPDATE asistencias SET hora_ingreso=?,hora_salida=?,minutos_tardanza=?,horas_trabajadas=?,estado=?,observacion=?,registrado_por_usuario_id=?${snapshotSQL} WHERE id=?`,[datos.hora_ingreso,datos.hora_salida,datos.minutos_tardanza,datos.horas_trabajadas,datos.estado,observacion,req.usuario.id,...snapshotParams,id]);
     } else {
-      minutosTardanza = 0;
+      const [result]=await connection.query(`INSERT INTO asistencias (empleado_id,fecha,hora_programada_entrada,hora_programada_salida,tolerancia_minutos,hora_ingreso,hora_salida,minutos_tardanza,horas_trabajadas,estado,observacion,registrado_por_usuario_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,[empleadoId,fecha,guardado.hora_programada_entrada,guardado.hora_programada_salida,guardado.tolerancia_minutos,datos.hora_ingreso,datos.hora_salida,datos.minutos_tardanza,datos.horas_trabajadas,datos.estado,observacion,req.usuario.id]);
+      id=result.insertId;
     }
-
-    // Las horas trabajadas se calculan automáticamente cuando existe ingreso y salida.
-    let horasTrabajadas = 0;
-    if (hora_ingreso && hora_salida && !['falta', 'permiso', 'descanso', 'feriado', 'vacaciones'].includes(estado)) {
-      const [hIng, mIng] = String(hora_ingreso).split(':').map(Number);
-      const [hSal, mSal] = String(hora_salida).split(':').map(Number);
-      let minutosTotales = ((hSal * 60) + mSal) - ((hIng * 60) + mIng);
-      if (minutosTotales < 0) minutosTotales += 24 * 60; // permite turnos que cruzan medianoche
-      horasTrabajadas = Number((minutosTotales / 60).toFixed(2));
+    const nuevos = {id,...guardado,...(confirmacion ? {confirmacion_programacion_historica:confirmacion} : {})};
+    if (confirmacion) {
+      // Confirmación, recálculo y evidencia se confirman o revierten juntos.
+      await connection.query(`INSERT INTO historial_cambios
+        (usuario_id,tabla_afectada,registro_id,accion,datos_anteriores,datos_nuevos,ip_origen)
+        VALUES (?,?,?,'UPDATE',?,?,?)`, [req.usuario.id,'asistencias',id,JSON.stringify(sanitizar(anterior)),
+        JSON.stringify({endpoint:'/api/asistencias/marcar',metodo:'POST',resultado_http:200,solicitud:sanitizar(req.body),registro:sanitizar(nuevos)}),req.ip||null]);
     }
-
-    const query = `
-      INSERT INTO asistencias (
-        empleado_id, fecha, hora_programada_entrada, hora_programada_salida,
-        hora_ingreso, hora_salida, minutos_tardanza, horas_trabajadas,
-        estado, observacion, registrado_por_usuario_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        hora_programada_entrada = VALUES(hora_programada_entrada),
-        hora_programada_salida = VALUES(hora_programada_salida),
-        hora_ingreso = VALUES(hora_ingreso),
-        hora_salida = VALUES(hora_salida),
-        minutos_tardanza = VALUES(minutos_tardanza),
-        horas_trabajadas = VALUES(horas_trabajadas),
-        estado = VALUES(estado),
-        observacion = VALUES(observacion),
-        registrado_por_usuario_id = VALUES(registrado_por_usuario_id)
-    `;
-
-    await pool.query(query, [
-      empleado_id,
-      fecha,
-      horaProgramadaEntrada,
-      horaProgramadaSalida,
-      hora_ingreso || null,
-      hora_salida || null,
-      minutosTardanza,
-      horasTrabajadas,
-      estado,
-      observacion || null,
-      req.usuario?.id || req.usuario?.usuario_id || null
-    ]);
-
-    return res.status(200).json({
-      ok: true,
-      mensaje: 'Asistencia registrada exitosamente.',
-      data: {
-        horaProgramadaEntrada,
-        horaProgramadaSalida,
-        minutosTardanza,
-        estado,
-        horasTrabajadas
-      }
-    });
-  } catch (error) {
-    console.error('Error al registrar marcación:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al registrar marcación.' });
-  }
+    await connection.commit(); auditar(res,'asistencias',id,anterior?'UPDATE':'INSERT',anterior||null,nuevos);
+    if (confirmacion) res.locals.auditoria.persistida=true;
+    return res.json({ok:true,id,mensaje:'Asistencia registrada correctamente.',data:{...guardado,minutosTardanza:datos.minutos_tardanza,horasTrabajadas:datos.horas_trabajadas}});
+  } catch(error) {if(connection) await connection.rollback(); return fallo(res,error);} finally {if(connection) connection.release();}
 };
-
-// 3. Control de Tardanzas Acumuladas
-exports.acumuladoTardanzas = async (req, res) => {
-  const { periodo, area_id } = req.query;
-
-  let condicionFecha = 'a.fecha = CURDATE()';
-  if (periodo === 'semanal') {
-    condicionFecha = 'YEARWEEK(a.fecha, 1) = YEARWEEK(CURDATE(), 1)';
-  } else if (periodo === 'mensual') {
-    condicionFecha = 'MONTH(a.fecha) = MONTH(CURDATE()) AND YEAR(a.fecha) = YEAR(CURDATE())';
-  } else if (periodo === 'trimestral') {
-    condicionFecha = 'QUARTER(a.fecha) = QUARTER(CURDATE()) AND YEAR(a.fecha) = YEAR(CURDATE())';
-  }
-
+exports.acumuladoTardanzas=async(req,res)=>{
   try {
-    let query = `
-      SELECT 
-        e.id,
-        CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
-        ar.nombre AS area,
-        COUNT(CASE WHEN a.estado = 'tardanza' THEN 1 END) AS total_tardanzas,
-        COALESCE(SUM(a.minutos_tardanza), 0) AS minutos_acumulados,
-        MAX(CASE WHEN a.estado = 'tardanza' THEN a.fecha END) AS ultima_tardanza
-      FROM empleados e
-      INNER JOIN areas ar ON e.area_id = ar.id
-      LEFT JOIN asistencias a ON a.empleado_id = e.id AND ${condicionFecha}
-      WHERE e.estado = 'activo'
-    `;
-
-    const params = [];
-    if (area_id) {
-      query += ` AND e.area_id = ?`;
-      params.push(area_id);
-    }
-
-    query += `
-      GROUP BY e.id, e.nombres, e.apellidos, ar.nombre
-      ORDER BY minutos_acumulados DESC
-    `;
-
-    const [rows] = await pool.query(query, params);
-
-    // Calcular KPIs
-    let totalTardanzas = 0;
-    let totalMinutos = 0;
-    let empleadosConTardanza = 0;
-
-    rows.forEach(r => {
-      totalTardanzas += Number(r.total_tardanzas);
-      totalMinutos += Number(r.minutos_acumulados);
-      if (Number(r.total_tardanzas) > 0) empleadosConTardanza++;
-    });
-
-    const porcentaje = rows.length > 0 ? ((empleadosConTardanza / rows.length) * 100).toFixed(1) : 0;
-
-    return res.status(200).json({
-      ok: true,
-      data: rows,
-      kpis: {
-        totalTardanzas,
-        minutosAcumulados: totalMinutos,
-        porcentajeConTardanzas: `${porcentaje}%`
-      }
-    });
-  } catch (error) {
-    console.error('Error en acumulado de tardanzas:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al consultar tardanzas.' });
-  }
+    const periodo=req.query.periodo||'diario';
+    if(!['diario','semanal','mensual','trimestral'].includes(periodo)) throw r.error('Periodo no válido.');
+    const referencia=r.fecha(req.query.fecha||r.hoy()),d=new Date(referencia+'T12:00:00Z'),fin=new Date(d);
+    if(periodo==='semanal'){d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));fin.setTime(d.getTime());fin.setUTCDate(d.getUTCDate()+6);}
+    if(periodo==='mensual'||periodo==='trimestral'){d.setUTCDate(1);if(periodo==='trimestral')d.setUTCMonth(Math.floor(d.getUTCMonth()/3)*3);fin.setTime(d.getTime());fin.setUTCMonth(d.getUTCMonth()+(periodo==='trimestral'?3:1));fin.setUTCDate(0);}
+    const desde=d.toISOString().slice(0,10),hasta=fin.toISOString().slice(0,10),f=r.filtrosPersonal(req.query);
+    const [rows]=await pool.query(`SELECT e.id,CONCAT(e.nombres,' ',e.apellidos) AS colaborador,ar.nombre AS area,
+      COUNT(CASE WHEN a.estado='tardanza' THEN 1 END) AS total_tardanzas,COALESCE(SUM(a.minutos_tardanza),0) AS minutos_acumulados,
+      MAX(CASE WHEN a.estado='tardanza' THEN a.fecha END) AS ultima_tardanza
+      FROM empleados e JOIN areas ar ON ar.id=e.area_id LEFT JOIN asistencias a ON a.empleado_id=e.id AND a.fecha BETWEEN ? AND ?
+      WHERE ${f.where} AND (e.estado='activo' OR a.id IS NOT NULL) GROUP BY e.id,e.nombres,e.apellidos,ar.nombre ORDER BY minutos_acumulados DESC,e.apellidos`,[desde,hasta,...f.params]);
+    return res.json({ok:true,fecha_inicio:desde,fecha_fin:hasta,data:rows,kpis:{totalTardanzas:rows.reduce((n,x)=>n+Number(x.total_tardanzas),0),minutosAcumulados:rows.reduce((n,x)=>n+Number(x.minutos_acumulados),0),porcentajeConTardanzas:`${rows.length?(rows.filter(x=>Number(x.total_tardanzas)>0).length/rows.length*100).toFixed(1):0}%`}});
+  }catch(error){return fallo(res,error);}
 };
-
-// 4. Listar Permisos
-exports.listarPermisos = async (req, res) => {
-  const { fecha_desde, fecha_hasta, empresa_id, estado } = req.query;
-
+exports.listarPermisos=async(req,res)=>{
   try {
-    let query = `
-      SELECT
-        p.id,
-        p.empleado_id,
-        CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
-        p.fecha_inicio,
-        p.fecha_fin,
-        p.hora_desde,
-        p.hora_hasta,
-        p.tipo_permiso,
-        p.motivo,
-        p.observaciones,
-        p.estado,
-        p.archivo_sustento
-      FROM permisos p
-      INNER JOIN empleados e ON p.empleado_id = e.id
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (fecha_desde) {
-      query += ` AND p.fecha_fin >= ?`;
-      params.push(fecha_desde);
-    }
-    if (fecha_hasta) {
-      query += ` AND p.fecha_inicio <= ?`;
-      params.push(fecha_hasta);
-    }
-    if (empresa_id) {
-      query += ` AND e.empresa_id = ?`;
-      params.push(empresa_id);
-    }
-    if (req.query.area_id) {
-      query += ` AND e.area_id = ?`;
-      params.push(req.query.area_id);
-    }
-    if (estado) {
-      query += ` AND p.estado = ?`;
-      params.push(estado);
-    }
-
-    query += ` ORDER BY p.id DESC`;
-    const [rows] = await pool.query(query, params);
-    return res.status(200).json({ ok: true, data: rows });
-  } catch (error) {
-    console.error('Error al listar permisos:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al consultar permisos.' });
-  }
+    const f=r.filtrosPersonal(req.query),condiciones=[f.where],params=[...f.params];
+    if(req.query.fecha_desde){condiciones.push('p.fecha_fin>=?');params.push(r.fecha(req.query.fecha_desde));}
+    if(req.query.fecha_hasta){condiciones.push('p.fecha_inicio<=?');params.push(r.fecha(req.query.fecha_hasta));}
+    if(req.query.fecha_desde&&req.query.fecha_hasta&&req.query.fecha_desde>req.query.fecha_hasta)throw r.error('La fecha inicial no puede ser posterior a la final.');
+    if(req.query.estado){if(!['Solicitado','Aprobado','Rechazado'].includes(req.query.estado))throw r.error('Estado no válido.');condiciones.push('p.estado=?');params.push(req.query.estado);}
+    const [rows]=await pool.query(`SELECT p.*,CONCAT(e.nombres,' ',e.apellidos) AS colaborador FROM permisos p JOIN empleados e ON e.id=p.empleado_id WHERE ${condiciones.join(' AND ')} ORDER BY p.fecha_inicio DESC,p.id DESC`,params);
+    return res.json({ok:true,data:rows.map(({archivo_sustento,...x})=>({...x,archivo_sustento:x.archivo_sustento_nombre||archivo_sustento,tiene_sustento:Boolean(x.archivo_sustento_nombre&&archivo_sustento)}))});
+  }catch(error){return fallo(res,error);}
 };
-
-// 5. Registrar permiso
-exports.crearPermiso = async (req, res) => {
-  const {
-    empleado_id, tipo_permiso, fecha_inicio, fecha_fin,
-    hora_desde, hora_hasta, motivo, observaciones, archivo_sustento
-  } = req.body;
-
-  if (!empleado_id || !fecha_inicio || !fecha_fin || !motivo) {
-    return res.status(400).json({ ok: false, mensaje: 'Empleado, fechas y motivo son obligatorios.' });
-  }
-
-  if (fecha_fin < fecha_inicio) {
-    return res.status(400).json({ ok: false, mensaje: 'La fecha fin no puede ser anterior a la fecha inicio.' });
-  }
-
+exports.crearPermiso=async(req,res)=>{
+  let privado;
   try {
-    const [empleado] = await pool.query(
-      `SELECT id FROM empleados WHERE id = ? AND estado = 'activo' LIMIT 1`,
-      [empleado_id]
-    );
-    if (!empleado.length) {
-      return res.status(404).json({ ok: false, mensaje: 'El trabajador no existe o no está activo.' });
-    }
-
-    const [result] = await pool.query(`
-      INSERT INTO permisos
-        (empleado_id, tipo_permiso, fecha_inicio, fecha_fin, hora_desde, hora_hasta, motivo, observaciones, estado, archivo_sustento)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', ?)
-    `, [
-      empleado_id,
-      tipo_permiso || 'Personal',
-      fecha_inicio,
-      fecha_fin,
-      hora_desde || null,
-      hora_hasta || null,
-      motivo,
-      observaciones || null,
-      archivo_sustento || null
-    ]);
-
-    return res.status(201).json({ ok: true, mensaje: 'Permiso registrado correctamente.', id: result.insertId });
-  } catch (error) {
-    console.error('Error al crear permiso:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al registrar permiso.' });
-  }
+    const b=req.body,empleadoId=r.entero(b.empleado_id,'Trabajador'),inicio=r.fecha(b.fecha_inicio),fin=r.fecha(b.fecha_fin);
+    if(fin<inicio)throw r.error('La fecha final no puede ser anterior a la inicial.');
+    const desde=r.hora(b.hora_desde,'Hora desde',true),hasta=r.hora(b.hora_hasta,'Hora hasta',true);
+    if(Boolean(desde)!==Boolean(hasta)||inicio===fin&&desde&&hasta<=desde)throw r.error('Complete ambas horas y coloque una hora final posterior a la inicial.');
+    const tipo=r.texto(b.tipo_permiso||'Personal','Tipo',50,true),motivo=r.texto(b.motivo,'Motivo',4000,true),observaciones=r.texto(b.observaciones,'Observaciones',4000);
+    const [[empleado]]=await pool.query("SELECT id FROM empleados WHERE id=? AND estado='activo'",[empleadoId]);
+    if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
+    let nombre=null;
+    if(b.sustento){const archivo=archivos.validarArchivo(b.sustento.nombre,b.sustento.base64);nombre=archivo.nombre_archivo;privado=await archivos.guardarArchivo(archivo);}
+    if(b.archivo_sustento&&!b.sustento)throw r.error('Adjunte el archivo sustentatorio; un nombre por sí solo no carga el documento.');
+    const [result]=await pool.query(`INSERT INTO permisos (empleado_id,tipo_permiso,fecha_inicio,fecha_fin,hora_desde,hora_hasta,motivo,observaciones,estado,archivo_sustento,archivo_sustento_nombre) VALUES (?,?,?,?,?,?,?,?,'Solicitado',?,?)`,[empleadoId,tipo,inicio,fin,desde,hasta,motivo,observaciones,privado||null,nombre]);
+    auditar(res,'permisos',result.insertId,'INSERT',null,{empleado_id:empleadoId,tipo_permiso:tipo,fecha_inicio:inicio,fecha_fin:fin,estado:'Solicitado',archivo_sustento_nombre:nombre});
+    return res.status(201).json({ok:true,id:result.insertId,mensaje:'Permiso registrado correctamente.'});
+  }catch(error){if(privado)await archivos.eliminarArchivo(privado).catch(()=>{});return fallo(res,error);}
 };
-
-// 6. Actualizar estado de permiso
-exports.actualizarEstadoPermiso = async (req, res) => {
-  const { id } = req.params;
-  const { estado } = req.body;
-  const estadosPermitidos = ['Solicitado', 'Aprobado', 'Rechazado'];
-
-  if (!estadosPermitidos.includes(estado)) {
-    return res.status(400).json({ ok: false, mensaje: 'Estado de permiso no válido.' });
-  }
-
+exports.actualizarEstadoPermiso=async(req,res)=>{
   try {
-    const [result] = await pool.query(
-      `UPDATE permisos SET estado = ? WHERE id = ?`,
-      [estado, id]
-    );
-    if (!result.affectedRows) {
-      return res.status(404).json({ ok: false, mensaje: 'Permiso no encontrado.' });
-    }
-    return res.status(200).json({ ok: true, mensaje: `Permiso ${estado.toLowerCase()} correctamente.` });
-  } catch (error) {
-    console.error('Error al actualizar permiso:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al actualizar permiso.' });
-  }
+    const id=r.entero(req.params.id,'Permiso'),estado=req.body.estado;
+    if(!['Solicitado','Aprobado','Rechazado'].includes(estado))throw r.error('Estado no válido.');
+    const [[anterior]]=await pool.query('SELECT * FROM permisos WHERE id=?',[id]);
+    if(!anterior)throw Object.assign(r.error('Permiso no encontrado.'),{status:404});
+    await pool.query('UPDATE permisos SET estado=? WHERE id=?',[estado,id]);
+    auditar(res,'permisos',id,'UPDATE',anterior,{...anterior,estado});
+    return res.json({ok:true,mensaje:'Estado del permiso actualizado.'});
+  }catch(error){return fallo(res,error);}
+};
+exports.sustentoPermiso=async(req,res)=>{
+  try {
+    const id=r.entero(req.params.id,'Permiso'),propio=req.usuario.rol===ROLES.COLABORADOR;
+    const [[permiso]]=await pool.query(`SELECT empleado_id,archivo_sustento,archivo_sustento_nombre FROM permisos WHERE id=? ${propio?'AND empleado_id=?':''}`,propio?[id,req.usuario.empleado_id]:[id]);
+    if(!permiso||!permiso.archivo_sustento_nombre)throw Object.assign(r.error('No existe un archivo adjunto disponible para este permiso.'),{status:404});
+    const archivo=await archivos.obtenerArchivo(permiso.archivo_sustento);
+    res.set({'Content-Type':archivo.mime_type,'Content-Disposition':archivos.disposicionArchivo(permiso.archivo_sustento_nombre,req.query.descargar==='1'),'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Content-Security-Policy':"default-src 'none'; sandbox"});
+    return res.sendFile(archivo.ruta);
+  }catch(error){return fallo(res,error);}
 };

@@ -7,12 +7,12 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
 <title>SBSS - Reportes Consolidados</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/lucide/lucide.min.js"></script>
+<script src="vendor/xlsx-js-style/xlsx.bundle.js"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{--line:#d7e5ee;--ink:#174b70}
 *{box-sizing:border-box}
@@ -32,6 +32,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 .toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:white;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
 </style>
 <link rel="stylesheet" href="css/navigation.css">
+<link rel="stylesheet" href="css/asistencia-core.css">
 </head>
 <body>
 <div class="app min-h-screen">
@@ -64,7 +65,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
   <!-- Contenido Principal -->
   <main class="flex-1 p-4 bg-[#f8fbfd] space-y-4 max-w-7xl mx-auto transition-all duration-300">
-    <div class="flex items-center justify-between">
+    <div class="core-heading flex items-center justify-between">
       <div>
         <h1 class="text-lg font-bold text-[#174d72]">REPORTES CONSOLIDADOS Y AUDITORÍA DE ASISTENCIA</h1>
         <p class="text-xs text-[#3c718f]">Genere resúmenes de horas efectivas laboradas, incidencias de tardanzas y avance de horas de prácticas.</p>
@@ -86,7 +87,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
     <!-- Filtros combinados -->
     <section class="panel p-3">
-      <div class="grid grid-cols-12 gap-3 items-end">
+      <div class="core-filters grid grid-cols-12 gap-3 items-end">
         <label class="col-span-3 text-[10px] font-bold">
           Desde:
           <input id="fInicio" type="date" class="control mt-1">
@@ -106,11 +107,11 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <select id="fVinculo" class="control mt-1">
             <option value="">Todos</option>
             <option value="trabajador">Trabajador</option>
-            <option value="practicante">Practicante</option>
+            <option value="practicante">Todos los practicantes</option><option value="practicante preprofesional">Practicante preprofesional</option><option value="practicante profesional">Practicante profesional</option><option value="voluntario">Voluntario</option><option value="otro">Otro</option>
           </select>
         </label>
-        <div class="col-span-1">
-          <button id="btnFiltrar" class="w-full h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center justify-center">
+        <label class="col-span-3 text-[10px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Cargo<select id="fCargo" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Trabajador<select id="fTrabajador" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option>presente</option><option>falta</option><option>tardanza</option><option>permiso</option><option>descanso</option><option>feriado</option><option>vacaciones</option><option>justificado</option></select></label><label class="col-span-3 text-[10px] font-bold">Periodo<select id="fPeriodo" class="control mt-1"><option value="personalizado">Personalizado</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option></select></label><div class="col-span-1">
+          <button id="btnFiltrar" aria-label="Aplicar filtros" class="w-full h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center justify-center">
             <i data-lucide="filter" class="w-4 h-4"></i>
           </button>
         </div>
@@ -118,13 +119,13 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     </section>
 
     <!-- Tarjetas de métricas -->
-    <section class="grid grid-cols-4 gap-4">
+    <section class="core-kpis grid grid-cols-4 gap-4">
       <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-emerald-600">
         <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">
           <i data-lucide="check-check" class="w-5 h-5"></i>
         </div>
         <div>
-          <span class="text-[10px] text-slate-500 font-bold block">Asistencias Puntuales</span>
+          <span class="text-[10px] text-slate-500 font-bold block">Asistencias</span>
           <strong id="kpiPuntuales" class="text-lg text-emerald-800">0</strong>
         </div>
       </div>
@@ -160,7 +161,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       </div>
     </section>
 
-    <!-- Tabla de resultados -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Faltas</span><strong id="kpiFaltas" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Permisos</span><strong id="kpiPermisos" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Horas pendientes</span><strong id="kpiPendientes" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">% Asistencia</span><strong id="kpiAsistencia" class="text-lg text-sky-900">0</strong></div></section><p id="criterioReporte" class="text-xs text-slate-600 p-3"></p><!-- Tabla de resultados -->
     <section class="panel overflow-hidden">
       <div class="p-3 border-b border-[#dce8f0] flex justify-between items-center bg-slate-50">
         <h2 class="font-bold text-xs text-sky-900 flex items-center gap-2">
@@ -170,24 +171,9 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       </div>
       <div class="overflow-x-auto">
         <table class="tbl" id="tablaReporte">
-          <thead>
-            <tr>
-              <th>N°</th>
-              <th>Colaborador</th>
-              <th>DNI</th>
-              <th>Empresa</th>
-              <th>Área / Cargo</th>
-              <th class="text-center">Vínculo</th>
-              <th class="text-center">Puntual</th>
-              <th class="text-center">Tardanza</th>
-              <th class="text-center">Falta</th>
-              <th class="text-center">Min. Tardanza</th>
-              <th class="text-center">Horas Laboradas</th>
-              <th class="text-center">Avance Horas</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Colaborador</th><th>DNI</th><th>Empresa</th><th>Área</th><th>Cargo</th><th>Vínculo</th><th>Puntual</th><th>Tardanza</th><th>Falta</th><th>Min. tardanza</th><th>Horas periodo</th><th>Horas acumuladas</th><th>Horas pendientes</th><th>Permisos</th><th>% asistencia</th><th>Avance horas %</th></tr></thead>
           <tbody id="tbodyReportes">
-            <tr><td colspan="12" class="text-center py-6 text-slate-400">Cargando reporte...</td></tr>
+            <tr><td colspan="16" class="text-center py-6 text-slate-400">Cargando reporte...</td></tr>
           </tbody>
         </table>
       </div>
@@ -197,770 +183,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 </div>
 
 <script src="js/sidebar.js"></script>
-<script>
-  const token = localStorage.getItem('sbss_token');
-  const $ = id => document.getElementById(id);
-
-  let reporteActual = [];
-
-  function toast(m) {
-    let t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = m;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-  }
-
-  // Establecer primer y último día del mes actual en los inputs
-  const hoy = new Date();
-  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
-  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
-  $('fInicio').value = primerDia;
-  $('fFin').value = ultimoDia;
-
-  async function cargarEmpresasFiltro() {
-    try {
-      const res = await fetch('http://localhost:3000/api/empresas', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!data.ok) return;
-
-      const select = $('fEmpresa');
-      data.data.forEach(e => {
-        const opt = document.createElement('option');
-        opt.value = e.id;
-        opt.textContent = e.razon_social;
-        select.appendChild(opt);
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function generarReporte() {
-    const fInicio = $('fInicio').value;
-    const fFin = $('fFin').value;
-    const empresa_id = $('fEmpresa').value;
-    const vinculo = $('fVinculo').value;
-
-    const params = new URLSearchParams();
-    if (fInicio) params.append('fecha_inicio', fInicio);
-    if (fFin) params.append('fecha_fin', fFin);
-    if (empresa_id) params.append('empresa_id', empresa_id);
-    if (vinculo) params.append('tipo_vinculo', vinculo);
-
-    try {
-      const res = await fetch(`http://localhost:3000/api/reportes/consolidado?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const resp = await res.json();
-      if (!resp.ok) return;
-
-      const { detalles } = resp.data;
-
-      // Aplicar los filtros también en el frontend.
-      // Esto garantiza que la tabla muestre SOLO la empresa y el vínculo seleccionados,
-      // incluso si el backend devuelve registros adicionales.
-      const empresaSeleccionadaId = $('fEmpresa').value;
-      const empresaSeleccionadaNombre = empresaSeleccionadaId
-        ? $('fEmpresa').options[$('fEmpresa').selectedIndex].text.trim()
-        : '';
-
-      const vinculoSeleccionado = ($('fVinculo').value || '').trim().toLowerCase();
-
-      reporteActual = (detalles || []).filter(r => {
-        const nombreEmpresaRegistro = String(r.empresa || '').trim().toLowerCase();
-        const idEmpresaRegistro = String(r.empresa_id ?? '').trim();
-
-        const coincideEmpresa =
-          !empresaSeleccionadaId ||
-          idEmpresaRegistro === String(empresaSeleccionadaId) ||
-          nombreEmpresaRegistro === empresaSeleccionadaNombre.toLowerCase();
-
-        const coincideVinculo =
-          !vinculoSeleccionado ||
-          String(r.tipo_vinculo || '').trim().toLowerCase() === vinculoSeleccionado;
-
-        return coincideEmpresa && coincideVinculo;
-      });
-
-      // Los indicadores también deben corresponder SOLO a los registros filtrados.
-      const totalPuntuales = reporteActual.reduce(
-        (total, r) => total + (Number(r.dias_puntual) || 0), 0
-      );
-      const totalTardanzas = reporteActual.reduce(
-        (total, r) => total + (Number(r.dias_tardanza) || 0), 0
-      );
-      const totalMinutos = reporteActual.reduce(
-        (total, r) => total + (Number(r.total_minutos_tardanza) || 0), 0
-      );
-      const totalHoras = reporteActual.reduce(
-        (total, r) => total + (Number(r.total_horas_laboradas) || 0), 0
-      );
-
-      // Render KPIs
-      $('kpiPuntuales').textContent = totalPuntuales;
-      $('kpiTardanzas').textContent = totalTardanzas;
-      $('kpiMinutos').textContent = `${totalMinutos} min`;
-      $('kpiHoras').textContent = `${totalHoras.toFixed(2)} hrs`;
-      $('lblConteoResultados').textContent = `Mostrando ${reporteActual.length} colaboradores`;
-
-      // Render Tabla
-      const tbody = $('tbodyReportes');
-      if (reporteActual.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">No se encontraron registros con los filtros seleccionados</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = reporteActual.map((r, i) => {
-        const pctAvance = r.horas_meta > 0 
-          ? Math.min(100, Math.round((r.total_horas_laboradas / r.horas_meta) * 100)) + '%' 
-          : 'N/A';
-
-        return `
-          <tr>
-            <td>${i + 1}</td>
-            <td><strong>${r.colaborador}</strong></td>
-            <td>${r.numero_documento}</td>
-            <td>${r.empresa}</td>
-            <td>${r.area} / <span class="text-slate-500">${r.cargo}</span></td>
-            <td class="text-center capitalize">${r.tipo_vinculo}</td>
-            <td class="text-center font-bold text-emerald-700">${r.dias_puntual}</td>
-            <td class="text-center font-bold text-amber-600">${r.dias_tardanza}</td>
-            <td class="text-center font-bold text-rose-600">${r.dias_falta}</td>
-            <td class="text-center font-bold ${r.total_minutos_tardanza > 0 ? 'text-amber-700' : ''}">${r.total_minutos_tardanza} min</td>
-            <td class="text-center font-bold text-sky-800">${r.total_horas_laboradas} hrs</td>
-            <td class="text-center font-bold text-slate-700">${pctAvance}</td>
-          </tr>
-        `;
-      }).join('');
-
-    } catch (e) {
-      console.error(e);
-      $('tbodyReportes').innerHTML = `<tr><td colspan="12" class="text-center py-6 text-rose-500">Error al cargar datos del reporte</td></tr>`;
-    }
-  }
-
-  // Exportar a Excel con formato de CONTROL DE ASISTENCIA
-  $('btnExportarExcel').onclick = async () => {
-    if (reporteActual.length === 0) {
-      toast('No hay datos para exportar');
-      return;
-    }
-
-    const fechaInicio = $('fInicio').value;
-    const fechaFin = $('fFin').value;
-
-    if (!fechaInicio || !fechaFin) {
-      toast('Seleccione el rango de fechas');
-      return;
-    }
-
-    const btnExcel = $('btnExportarExcel');
-    const htmlOriginal = btnExcel.innerHTML;
-    btnExcel.disabled = true;
-    btnExcel.innerHTML = '<span>Generando Excel...</span>';
-
-    try {
-      // ------------------------------------------------------------
-      // 1. Crear lista de fechas del rango seleccionado
-      // ------------------------------------------------------------
-      const parseFechaLocal = (valor) => {
-        const [y, m, d] = valor.split('-').map(Number);
-        return new Date(y, m - 1, d);
-      };
-
-      const fechaISO = (fecha) => {
-        const y = fecha.getFullYear();
-        const m = String(fecha.getMonth() + 1).padStart(2, '0');
-        const d = String(fecha.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      };
-
-      const fechaCorta = (fecha) => {
-        const d = String(fecha.getDate()).padStart(2, '0');
-        const m = String(fecha.getMonth() + 1).padStart(2, '0');
-        return `${d}/${m}`;
-      };
-
-      const diasNombre = [
-        'DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES',
-        'JUEVES', 'VIERNES', 'SÁBADO'
-      ];
-
-      const fechas = [];
-      let cursor = parseFechaLocal(fechaInicio);
-      const fin = parseFechaLocal(fechaFin);
-
-      while (cursor <= fin) {
-        fechas.push(new Date(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-
-      // ------------------------------------------------------------
-      // 2. Consultar las asistencias diarias desde la API
-      // ------------------------------------------------------------
-      const empresaId = $('fEmpresa').value;
-      const dnisPermitidos = new Set(
-        reporteActual.map(r => String(r.numero_documento || '').trim())
-      );
-
-      const asistenciasPorFecha = {};
-
-      // Se consulta por bloques para no disparar demasiadas solicitudes a la vez.
-      const tamanoBloque = 10;
-      for (let i = 0; i < fechas.length; i += tamanoBloque) {
-        const bloque = fechas.slice(i, i + tamanoBloque);
-
-        const respuestas = await Promise.all(
-          bloque.map(async fecha => {
-            const iso = fechaISO(fecha);
-            const params = new URLSearchParams({ fecha: iso });
-
-            if (empresaId) {
-              params.append('empresa_id', empresaId);
-            }
-
-            const res = await fetch(
-              `http://localhost:3000/api/asistencias?${params.toString()}`,
-              { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-
-            if (!res.ok) {
-              throw new Error(`No se pudo consultar la asistencia del ${iso}`);
-            }
-
-            const json = await res.json();
-            const datos = json.ok ? (json.data || []) : [];
-
-            return {
-              fecha: iso,
-              datos: datos.filter(a =>
-                dnisPermitidos.has(String(a.numero_documento || '').trim())
-              )
-            };
-          })
-        );
-
-        respuestas.forEach(r => {
-          asistenciasPorFecha[r.fecha] = r.datos;
-        });
-      }
-
-      // ------------------------------------------------------------
-      // 3. Agrupar fechas por semanas (lunes a domingo)
-      // ------------------------------------------------------------
-      const getMondayKey = (fecha) => {
-        const d = new Date(fecha);
-        const day = d.getDay() || 7;
-        d.setDate(d.getDate() - day + 1);
-        return fechaISO(d);
-      };
-
-      const semanasMap = new Map();
-
-      fechas.forEach(fecha => {
-        const key = getMondayKey(fecha);
-        if (!semanasMap.has(key)) semanasMap.set(key, []);
-        semanasMap.get(key).push(fecha);
-      });
-
-      const semanas = Array.from(semanasMap.entries()).map(([lunes, dias]) => ({
-        lunes,
-        dias
-      }));
-
-      // ------------------------------------------------------------
-      // 4. Preparar datos por empleado y por fecha
-      // ------------------------------------------------------------
-      const empleados = reporteActual.map(r => ({
-        colaborador: r.colaborador,
-        dni: String(r.numero_documento || ''),
-        empresa: r.empresa || '',
-        area: r.area || '',
-        cargo: r.cargo || '',
-        vinculo: r.tipo_vinculo || '',
-        horasMeta: Number(r.horas_meta) || 0,
-        puntual: Number(r.dias_puntual) || 0,
-        tardanza: Number(r.dias_tardanza) || 0,
-        falta: Number(r.dias_falta) || 0,
-        minutosTardanza: Number(r.total_minutos_tardanza) || 0,
-        horasPeriodo: Number(r.total_horas_laboradas) || 0
-      }));
-
-      const buscarMarcacion = (dni, fecha) => {
-        const lista = asistenciasPorFecha[fechaISO(fecha)] || [];
-        return lista.find(a =>
-          String(a.numero_documento || '').trim() === String(dni).trim()
-        );
-      };
-
-      // ------------------------------------------------------------
-      // 5. Construir el Excel con apariencia similar al control mostrado
-      // ------------------------------------------------------------
-      const wb = XLSX.utils.book_new();
-      const ws = {};
-
-      const bordes = {
-        top:    { style: 'thin', color: { rgb: '000000' } },
-        bottom: { style: 'thin', color: { rgb: '000000' } },
-        left:   { style: 'thin', color: { rgb: '000000' } },
-        right:  { style: 'thin', color: { rgb: '000000' } }
-      };
-
-      const estiloSemana = {
-        fill: { fgColor: { rgb: 'B58900' } },
-        font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloEmpleadoHeader = {
-        fill: { fgColor: { rgb: 'F6D77B' } },
-        font: { bold: true, color: { rgb: '000000' }, sz: 10 },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloDia = {
-        fill: { fgColor: { rgb: 'F6D77B' } },
-        font: { bold: true, color: { rgb: '000000' }, sz: 9 },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloEntrada = {
-        fill: { fgColor: { rgb: 'E2F0D9' } },
-        font: { bold: true, color: { rgb: '000000' }, sz: 8 },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloSalida = {
-        fill: { fgColor: { rgb: 'F8CBAD' } },
-        font: { bold: true, color: { rgb: '000000' }, sz: 8 },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloResumen = {
-        fill: { fgColor: { rgb: 'FFE699' } },
-        font: { bold: true, color: { rgb: '000000' }, sz: 8 },
-        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-        border: bordes
-      };
-
-      const estiloDatoEntrada = {
-        fill: { fgColor: { rgb: 'E2F0D9' } },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes,
-        font: { sz: 9 }
-      };
-
-      const estiloDatoSalida = {
-        fill: { fgColor: { rgb: 'F8CBAD' } },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes,
-        font: { sz: 9 }
-      };
-
-      const estiloDatoResumen = {
-        fill: { fgColor: { rgb: 'FFF2CC' } },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes,
-        font: { sz: 9 },
-        numFmt: '[h]:mm'
-      };
-
-      const estiloNombreTrabajador = {
-        fill: { fgColor: { rgb: 'F4CCCC' } },
-        font: { bold: true, color: { rgb: '1F1F1F' }, sz: 9 },
-        alignment: { horizontal: 'left', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloNombrePracticante = {
-        fill: { fgColor: { rgb: 'B4A7D6' } },
-        font: { bold: true, color: { rgb: '1F1F1F' }, sz: 9 },
-        alignment: { horizontal: 'left', vertical: 'center' },
-        border: bordes
-      };
-
-      const estiloVacio = {
-        alignment: { horizontal: 'center', vertical: 'center' },
-        border: bordes
-      };
-
-      const merges = [];
-      const cols = [{ wch: 33 }];
-      const filas = [[], [], []];
-
-      // Primera columna
-      filas[0][0] = 'SEMANAS';
-      filas[1][0] = 'EMPLEADOS';
-      filas[2][0] = '';
-      merges.push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
-
-      let colActual = 1;
-
-      semanas.forEach((semana, indiceSemana) => {
-        const primerDia = semana.dias[0];
-        const ultimoDiaSemana = semana.dias[semana.dias.length - 1];
-
-        const inicioBloque = colActual;
-        const columnasDias = semana.dias.length * 2;
-        const finBloque = inicioBloque + columnasDias + 3 - 1;
-
-        filas[0][inicioBloque] =
-          `SEMANA ${indiceSemana + 1}: ${fechaCorta(primerDia)} AL ${fechaCorta(ultimoDiaSemana)}`;
-        merges.push({
-          s: { r: 0, c: inicioBloque },
-          e: { r: 0, c: finBloque }
-        });
-
-        semana.dias.forEach(fecha => {
-          const inicioDia = colActual;
-          filas[1][inicioDia] = `${diasNombre[fecha.getDay()]} ${fechaCorta(fecha)}`;
-          merges.push({
-            s: { r: 1, c: inicioDia },
-            e: { r: 1, c: inicioDia + 1 }
-          });
-
-          filas[2][inicioDia] = 'ENTRADA';
-          filas[2][inicioDia + 1] = 'SALIDA';
-
-          cols.push({ wch: 10 }, { wch: 10 });
-          colActual += 2;
-        });
-
-        filas[1][colActual] = 'HORAS NORMALES';
-        filas[2][colActual] = '';
-        merges.push({ s: { r: 1, c: colActual }, e: { r: 2, c: colActual } });
-        cols.push({ wch: 13 });
-        colActual++;
-
-        filas[1][colActual] = 'HORAS EXTRAS';
-        filas[2][colActual] = '';
-        merges.push({ s: { r: 1, c: colActual }, e: { r: 2, c: colActual } });
-        cols.push({ wch: 12 });
-        colActual++;
-
-        filas[1][colActual] = 'TOTAL HORAS';
-        filas[2][colActual] = '';
-        merges.push({ s: { r: 1, c: colActual }, e: { r: 2, c: colActual } });
-        cols.push({ wch: 12 });
-        colActual++;
-      });
-
-      // Columnas finales de resumen del periodo
-      const colResumenInicio = colActual;
-      const resumenHeaders = [
-        'PUNTUAL',
-        'TARDANZA',
-        'FALTA',
-        'MIN. TARDANZA',
-        'TOTAL PERIODO'
-      ];
-
-      resumenHeaders.forEach(titulo => {
-        filas[0][colActual] = 'RESUMEN';
-        filas[1][colActual] = titulo;
-        filas[2][colActual] = '';
-        merges.push({ s: { r: 1, c: colActual }, e: { r: 2, c: colActual } });
-        cols.push({ wch: titulo === 'MIN. TARDANZA' ? 14 : 12 });
-        colActual++;
-      });
-
-      merges.push({
-        s: { r: 0, c: colResumenInicio },
-        e: { r: 0, c: colActual - 1 }
-      });
-
-      // Filas de colaboradores
-      empleados.forEach(emp => {
-        const fila = [emp.colaborador];
-
-        semanas.forEach(semana => {
-          let horasNormales = 0;
-          let horasExtras = 0;
-          let horasTotalesSemana = 0;
-
-          semana.dias.forEach(fecha => {
-            const marcacion = buscarMarcacion(emp.dni, fecha);
-
-            const ingreso = marcacion?.hora_ingreso
-              ? String(marcacion.hora_ingreso).slice(0, 5)
-              : '';
-
-            const salida = marcacion?.hora_salida
-              ? String(marcacion.hora_salida).slice(0, 5)
-              : '';
-
-            fila.push(ingreso, salida);
-
-            const horasDia = Number(marcacion?.horas_trabajadas) || 0;
-            horasTotalesSemana += horasDia;
-            horasNormales += Math.min(horasDia, 8);
-            horasExtras += Math.max(horasDia - 8, 0);
-          });
-
-          // Excel maneja horas como fracción de un día.
-          fila.push(
-            horasNormales / 24,
-            horasExtras / 24,
-            horasTotalesSemana / 24
-          );
-        });
-
-        fila.push(
-          emp.puntual,
-          emp.tardanza,
-          emp.falta,
-          emp.minutosTardanza,
-          emp.horasPeriodo / 24
-        );
-
-        filas.push(fila);
-      });
-
-      // Crear hoja a partir de los datos
-      XLSX.utils.sheet_add_aoa(ws, filas, { origin: 'A1' });
-
-      // Aplicar estilos a encabezados
-      const totalColumnas = colActual;
-
-      for (let c = 0; c < totalColumnas; c++) {
-        const c1 = XLSX.utils.encode_cell({ r: 0, c });
-        const c2 = XLSX.utils.encode_cell({ r: 1, c });
-        const c3 = XLSX.utils.encode_cell({ r: 2, c });
-
-        if (ws[c1]) ws[c1].s = c === 0 ? estiloSemana : estiloSemana;
-        if (ws[c2]) ws[c2].s = c === 0 ? estiloEmpleadoHeader : estiloDia;
-
-        if (ws[c3]) {
-          const valor = String(ws[c3].v || '');
-          if (valor === 'ENTRADA') {
-            ws[c3].s = estiloEntrada;
-          } else if (valor === 'SALIDA') {
-            ws[c3].s = estiloSalida;
-          } else {
-            ws[c3].s = estiloResumen;
-          }
-        }
-      }
-
-      // Los encabezados de resumen semanal ocupan filas 2-3
-      semanas.forEach((semana, indiceSemana) => {
-        let base = 1;
-
-        for (let x = 0; x < indiceSemana; x++) {
-          base += semanas[x].dias.length * 2 + 3;
-        }
-
-        const resumenSemanaInicio = base + semana.dias.length * 2;
-
-        for (let c = resumenSemanaInicio; c < resumenSemanaInicio + 3; c++) {
-          const addr2 = XLSX.utils.encode_cell({ r: 1, c });
-          const addr3 = XLSX.utils.encode_cell({ r: 2, c });
-          if (ws[addr2]) ws[addr2].s = estiloResumen;
-          if (ws[addr3]) ws[addr3].s = estiloResumen;
-        }
-      });
-
-      // Resumen final
-      for (let c = colResumenInicio; c < totalColumnas; c++) {
-        const addr2 = XLSX.utils.encode_cell({ r: 1, c });
-        const addr3 = XLSX.utils.encode_cell({ r: 2, c });
-        if (ws[addr2]) ws[addr2].s = estiloResumen;
-        if (ws[addr3]) ws[addr3].s = estiloResumen;
-      }
-
-      // Aplicar estilos a filas de datos
-      for (let r = 3; r < filas.length; r++) {
-        const emp = empleados[r - 3];
-        const celdaNombre = XLSX.utils.encode_cell({ r, c: 0 });
-
-        if (ws[celdaNombre]) {
-          ws[celdaNombre].s =
-            String(emp.vinculo).toLowerCase() === 'practicante'
-              ? estiloNombrePracticante
-              : estiloNombreTrabajador;
-        }
-
-        let c = 1;
-
-        semanas.forEach(semana => {
-          semana.dias.forEach(() => {
-            const entrada = XLSX.utils.encode_cell({ r, c });
-            const salida = XLSX.utils.encode_cell({ r, c: c + 1 });
-
-            if (ws[entrada]) ws[entrada].s = estiloDatoEntrada;
-            if (ws[salida]) ws[salida].s = estiloDatoSalida;
-
-            c += 2;
-          });
-
-          for (let j = 0; j < 3; j++) {
-            const addr = XLSX.utils.encode_cell({ r, c });
-            if (ws[addr]) ws[addr].s = estiloDatoResumen;
-            c++;
-          }
-        });
-
-        // Resumen final
-        for (; c < totalColumnas; c++) {
-          const addr = XLSX.utils.encode_cell({ r, c });
-          if (!ws[addr]) continue;
-
-          if (c === totalColumnas - 1) {
-            ws[addr].s = estiloDatoResumen;
-          } else {
-            ws[addr].s = {
-              ...estiloVacio,
-              fill: { fgColor: { rgb: 'FFF2CC' } },
-              font: { sz: 9, bold: true }
-            };
-          }
-        }
-      }
-
-      // Configuración visual de hoja
-      ws['!merges'] = merges;
-      ws['!cols'] = cols;
-      ws['!rows'] = [
-        { hpt: 22 },
-        { hpt: 24 },
-        { hpt: 20 },
-        ...empleados.map(() => ({ hpt: 20 }))
-      ];
-
-      // Congelar encabezados y columna de empleados.
-      ws['!freeze'] = { xSplit: 1, ySplit: 3 };
-
-      // Definir rango total.
-      ws['!ref'] = XLSX.utils.encode_range({
-        s: { r: 0, c: 0 },
-        e: { r: filas.length - 1, c: totalColumnas - 1 }
-      });
-
-      XLSX.utils.book_append_sheet(wb, ws, 'CONTROL ASISTENCIA');
-
-      // ------------------------------------------------------------
-      // 6. Hoja adicional de resumen consolidado
-      // ------------------------------------------------------------
-      const resumen = [
-        ['REPORTE CONSOLIDADO DE ASISTENCIA'],
-        [],
-        ['Desde', fechaInicio],
-        ['Hasta', fechaFin],
-        [
-          'Empresa',
-          $('fEmpresa').options[$('fEmpresa').selectedIndex]?.text || 'Todas las Empresas'
-        ],
-        [
-          'Vínculo',
-          $('fVinculo').options[$('fVinculo').selectedIndex]?.text || 'Todos'
-        ],
-        [],
-        [
-          'Colaborador', 'DNI', 'Empresa', 'Área', 'Cargo', 'Vínculo',
-          'Puntual', 'Tardanza', 'Falta', 'Min. Tardanza', 'Horas Laboradas'
-        ],
-        ...empleados.map(e => [
-          e.colaborador,
-          e.dni,
-          e.empresa,
-          e.area,
-          e.cargo,
-          e.vinculo,
-          e.puntual,
-          e.tardanza,
-          e.falta,
-          e.minutosTardanza,
-          e.horasPeriodo
-        ])
-      ];
-
-      const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
-      wsResumen['!cols'] = [
-        { wch: 30 }, { wch: 14 }, { wch: 28 }, { wch: 24 }, { wch: 26 },
-        { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 14 }, { wch: 16 }
-      ];
-
-      for (let c = 0; c < 11; c++) {
-        const addr = XLSX.utils.encode_cell({ r: 7, c });
-        if (wsResumen[addr]) wsResumen[addr].s = estiloSemana;
-      }
-
-      XLSX.utils.book_append_sheet(wb, wsResumen, 'RESUMEN');
-
-      const nombre =
-        `CONTROL_DE_ASISTENCIA_${fechaInicio}_al_${fechaFin}.xlsx`;
-
-      XLSX.writeFile(wb, nombre);
-      toast('Excel de control de asistencia descargado');
-    } catch (e) {
-      console.error(e);
-      toast('Error al generar el Excel de asistencia');
-    } finally {
-      btnExcel.disabled = false;
-      btnExcel.innerHTML = htmlOriginal;
-      lucide.createIcons();
-    }
-  };
-
-  // Exportar a PDF consolidado con autotable
-  $('btnExportarPDF').onclick = () => {
-    if (reporteActual.length === 0) {
-      toast('No hay datos para exportar');
-      return;
-    }
-
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('l', 'mm', 'a4'); // Horizontal
-
-      doc.setFontSize(14);
-      doc.text('HOLDING SBSS - REPORTE CONSOLIDADO DE ASISTENCIA', 14, 15);
-      doc.setFontSize(9);
-      doc.text(`Rango: ${$('fInicio').value} al ${$('fFin').value} | Generado el: ${new Date().toLocaleDateString('es-PE')}`, 14, 21);
-
-      const tableData = reporteActual.map((r, i) => [
-        i + 1,
-        r.colaborador,
-        r.numero_documento,
-        r.empresa,
-        r.area,
-        r.tipo_vinculo,
-        r.dias_puntual,
-        r.dias_tardanza,
-        `${r.total_minutos_tardanza} m`,
-        `${r.total_horas_laboradas} h`
-      ]);
-
-      doc.autoTable({
-        startY: 26,
-        head: [['#', 'Colaborador', 'DNI', 'Empresa', 'Área', 'Vínculo', 'Puntual', 'Tard.', 'Min. Tard', 'Horas']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [7, 93, 145] },
-        styles: { fontSize: 8 }
-      });
-
-      doc.save(`Reporte_Consolidado_${$('fInicio').value}.pdf`);
-      toast('Reporte PDF descargado');
-    } catch (e) {
-      console.error(e);
-      toast('Error al compilar el PDF');
-    }
-  };
-
-  $('btnFiltrar').onclick = generarReporte;
-
-  // Inicializar
-  cargarEmpresasFiltro();
-  generarReporte();
-</script>
+<script src="js/asistencia-ui.js"></script>
+<script src="js/reportes.js"></script>
 </body>
 </html>

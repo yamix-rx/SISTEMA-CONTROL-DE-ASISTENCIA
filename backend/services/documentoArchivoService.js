@@ -4,7 +4,9 @@ const { randomUUID } = require('node:crypto');
 const { esDoc, esDocx } = require('./documentoWordService');
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const DIRECTORIO = path.resolve(__dirname, '../uploads/documentos');
+const DIRECTORIO = process.env.DOCUMENTOS_DIR
+  ? path.resolve(process.env.DOCUMENTOS_DIR)
+  : path.resolve(__dirname, '../uploads/documentos');
 const FORMATOS = Object.freeze({
   '.pdf': 'application/pdf',
   '.png': 'image/png',

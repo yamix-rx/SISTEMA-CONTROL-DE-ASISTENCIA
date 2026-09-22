@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SBSS · Inicio de Sesión</title>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
   <style>
     :root{
       --ink:#1E2732;
@@ -52,7 +50,7 @@
       display:flex;align-items:center;justify-content:center;
       box-shadow:0 16px 28px -10px rgba(169,121,62,0.55);
     }
-    .avatar i{width:38px;height:38px;color:#FFFFFF;}
+    .avatar svg{width:38px;height:38px;color:#FFFFFF;}
 
     .brand{
       font-family:'Fraunces',serif;
@@ -82,7 +80,12 @@
       margin-bottom:16px;
     }
     .alert.show{display:flex;}
-    .alert i{width:14px;height:14px;flex-shrink:0;}
+    .alert svg{width:14px;height:14px;flex-shrink:0;}
+    .connection{font-size:12px;line-height:1.5;margin:0 0 16px;}
+    .connection a{display:block;color:var(--ink);overflow-wrap:anywhere;}
+    .connection button{margin-top:8px;cursor:pointer;}
+    fieldset{border:0;margin:0;padding:0;min-width:0;}
+    fieldset:disabled{opacity:.65;}
 
     .field{
       display:flex;
@@ -99,8 +102,8 @@
       border-color:var(--brass);
       background:#FFFFFF;
     }
-    .field i{width:17px;height:17px;color:#9A9A9A;flex-shrink:0;}
-    .field:focus-within i{color:var(--brass);}
+    .field svg{width:17px;height:17px;color:#9A9A9A;flex-shrink:0;}
+    .field:focus-within svg{color:var(--brass);}
     .field input{
       border:none;outline:none;background:transparent;
       width:100%;
@@ -110,7 +113,7 @@
     }
     .field input::placeholder{color:#ADADAD;}
     .field button{
-      background:none;border:none;cursor:pointer;padding:0;display:flex;flex-shrink:0;
+      background:none;border:none;cursor:pointer;padding:0;display:flex;flex-shrink:0;font-size:11px;color:var(--ink);
     }
 
     .row-between{
@@ -162,28 +165,33 @@
 <body>
 
   <div class="card">
-    <div class="avatar"><i data-lucide="user-round"></i></div>
+    <div class="avatar"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div>
 
     <p class="brand">SBSS</p>
     <p class="brand-sub">Personal · Asistencia · Expediente digital</p>
 
-    <div class="alert" id="alertaError">
-      <i data-lucide="alert-circle"></i>
+    <div class="alert" id="alertaError" role="alert">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
       <span id="mensajeError">Credenciales no válidas</span>
     </div>
 
-    <form id="formLogin">
+    <div class="connection" id="estadoConexion" role="status">
+      <span id="mensajeConexion">Comprobando conexión con SBSS…</span>
+      <a id="enlaceServidor" hidden>Abrir el servidor de SBSS</a>
+      <button type="button" id="btnReintentarConexion" hidden>Volver a intentar</button>
+    </div>
+    <noscript>Activa JavaScript y abre SBSS desde la dirección de su servidor para iniciar sesión.</noscript>
+    <form id="formLogin" method="post">
+      <fieldset id="camposLogin" disabled>
       <div class="field">
-        <i data-lucide="user"></i>
-        <input type="email" id="email" name="email" placeholder="Usuario o correo" required>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a8 8 0 0 0-16 0v2"/></svg>
+        <input type="email" id="email" name="email" placeholder="Correo electrónico" autocomplete="username" required>
       </div>
 
       <div class="field">
-        <i data-lucide="lock"></i>
-        <input type="password" id="password" name="password" placeholder="••••••••••" required>
-        <button type="button" id="btnTogglePassword">
-          <i data-lucide="eye" id="iconoOjo" style="width:16px;height:16px;color:#9A9A9A;"></i>
-        </button>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="password" name="password" placeholder="••••••••••" autocomplete="current-password" required>
+        <button type="button" id="btnTogglePassword" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
       </div>
 
       <div class="row-between">
@@ -191,87 +199,14 @@
           <input type="checkbox" id="recordarSesion" checked>
           <span>Recordar sesión</span>
         </label>
-        <a href="#" class="forgot">¿Olvidó su contraseña?</a>
+        <details class="forgot"><summary>¿Olvidó su contraseña?</summary><p>Solicite al administrador de SBSS que restablezca su acceso desde Usuarios y configuración.</p></details>
       </div>
 
-      <button type="submit" class="btn-submit" id="btnIngresar">INGRESAR</button>
+      <button type="submit" class="btn-submit" id="btnIngresar" disabled>INGRESAR</button>
+      </fieldset>
     </form>
-    </div>
   </div>
 
-  <script>
-    lucide.createIcons();
-
-    // 1. Alternar visibilidad de la contraseña
-    const btnTogglePassword = document.getElementById('btnTogglePassword');
-    const inputPassword = document.getElementById('password');
-    const iconoOjo = document.getElementById('iconoOjo');
-
-    btnTogglePassword.addEventListener('click', () => {
-      const esPassword = inputPassword.type === 'password';
-      inputPassword.type = esPassword ? 'text' : 'password';
-      iconoOjo.setAttribute('data-lucide', esPassword ? 'eye-off' : 'eye');
-      lucide.createIcons();
-    });
-
-    // 2. Manejo de autenticación asíncrona
-    const formLogin = document.getElementById('formLogin');
-    const alertaError = document.getElementById('alertaError');
-    const mensajeError = document.getElementById('mensajeError');
-    const btnIngresar = document.getElementById('btnIngresar');
-
-    formLogin.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      // Validación local rápida
-      if (!email || !password) {
-        mensajeError.textContent = 'Por favor, complete todos los campos.';
-        alertaError.classList.add('show');
-        return;
-      }
-
-      // Limpiar estados y bloquear botón
-      alertaError.classList.remove('show');
-      btnIngresar.disabled = true;
-      btnIngresar.textContent = 'VALIDANDO...';
-
-      try {
-        const respuesta = await fetch('http://localhost:3000/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        const data = await respuesta.json();
-
-        if (!respuesta.ok || !data.ok) {
-          throw new Error(data.mensaje || 'Credenciales no válidas.');
-        }
-
-        const paneles = ['Dashboard.html', 'RecursosHumanos.html', 'MiPanel.html'];
-        if (!data.acceso || !paneles.includes(data.acceso.panel) || data.redirectUrl !== data.acceso.panel) {
-          throw new Error('Tu cuenta no tiene un panel habilitado. Contacta al administrador.');
-        }
-
-        // Guardar sesión en el navegador
-        localStorage.setItem('sbss_token', data.token);
-        localStorage.setItem('sbss_usuario', JSON.stringify(data.usuario));
-        localStorage.setItem('sbss_acceso', JSON.stringify(data.acceso));
-
-        // Redirigir según el rol retornado por la API
-        window.location.replace(data.acceso.panel);
-
-      } catch (err) {
-        mensajeError.textContent = err.message;
-        alertaError.classList.add('show');
-      } finally {
-        btnIngresar.disabled = false;
-        btnIngresar.textContent = 'INGRESAR';
-      }
-    });
-  </script>
+  <script src="js/login.js"></script>
 </body>
 </html>

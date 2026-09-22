@@ -51,6 +51,8 @@ function filasPanel(sql, params) {
 const pool = {
   async query(sql, params = []) {
     consultas.push({ sql, params });
+    if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
+    if (/SELECT \* FROM `?documentos_empleado`? WHERE id/.test(sql)) return [registros.filter(d => d.id === params[0])];
     if (/FROM usuarios u/.test(sql)) return [cuentas.has(params[0]) ? [cuentas.get(params[0])] : []];
     if (/INSERT INTO documentos_empleado/.test(sql)) {
       creados.add(params[3]);
@@ -69,7 +71,7 @@ const pool = {
       if (esquemaFalla && /de.observacion/.test(sql)) throw Object.assign(new Error('Fixture missing column'), { code: 'ER_BAD_FIELD_ERROR' });
       return [filasPanel(sql, params)];
     }
-    if (/FROM documentos_empleado WHERE id/.test(sql)) return [registros.filter(d => d.id === params[0])];
+    if (/FROM documentos_empleado WHERE id/.test(sql)) return [registros.filter(d => d.id === params[0] && (!/AND empleado_id = \?/.test(sql) || d.empleado_id === params[1]))];
     if (/SELECT id FROM empleados/.test(sql)) return [empleados.filter(e => e.id === params[0])];
     if (/SELECT id FROM tipo_documentos/.test(sql)) return [tipos.filter(t => t.id === params[0])];
     if (/FROM empleados e/.test(sql)) return [empleados];
@@ -332,4 +334,23 @@ test('migración es idempotente, acepta nombre antiguo y valida tablas antes de 
   delete columnas.usuarios;
   await assert.rejects(migrar(mock, () => {}), /No existe la tabla usuarios/);
   assert.equal(cambios.length, 6);
+});
+
+test('colaborador puede abrir y descargar sus archivos; IDs ajenos devuelven 404', async () => {
+  const subida = await request('', { method: 'POST', body: carga() });
+  const id = subida.body.documento_id;
+  for (const ruta of ['archivo', 'descargar']) {
+    const propio = await request(`/mios/${id}/${ruta}`, { usuario: 3, claims: { empleado_id: 102 } });
+    assert.equal(propio.status, 200);
+    assert.equal(propio.headers.get('content-type'), 'application/pdf');
+    assert.deepEqual(propio.body, Buffer.from(carga().contenido_base64, 'base64'));
+    assert.equal((await request(`/mios/3/${ruta}?empleado_id=102`, { usuario: 3 })).status, 404);
+    assert.equal((await request(`/mios/${id}/${ruta}`, { usuario: null })).status, 401);
+  }
+  const lecturas = consultas.filter(q => /FROM documentos_empleado WHERE id.*AND empleado_id/.test(q.sql));
+  assert.ok(lecturas.length >= 4);
+  assert.ok(lecturas.every(q => q.params[1] === 101));
+  assert.equal((await request('/mios/3/descargar', { usuario: 2 })).status, 403);
+  assert.equal((await request('/3/descargar', { usuario: 3 })).status, 403);
+  assert.equal((await request('', { usuario: 3 })).status, 403);
 });

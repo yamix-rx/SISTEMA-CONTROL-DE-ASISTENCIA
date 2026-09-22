@@ -7,7 +7,11 @@
     "start": "node server.js",
     "test": "node --test tests/*.test.js",
     "migrar:documentos": "node scripts/migrar-documentos.js",
-    "migrar:rrhh": "node scripts/migrar-contratos-capacitaciones.js"
+    "migrar:rrhh": "node scripts/migrar-contratos-capacitaciones.js",
+    "migrar": "node scripts/migrar-v1.js",
+    "instalar": "node scripts/instalar.js",
+    "backup": "node scripts/backup.js",
+    "restaurar": "node scripts/restaurar.js"
   },
   "keywords": [],
   "author": "",

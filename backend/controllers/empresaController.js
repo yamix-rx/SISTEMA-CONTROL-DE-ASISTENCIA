@@ -31,18 +31,21 @@ exports.listarEmpresas = async (req, res) => {
 exports.guardarEmpresa = async (req, res) => {
   const { id, razon_social, ruc, direccion, estado } = req.body;
 
-  if (!razon_social || !ruc) {
-    return res.status(400).json({ ok: false, mensaje: 'Razón social y RUC son obligatorios.' });
+  if (typeof razon_social !== 'string' || !razon_social.trim() || razon_social.length > 150 || (ruc && !/^\d{11}$/.test(ruc))) {
+    return res.status(400).json({ ok: false, mensaje: 'Ingrese la razón social y, si corresponde, un RUC de 11 dígitos.' });
   }
+  if (estado && !['activo','inactivo'].includes(estado)) return res.status(400).json({ ok:false, mensaje:'Estado de empresa no válido.' });
+  if (id && (!Number.isInteger(Number(id)) || Number(id) <= 0)) return res.status(400).json({ ok:false, mensaje:'Empresa no válida.' });
 
   try {
     if (id) {
       // Actualizar
-      await pool.query(`
+      const [result] = await pool.query(`
         UPDATE empresas 
         SET razon_social = ?, ruc = ?, direccion = ?, estado = ?
         WHERE id = ?
-      `, [razon_social, ruc, direccion || null, estado || 'activo', id]);
+      `, [razon_social.trim(), ruc || null, direccion || null, estado || 'activo', id]);
+      if (!result.affectedRows) return res.status(404).json({ok:false, mensaje:'Empresa no encontrada.'});
 
       return res.status(200).json({ ok: true, mensaje: 'Empresa actualizada correctamente.' });
     } else {
@@ -50,7 +53,7 @@ exports.guardarEmpresa = async (req, res) => {
       const [result] = await pool.query(`
         INSERT INTO empresas (razon_social, ruc, direccion, estado)
         VALUES (?, ?, ?, ?)
-      `, [razon_social, ruc, direccion || null, estado || 'activo']);
+      `, [razon_social.trim(), ruc || null, direccion || null, estado || 'activo']);
 
       return res.status(201).json({ ok: true, mensaje: 'Empresa registrada con éxito.', id: result.insertId });
     }
@@ -64,9 +67,11 @@ exports.guardarEmpresa = async (req, res) => {
 exports.cambiarEstado = async (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
+  if (!['activo','inactivo'].includes(estado) || !Number.isInteger(Number(id)) || Number(id)<=0) return res.status(400).json({ok:false,mensaje:'Empresa o estado no válido.'});
 
   try {
-    await pool.query(`UPDATE empresas SET estado = ? WHERE id = ?`, [estado, id]);
+    const [result] = await pool.query(`UPDATE empresas SET estado = ? WHERE id = ?`, [estado, id]);
+    if (!result.affectedRows) return res.status(404).json({ok:false,mensaje:'Empresa no encontrada.'});
     return res.status(200).json({ ok: true, mensaje: 'Estado actualizado correctamente.' });
   } catch (error) {
     console.error('Error al cambiar estado de la empresa:', error);

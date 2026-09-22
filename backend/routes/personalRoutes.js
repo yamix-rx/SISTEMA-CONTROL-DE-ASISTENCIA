@@ -11,6 +11,7 @@ router.use(auditoriaMiddleware);
 router.get('/', personalController.listarColaboradores);
 router.get('/catalogos', personalController.obtenerCatalogos);
 router.post('/', personalController.crearColaborador);
+router.patch('/:id/observaciones', personalController.actualizarObservaciones);
 router.put('/:id/horas-practicas', personalController.actualizarHorasPracticas);
 router.put('/:id', personalController.actualizarColaborador);
 router.get('/:id', personalController.obtenerFichaColaborador);

@@ -2,11 +2,13 @@ const pool = require('../config/database');
 
 function sanitizar(valor) {
   if (valor === null || valor === undefined) return valor;
+  if (valor instanceof Date) return valor.toISOString();
+  if (Buffer.isBuffer(valor)) return '[ARCHIVO OMITIDO]';
   if (Array.isArray(valor)) return valor.map(sanitizar);
   if (typeof valor === 'object') {
     const out = {};
     for (const [clave, dato] of Object.entries(valor)) {
-      const sensible = /password|token|authorization|secret/i.test(clave);
+      const sensible = /password|contrasena|contraseña|token|authorization|secret|base64|contenido_archivo/i.test(clave);
       out[clave] = sensible ? '[OCULTO]' : sanitizar(dato);
     }
     return out;

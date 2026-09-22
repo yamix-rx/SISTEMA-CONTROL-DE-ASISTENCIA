@@ -32,7 +32,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       ORDER BY h.hora_entrada ASC
     `, paramsEmpresa);
 
-    const totalEnTurno = filasEnTurno.length;
+    const totalEnTurno = new Set(filasEnTurno.map(item => item.id)).size;
 
     // 3. Asistencias registradas hoy
     const [asistenciasHoy] = await pool.query(`
@@ -47,18 +47,18 @@ exports.obtenerDatosDashboard = async (req, res) => {
     let totalTardanzas = 0;
 
     asistenciasHoy.forEach(item => {
-      if (item.estado === 'presente') totalPresentes += item.total;
-      if (item.estado === 'tardanza') totalTardanzas += item.total;
+      if (item.estado === 'presente') totalPresentes += Number(item.total);
+      if (item.estado === 'tardanza') totalTardanzas += Number(item.total);
     });
 
     const porcentajeAsistencia = totalEnTurno > 0 
-      ? Math.round(((totalPresentes + totalTardanzas) / totalEnTurno) * 100) 
+      ? Math.min(100, Math.round(((totalPresentes + totalTardanzas) / totalEnTurno) * 100))
       : 0;
 
     // 4. Seguimiento de horas de practicantes próximos a completar.
     // El requerimiento no fija un umbral; para V1 se considera "próximo" desde 80%.
     const filtroEmpresaPracticas = empresa_id ? 'AND e.empresa_id = ?' : '';
-    const [practicantesProximos] = await pool.query(`
+    const [seguimientoPracticas] = await pool.query(`
       SELECT
         e.id AS empleado_id,
         CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
@@ -68,7 +68,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta,
         ROUND(COALESCE(SUM(a.horas_trabajadas), 0), 2) AS horas_realizadas,
         ROUND(GREATEST(COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) - COALESCE(SUM(a.horas_trabajadas), 0), 0), 2) AS horas_pendientes,
-        LEAST(100, ROUND(
+        LEAST(CASE WHEN COALESCE(SUM(a.horas_trabajadas),0) >= COALESCE(pd.horas_meta, e.horas_totales_asignadas,0) THEN 100 ELSE 99.9 END, ROUND(
           CASE WHEN COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) > 0
             THEN (COALESCE(SUM(a.horas_trabajadas), 0) / COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0)) * 100
             ELSE 0 END, 1
@@ -83,9 +83,8 @@ exports.obtenerDatosDashboard = async (req, res) => {
         AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
         ${filtroEmpresaPracticas}
       GROUP BY e.id, e.nombres, e.apellidos, emp.razon_social, ar.nombre, c.nombre, pd.horas_meta, e.horas_totales_asignadas
-      HAVING horas_meta > 0 AND porcentaje_avance >= 80 AND porcentaje_avance < 100
+      HAVING horas_meta > 0
       ORDER BY porcentaje_avance DESC, horas_pendientes ASC, e.apellidos ASC
-      LIMIT 10
     `, paramsEmpresa);
 
     // 5. El contador incluye todos los faltantes; la lista de alertas muestra hasta 10.
@@ -108,6 +107,41 @@ exports.obtenerDatosDashboard = async (req, res) => {
         ${faltantesBase} ORDER BY e.apellidos, e.id, td.id LIMIT 10`, paramsEmpresa)
     ]);
 
+    const [[contratosPorVencer], [tardanzasAcumuladas], [personalActivo], [conveniosPorVencer]] = await Promise.all([
+      pool.query(`SELECT c.id, c.empleado_id, c.tipo_contrato, c.fecha_fin,
+          CONCAT(e.nombres,' ',e.apellidos) AS colaborador, emp.razon_social AS empresa,
+          DATEDIFF(c.fecha_fin,CURDATE()) AS dias_restantes
+        FROM contratos c JOIN empleados e ON e.id=c.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
+        WHERE c.estado='vigente' AND e.estado='activo'
+          AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          ${filtroEmpresaHorario}
+        ORDER BY c.fecha_fin, c.id LIMIT 30`, paramsEmpresa),
+      pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
+          emp.razon_social AS empresa, COUNT(*) AS tardanzas, SUM(a.minutos_tardanza) AS minutos
+        FROM asistencias a JOIN empleados e ON e.id=a.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
+        WHERE a.minutos_tardanza>0 AND a.fecha BETWEEN DATE_FORMAT(CURDATE(),'%Y-%m-01') AND CURDATE()
+          ${filtroEmpresaHorario}
+        GROUP BY e.id,e.nombres,e.apellidos,emp.razon_social HAVING COUNT(*)>=3
+        ORDER BY tardanzas DESC, minutos DESC LIMIT 30`, paramsEmpresa),
+      pool.query(`SELECT COALESCE(SUM(e.tipo_vinculo='trabajador'),0) AS trabajadores,
+          COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0) AS practicantes
+        FROM empleados e WHERE e.estado='activo' ${filtroEmpresaHorario}`, paramsEmpresa),
+      pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
+          emp.razon_social AS empresa, ar.nombre AS area, c.nombre AS cargo, e.puesto,
+          DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d') AS fecha_vencimiento_convenio,
+          DATEDIFF(pd.fecha_vencimiento_convenio,CURDATE()) AS dias_restantes
+        FROM practicante_detalles pd
+        JOIN empleados e ON e.id=pd.empleado_id
+        JOIN empresas emp ON emp.id=e.empresa_id
+        JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
+        WHERE e.estado='activo' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
+          AND pd.fecha_vencimiento_convenio BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          ${filtroEmpresaHorario}
+        ORDER BY pd.fecha_vencimiento_convenio, e.id`, paramsEmpresa)
+    ]);
+    const practicantesProximos = seguimientoPracticas.filter(item => Number(item.horas_realizadas) < Number(item.horas_meta) && Number(item.porcentaje_avance) >= 80);
+    const practicantesCompletados = seguimientoPracticas.filter(item => Number(item.horas_realizadas) >= Number(item.horas_meta));
+
     return res.status(200).json({
       ok: true,
       empresas,
@@ -115,11 +149,20 @@ exports.obtenerDatosDashboard = async (req, res) => {
         enTurnoHoy: totalEnTurno,
         porcentajeAsistencia: `${porcentajeAsistencia}%`,
         tardanzasHoy: totalTardanzas,
+        trabajadoresActivos: Number(personalActivo[0]?.trabajadores || 0),
+        practicantesActivos: Number(personalActivo[0]?.practicantes || 0),
+        faltasHoy: Number(asistenciasHoy.find(item => item.estado === 'falta')?.total || 0),
+        permisosHoy: Number(asistenciasHoy.find(item => item.estado === 'permiso')?.total || 0),
         documentosPendientes: Number(totalFaltantes[0]?.total || 0)
       },
       personalEnTurno: filasEnTurno,
       alertasDocumentos: documentosPendientes,
-      practicantesProximos
+      practicantesProximos,
+      practicantesCompletados,
+      seguimientoPracticas,
+      contratosPorVencer,
+      conveniosPorVencer,
+      tardanzasAcumuladas
     });
 
   } catch (error) {

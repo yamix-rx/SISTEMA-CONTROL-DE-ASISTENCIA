@@ -7,9 +7,9 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
   <title>Sistema Web SBSS - Registro de Horarios</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
   <link rel="stylesheet" href="css/estilos.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="vendor/lucide/lucide.min.js"></script>
   <style>
     :root {
       --sbss-blue: #0b5487;
@@ -73,6 +73,7 @@
  
   </style>
 <link rel="stylesheet" href="css/navigation.css">
+<link rel="stylesheet" href="css/asistencia-core.css">
 </head>
 <body class="text-slate-800 font-sans antialiased min-h-screen">
 <div class="app-shell min-h-screen">
@@ -114,7 +115,7 @@
     <!-- CONTENT -->
     <main class="flex-1 p-4 bg-[#f7fafc]">
       <section class="bg-white rounded-lg panel-border soft-shadow p-4 space-y-3">
-        <div class="flex items-center justify-between">
+        <div class="core-heading flex items-center justify-between">
           <div class="flex items-center gap-3 text-[#174e75]">
             <div class="w-9 h-9 rounded-lg bg-sky-50 border border-sky-100 grid place-items-center"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
             <h1 class="font-extrabold text-[17px] tracking-tight">REGISTRO DE HORARIOS POR EMPRESA Y ÁREA</h1>
@@ -130,7 +131,7 @@
             <i data-lucide="filter" class="w-4 h-4"></i> FILTROS DE VISUALIZACIÓN
           </div>
           <div class="p-3">
-            <div class="grid grid-cols-[1fr_1fr_1fr_1fr_230px] gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Empresa
                 <select id="filtroEmpresa" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
                   <option value="todas">Todas las empresas</option>
@@ -143,7 +144,7 @@
                 </select>
               </label>
 
-              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Semana
+              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Cargo<select id="filtroCargo" class="w-full h-9 px-3 rounded-md panel-border"></select></label><label class="space-y-1 text-[11px] font-bold text-[#315b76]">Trabajador<select id="filtroTrabajador" class="w-full h-9 px-3 rounded-md panel-border"></select></label><label class="space-y-1 text-[11px] font-bold text-[#315b76]">Semana
                 <select id="filtroSemana" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
                   <option value="-1">Semana anterior</option>
                   <option value="0" selected>Semana actual</option>
@@ -164,7 +165,7 @@
         </div>
 
         <!-- AREAS TABS DINÁMICAS -->
-        <div id="areaTabs" class="grid grid-cols-7 gap-2"></div>
+        <div id="areaTabs" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
 
         <div class="h-8 px-3 rounded-md bg-[#eef6fb] border border-[#d5e8f4] flex items-center text-[10px] text-[#41637a]">
           <i data-lucide="info" class="w-3.5 h-3.5 text-sky-700 mr-2"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente desde la base de datos.
@@ -172,7 +173,7 @@
 
         <!-- HORARIO TABLE -->
         <div class="rounded-lg panel-border overflow-hidden">
-          <div class="h-12 px-4 flex items-center justify-between bg-white border-b border-slate-200">
+          <div class="h-12 px-4 core-heading flex items-center justify-between bg-white border-b border-slate-200">
             <div class="flex items-center gap-2 text-[#174e75]">
               <i data-lucide="calendar-days" class="w-4 h-4"></i>
               <h2 id="tituloHorario" class="font-extrabold text-[14px]">HORARIO SEMANAL — GENERAL</h2>
@@ -233,7 +234,7 @@
 <!-- MODAL REGISTRAR HORARIO -->
 <div id="modalHorario" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
   <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
-    <div class="h-14 px-5 top-gradient text-white flex items-center justify-between">
+    <div class="h-14 px-5 top-gradient text-white core-heading flex items-center justify-between">
       <div class="flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5"></i><h3 class="font-extrabold text-sm">REGISTRAR HORARIO</h3></div>
       <button id="btnCerrarModal" class="p-1.5 rounded-lg hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
@@ -255,15 +256,15 @@
           </select>
         </label>
         <label class="text-xs font-bold text-slate-600 space-y-1">Hora de entrada
-          <input id="modalEntrada" type="time" min="07:00" max="20:00" value="08:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+          <input id="modalEntrada" type="time" value="08:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
         </label>
         <label class="text-xs font-bold text-slate-600 space-y-1">Hora de salida
-          <input id="modalSalida" type="time" min="08:00" max="22:00" value="17:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+          <input id="modalSalida" type="time" value="17:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
         </label>
         <label class="text-xs font-bold text-slate-600 space-y-1">Tolerancia entrada (minutos)
-          <input id="modalTolerancia" type="number" value="0" disabled title="La tardanza se calcula desde la hora de entrada." class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-slate-100 text-slate-500">
+          <input id="modalTolerancia" type="number" value="0" min="0" max="120" required title="Por defecto no se aplica tolerancia." class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-800">
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Estado
+        <label class="text-xs font-bold text-slate-600"><input id="modalNocturno" type="checkbox"> La salida corresponde al día siguiente</label><label class="text-xs font-bold text-slate-600 space-y-1">Estado
           <select id="modalEstado" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500">
             <option value="asignado">Asignado</option>
             <option value="descanso">Descanso</option>
@@ -272,9 +273,9 @@
       </div>
       <div class="rounded-lg bg-sky-50 border border-sky-100 p-3 text-[11px] text-sky-800 flex gap-2">
         <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
-        <p>Los cambios se guardan directamente en la tabla <strong>horarios</strong> de la base de datos MySQL.</p>
+        <p>La tolerancia define cuándo se considera tardanza. Un día marcado como descanso no cuenta como turno programado. Los cambios conservan las asistencias anteriores.</p>
       </div>
-      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+      <div class="core-heading flex items-center justify-between pt-2 border-t border-slate-100">
         <button id="btnEliminar" type="button" class="hidden h-9 px-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100">
           <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Eliminar turno
         </button>
@@ -291,382 +292,8 @@
 
 <div id="toast" class="hidden fixed right-5 bottom-5 z-[60] toast bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold"></div>
 
-<script>
-  const token = localStorage.getItem('sbss_token');
-  const HOURS = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
-  const CHIP_CLASSES = ['chip-green','chip-blue','chip-purple','chip-pink','chip-red','chip-cyan','chip-yellow','chip-slate'];
-
-  let schedulesRaw = []; // De la API
-  let employeesList = []; // Empleados con chips asignados
-  let areasDisponibles = ['General'];
-
-  function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.remove('hidden');
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(() => toast.classList.add('hidden'), 2400);
-  }
-
-  function getMonday(offsetWeeks = 0) {
-    const d = new Date();
-    const day = d.getDay() || 7;
-    d.setHours(0,0,0,0);
-    d.setDate(d.getDate() - day + 1 + (Number(offsetWeeks) * 7));
-    return d;
-  }
-
-  function fmtDate(d) {
-    return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'}).replace('.', '');
-  }
-
-  function isHourWithin(hour, start, end) {
-    const h = parseInt(hour.split(':')[0], 10);
-    const s = parseInt(start.split(':')[0], 10);
-    const e = parseInt(end.split(':')[0], 10);
-    return h >= s && h < e;
-  }
-
-  // 1. Cargar Empresas
-  async function cargarEmpresas() {
-    try {
-      const res = await fetch('http://localhost:3000/api/empresas', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.ok) {
-        const empFilter = document.getElementById('filtroEmpresa');
-        const empGlobal = document.getElementById('empresaGlobal');
-        data.data.forEach(e => {
-          const opt1 = new Option(e.razon_social, e.razon_social);
-          const opt2 = new Option(e.razon_social, e.razon_social);
-          empFilter.appendChild(opt1);
-          empGlobal.appendChild(opt2);
-        });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // 2. Cargar Datos de la API de Horarios
-  async function cargarDatosAPI() {
-    try {
-      const res = await fetch('http://localhost:3000/api/horarios', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        window.location.href = 'login.html';
-        return;
-      }
-      const json = await res.json();
-      if (!json.ok) return;
-
-      const raw = json.data || [];
-      
-      // Mapear empleados y colores
-      employeesList = raw.map((r, i) => ({
-        id: r.empleado_id,
-        name: r.colaborador,
-        shortName: r.colaborador.split(' ')[0] + ' ' + (r.colaborador.split(' ')[2] || ''),
-        company: r.empresa,
-        area: r.area,
-        chip: CHIP_CLASSES[i % CHIP_CLASSES.length]
-      }));
-
-      // Extraer áreas únicas para las pestañas
-      const areasSet = new Set(raw.map(r => r.area));
-      areasDisponibles = ['General', ...Array.from(areasSet)];
-      renderAreaTabs();
-      poblarSelectAreas();
-
-      // Transformar en formato plano de turnos
-      schedulesRaw = [];
-      raw.forEach(colab => {
-        colab.malla_horarios.forEach(h => {
-          schedulesRaw.push({
-            id: h.id,
-            employeeId: colab.empleado_id,
-            company: colab.empresa,
-            area: colab.area,
-            day: h.dia_semana,
-            start: h.hora_entrada.slice(0, 5),
-            end: h.hora_salida.slice(0, 5),
-            tolerancia: h.tolerancia_minutos,
-            status: h.activo ? 'asignado' : 'descanso'
-          });
-        });
-      });
-
-      populateModalSelect();
-      renderSchedule();
-    } catch (e) {
-      console.error(e);
-      showToast('Error de conexión con la API');
-    }
-  }
-
-  function renderAreaTabs() {
-    const tabsCont = document.getElementById('areaTabs');
-    const iconos = {
-      'General': 'users',
-      'Recursos Humanos': 'user-check',
-      'Tecnología y Sistemas': 'monitor',
-      'Logística y Almacén': 'box',
-      'Comercial y Ventas': 'megaphone',
-      'Administración y Finanzas': 'scale',
-      'Operaciones y Servicios': 'building-2'
-    };
-
-    tabsCont.innerHTML = areasDisponibles.map((area, idx) => `
-      <button data-area="${area}" class="area-btn ${idx === 0 ? 'active' : ''} h-10 rounded-md panel-border bg-white text-[10px] font-extrabold text-[#315b76] flex items-center justify-center gap-1.5 px-2">
-        <i data-lucide="${iconos[area] || 'briefcase'}" class="w-3.5 h-3.5 text-sky-700"></i>
-        <span class="truncate">${area.toUpperCase()}</span>
-      </button>
-    `).join('');
-
-    document.querySelectorAll('.area-btn').forEach(btn => {
-      btn.onclick = () => setArea(btn.dataset.area);
-    });
-    lucide.createIcons();
-  }
-
-  function poblarSelectAreas() {
-    const select = document.getElementById('filtroArea');
-    select.innerHTML = areasDisponibles.map(a => `<option value="${a}">${a === 'General' ? 'Horario General' : a}</option>`).join('');
-  }
-
-  function activeFilter() {
-    return {
-      company: document.getElementById('filtroEmpresa').value,
-      area: document.getElementById('filtroArea').value,
-      week: Number(document.getElementById('filtroSemana').value),
-      view: document.getElementById('filtroVista').value
-    };
-  }
-
-  function filteredSchedules() {
-    const f = activeFilter();
-    return schedulesRaw.filter(s => {
-      const companyOk = f.company === 'todas' || s.company === f.company;
-      const areaOk = f.area === 'General' || s.area === f.area;
-      return companyOk && areaOk;
-    });
-  }
-
-  function renderSchedule() {
-    const body = document.getElementById('scheduleBody');
-    const f = activeFilter();
-    const filtered = filteredSchedules();
-    const hoursToRender = HOURS.filter(h => f.view === 'manana' ? h < '14:00' : f.view === 'tarde' ? h >= '14:00' : true);
-
-    body.innerHTML = '';
-
-    function addTurnRow(label) {
-      const tr = document.createElement('tr');
-      tr.className = 'turn-row';
-      tr.innerHTML = `<td class="h-6"></td><td colspan="7" class="h-6 text-center">${label}</td>`;
-      body.appendChild(tr);
-    }
-
-    hoursToRender.forEach(hour => {
-      if (hour === '08:00' && f.view !== 'tarde') addTurnRow('TURNO MAÑANA');
-      if (hour === '14:00' && f.view !== 'manana') addTurnRow('TURNO TARDE');
-
-      const tr = document.createElement('tr');
-      let html = `<td class="hour-cell h-10 text-center">${hour}</td>`;
-
-      for (let day = 1; day <= 7; day++) {
-        const items = filtered.filter(s => s.day === day && isHourWithin(hour, s.start, s.end));
-        const chips = items.map(s => {
-          const emp = employeesList.find(e => e.id === Number(s.employeeId));
-          if (!emp) return '';
-          const stateClass = s.status === 'descanso' ? 'chip-slate' : emp.chip;
-          return `<button class="person-chip ${stateClass}" data-schedule-id="${s.id}" title="${emp.name} · ${s.start}-${s.end} · ${s.area}">
-            ${emp.shortName}
-          </button>`;
-        }).join('');
-        html += `<td class="slot-cell px-3 py-1 text-center">${chips || '<span class="text-slate-300">—</span>'}</td>`;
-      }
-      tr.innerHTML = html;
-      body.appendChild(tr);
-    });
-
-    // Eventos a las fichas
-    document.querySelectorAll('[data-schedule-id]').forEach(btn => {
-      btn.onclick = () => openEdit(Number(btn.dataset.scheduleId));
-    });
-
-    const areaLabel = f.area === 'General' ? 'GENERAL' : f.area.toUpperCase();
-    document.getElementById('tituloHorario').textContent = `HORARIO SEMANAL — ${areaLabel}`;
-
-    const monday = getMonday(f.week);
-    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
-    document.getElementById('rangoSemana').textContent = `${fmtDate(monday)} — ${fmtDate(sunday)}`;
-
-    const uniqueEmployees = new Set(filtered.map(s => s.employeeId));
-    document.getElementById('kpiPersonal').textContent = uniqueEmployees.size;
-
-    const companyFiltered = schedulesRaw.filter(s => f.company === 'todas' || s.company === f.company);
-    document.getElementById('kpiAreas').textContent = new Set(companyFiltered.map(s => s.area)).size;
-
-    lucide.createIcons();
-  }
-
-  function setArea(area) {
-    document.getElementById('filtroArea').value = area;
-    document.querySelectorAll('.area-btn').forEach(b => b.classList.toggle('active', b.dataset.area === area));
-    renderSchedule();
-  }
-
-  function syncCompany(sourceValue) {
-    document.getElementById('filtroEmpresa').value = sourceValue;
-    document.getElementById('empresaGlobal').value = sourceValue;
-    renderSchedule();
-  }
-
-  function populateModalSelect() {
-    const empSel = document.getElementById('empleadoSelect');
-    empSel.innerHTML = '<option value="">Seleccione un colaborador...</option>' + 
-      employeesList.map(e => `<option value="${e.id}">${e.name} (${e.area})</option>`).join('');
-  }
-
-  function syncEmployeeMetadata() {
-    const emp = employeesList.find(e => e.id === Number(document.getElementById('empleadoSelect').value));
-    if (!emp) {
-      document.getElementById('modalEmpresa').value = '';
-      document.getElementById('modalArea').value = '';
-      return;
-    }
-    document.getElementById('modalEmpresa').value = emp.company;
-    document.getElementById('modalArea').value = emp.area;
-  }
-
-  function openCreate() {
-    document.getElementById('formHorario').reset();
-    document.getElementById('editHorarioId').value = '';
-    document.getElementById('modalEntrada').value = '08:00';
-    document.getElementById('modalSalida').value = '17:00';
-    document.getElementById('modalTolerancia').value = '0';
-    document.getElementById('btnEliminar').classList.add('hidden');
-    if (employeesList.length > 0) {
-      document.getElementById('empleadoSelect').value = employeesList[0].id;
-      syncEmployeeMetadata();
-    }
-    showModal();
-  }
-
-  function openEdit(scheduleId) {
-    const s = schedulesRaw.find(x => Number(x.id) === Number(scheduleId));
-    if (!s) return;
-    document.getElementById('editHorarioId').value = s.id;
-    document.getElementById('empleadoSelect').value = s.employeeId;
-    document.getElementById('modalEmpresa').value = s.company;
-    document.getElementById('modalArea').value = s.area;
-    document.getElementById('modalDia').value = s.day;
-    document.getElementById('modalEntrada').value = s.start;
-    document.getElementById('modalSalida').value = s.end;
-    document.getElementById('modalTolerancia').value = '0';
-    document.getElementById('modalEstado').value = s.status;
-    document.getElementById('btnEliminar').classList.remove('hidden');
-    showModal();
-  }
-
-  function showModal() {
-    const modal = document.getElementById('modalHorario');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    lucide.createIcons();
-  }
-
-  function hideModal() {
-    const modal = document.getElementById('modalHorario');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-  }
-
-  // Guardar en Backend MySQL
-  document.getElementById('formHorario').onsubmit = async (e) => {
-    e.preventDefault();
-    const start = document.getElementById('modalEntrada').value;
-    const end = document.getElementById('modalSalida').value;
-    if (end <= start) {
-      showToast('La hora de salida debe ser mayor a la de entrada');
-      return;
-    }
-
-    const btn = document.getElementById('btnSubmitForm');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    const payload = {
-      empleado_id: Number(document.getElementById('empleadoSelect').value),
-      dias: [Number(document.getElementById('modalDia').value)],
-      hora_entrada: start,
-      hora_salida: end,
-      tolerancia_minutos: Number(document.getElementById('modalTolerancia').value)
-    };
-
-    try {
-      const res = await fetch('http://localhost:3000/api/horarios/asignar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar');
-
-      hideModal();
-      await cargarDatosAPI();
-      showToast('Horario actualizado en MySQL');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline mr-1"></i>Guardar horario';
-      lucide.createIcons();
-    }
-  };
-
-  // Eliminar en Backend MySQL
-  document.getElementById('btnEliminar').onclick = async () => {
-    const id = document.getElementById('editHorarioId').value;
-    if (!id || !confirm('¿Desea eliminar este turno asignado?')) return;
-
-    try {
-      const res = await fetch(`http://localhost:3000/api/horarios/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al eliminar');
-
-      hideModal();
-      await cargarDatosAPI();
-      showToast('Turno eliminado correctamente');
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  document.getElementById('btnAbrirModal').onclick = openCreate;
-  document.getElementById('btnCerrarModal').onclick = hideModal;
-  document.getElementById('btnCancelar').onclick = hideModal;
-  document.getElementById('modalHorario').onclick = e => { if (e.target.id === 'modalHorario') hideModal(); };
-  document.getElementById('empleadoSelect').onchange = syncEmployeeMetadata;
-document.getElementById('filtroArea').onchange = e => setArea(e.target.value);
-  document.getElementById('filtroEmpresa').onchange = e => syncCompany(e.target.value);
-  document.getElementById('empresaGlobal').onchange = e => syncCompany(e.target.value);
-  document.getElementById('filtroSemana').onchange = renderSchedule;
-  document.getElementById('filtroVista').onchange = renderSchedule;
-
-  // Inicializar
-  cargarEmpresas();
-  cargarDatosAPI();
-</script>
+<script src="js/asistencia-ui.js"></script>
+<script src="js/horarios.js"></script>
 <script src="js/sidebar.js"></script>
 </body>
 </html>

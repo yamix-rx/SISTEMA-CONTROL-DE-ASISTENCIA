@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/session.css">
 <link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/navigation.css">
 <script src="js/session.js"></script>
 <script src="js/navigation.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="js/sidebar.js" defer></script>
+<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
+<script src="vendor/lucide/lucide.min.js"></script>
 <title>SBSS - Auditoría</title>
 <style>
 body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-serif}
@@ -35,7 +37,7 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
 </head>
 <body>
 <div class="app">
-<header class="top flex items-center px-4">
+<header class="sbss-header top flex items-center px-4">
   <div class="font-bold text-lg">SBSS</div>
   <div class="ml-auto text-right">
     <div id="nombreUsuarioSesion" class="text-xs font-semibold"></div>
@@ -43,12 +45,12 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
   </div>
   <div id="avatarLetra" class="ml-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold"></div>
 </header>
-<div class="flex min-h-[calc(100vh-54px)]">
-  <aside id="sidebarMenu" class="w-[230px] bg-white border-r border-slate-200 shrink-0"></aside>
-  <button id="btnAbrirSidebar" class="hidden"></button>
+<div class="sbss-navigation-layout">
+  <aside id="sidebarMenu" class="sbss-sidebar"></aside>
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú"></button>
   <main class="flex-1 min-w-0 p-4">
     <div class="mb-4">
-      <h1 class="text-xl font-bold text-slate-800">Auditoría del sistema</h1>
+      <h1 class="text-xl font-bold text-slate-800 pl-9 md:pl-0">Auditoría del sistema</h1>
       <p class="text-xs text-slate-500">Registro de accesos y operaciones realizadas por los usuarios.</p>
     </div>
 
@@ -77,6 +79,8 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
           <option value="INSERT">Registro</option>
           <option value="UPDATE">Modificación</option>
           <option value="DELETE">Eliminación</option>
+          <option value="DENEGADO">Operación denegada</option>
+          <option value="ERROR">Operación sin completar</option>
         </select>
         <select id="fTabla">
           <option value="">Todos los módulos</option>
@@ -89,6 +93,10 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
           <option value="contratos">Contratos</option>
           <option value="capacitaciones">Capacitaciones</option>
           <option value="sesiones">Sesiones</option>
+          <option value="usuarios">Usuarios</option>
+          <option value="areas">Áreas</option>
+          <option value="cargos">Cargos</option>
+          <option value="plantillas_documentos">Plantillas</option>
         </select>
         <input type="date" id="fDesde">
         <input type="date" id="fHasta">
@@ -117,12 +125,12 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pretty = value => value == null ? '' : JSON.stringify(value, null, 2);
 function labelAccion(a){
-  return ({LOGIN:'INICIO DE SESIÓN',LOGIN_FALLIDO:'INICIO FALLIDO',INSERT:'REGISTRO',UPDATE:'MODIFICACIÓN',DELETE:'ELIMINACIÓN'})[a] || a;
+  return ({LOGIN:'INICIO DE SESIÓN',LOGIN_FALLIDO:'INICIO FALLIDO',INSERT:'REGISTRO',UPDATE:'MODIFICACIÓN',DELETE:'ELIMINACIÓN',DENEGADO:'DENEGADO',ERROR:'SIN COMPLETAR'})[a] || a;
 }
 function renderResumen(rows){
   const map=Object.fromEntries(rows.map(x=>[x.accion,Number(x.cantidad)]));
   kpiLogin.textContent=map.LOGIN||0; kpiInsert.textContent=map.INSERT||0;
-  kpiUpdate.textContent=map.UPDATE||0; kpiDelete.textContent=map.DELETE||0; kpiFail.textContent=map.LOGIN_FALLIDO||0;
+  kpiUpdate.textContent=map.UPDATE||0; kpiDelete.textContent=map.DELETE||0; kpiFail.textContent=(map.LOGIN_FALLIDO||0)+(map.DENEGADO||0)+(map.ERROR||0);
 }
 async function cargarResumen(){
   const r=await SBSSSession.fetch(`${SBSSSession.API_BASE}/auditoria/resumen`); const d=await r.json();

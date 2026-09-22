@@ -7,8 +7,8 @@ const ROLES = Object.freeze({
 const POLITICAS = new Map([
   [ROLES.ADMIN, {
     panel: 'Dashboard.html',
-    modulos: ['dashboard', 'empresas', 'personal', 'documentos', 'contratos', 'capacitaciones', 'horarios', 'asistencia', 'reportes', 'auditoria'],
-    permisos: ['empresas:gestionar', 'auditoria:consultar', 'personal:consultar', 'documentos:gestionar', 'contratos:gestionar', 'capacitaciones:gestionar', 'horarios:gestionar', 'asistencia:gestionar', 'reportes:consultar']
+    modulos: ['dashboard', 'empresas', 'personal', 'documentos', 'contratos', 'capacitaciones', 'horarios', 'asistencia', 'reportes', 'auditoria', 'administracion'],
+    permisos: ['empresas:gestionar', 'administracion:gestionar', 'auditoria:consultar', 'personal:consultar', 'documentos:gestionar', 'contratos:gestionar', 'capacitaciones:gestionar', 'horarios:gestionar', 'asistencia:gestionar', 'reportes:consultar']
   }],
   [ROLES.RRHH, {
     panel: 'RecursosHumanos.html',

@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
     }
 
     // El token identifica la cuenta. Rol y empleado se consultan en cada petición.
-    const token = jwt.sign({ usuario_id: usuario.usuario_id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ usuario_id: usuario.usuario_id, sv: Number(usuario.sesion_version || 0) }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || '8h', algorithm: 'HS256'
     });
 

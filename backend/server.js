@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('node:path');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -15,13 +15,21 @@ const documentoRoutes = require('./routes/documentoRoutes');
 const contratoRoutes = require('./routes/contratoRoutes');
 const capacitacionRoutes = require('./routes/capacitacionRoutes');
 const auditoriaRoutes = require('./routes/auditoriaRoutes');
+const administracionRoutes = require('./routes/administracionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use((req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Referrer-Policy', 'same-origin');
+  if (req.path.startsWith('/api/')) res.set('Cache-Control', 'private, no-store');
+  next();
+});
 // La carga de documentos tiene su propio límite y autentica antes de leer archivos.
 app.use('/api/documentos', documentoRoutes);
+app.use('/api/asistencias', asistenciaRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -29,7 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/asistencias', asistenciaRoutes); 
+app.use('/api/administracion', administracionRoutes);
 app.use('/api/empresas', empresaRoutes);
 app.use('/api/reportes', reporteRoutes);
 app.use('/api/personal', personalRoutes); 
@@ -39,7 +47,13 @@ app.use('/api/contratos', contratoRoutes);
 app.use('/api/capacitaciones', capacitacionRoutes);
 
 // Abrir http://localhost:3000: el mismo servidor entrega el frontend.
-app.use(express.static(path.resolve(__dirname, '../frontend')));
+app.get('/favicon.ico', (req, res) => res.sendFile(path.resolve(__dirname, '../frontend/favicon.svg')));
+const frontendDir = path.resolve(__dirname, '../frontend');
+// Publicar solo las pantallas y los recursos preparados; las herramientas de compilación quedan fuera.
+for (const carpeta of ['css', 'js', 'vendor']) {
+  app.use(`/${carpeta}`, express.static(path.join(frontendDir, carpeta)));
+}
+app.get(['/', /^\/[A-Za-z0-9_-]+\.html$/, '/favicon.svg'], express.static(frontendDir));
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);

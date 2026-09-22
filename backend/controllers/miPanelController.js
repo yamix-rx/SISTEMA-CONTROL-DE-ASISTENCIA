@@ -1,5 +1,4 @@
-const pool = require('../config/database');
-const { obtenerFicha } = require('../services/fichaService');
+const { obtenerFicha, obtenerHistorial, fichaPublica } = require('../services/fichaService');
 
 exports.obtenerMiPanel = async (req, res) => {
   // No se aceptan IDs por ruta, query o body: identidad vigente de la sesión.
@@ -13,19 +12,10 @@ exports.obtenerMiPanel = async (req, res) => {
     if (!ficha) {
       return res.status(404).json({ ok: false, mensaje: 'No se encontró su ficha de colaborador.' });
     }
-    const [[asistencias], [permisos]] = await Promise.all([
-      pool.query(`
-        SELECT fecha, hora_ingreso, hora_salida, minutos_tardanza, horas_trabajadas, estado
-        FROM asistencias WHERE empleado_id = ? ORDER BY fecha DESC, id DESC LIMIT 30
-      `, [empleadoId]),
-      pool.query(`
-        SELECT p.fecha_inicio, p.fecha_fin, p.tipo_permiso, p.motivo, p.estado
-        FROM permisos p
-        WHERE p.empleado_id = ? ORDER BY p.fecha_inicio DESC, p.id DESC LIMIT 20
-      `, [empleadoId])
-    ]);
-    return res.json({ ok: true, data: { ...ficha, asistencias, permisos } });
+    const historial = await obtenerHistorial(empleadoId, req.query);
+    return res.json({ ok: true, data: { ...fichaPublica(ficha), ...historial } });
   } catch (error) {
+    if (error.status === 400) return res.status(400).json({ ok: false, mensaje: error.message });
     console.error('Error al consultar panel personal:', error.code || error.name);
     return res.status(500).json({ ok: false, mensaje: 'No se pudo cargar su panel personal.' });
   }

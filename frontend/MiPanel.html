@@ -65,7 +65,7 @@
                     <article class="summary-card"><div class="summary-label"><svg class="icon" aria-hidden="true"><use href="#icon-calendar"/></svg>Horario de hoy</div><strong id="todaySchedule">—</strong><p id="todayScheduleDetail">—</p></article>
                     <article class="summary-card"><div class="summary-label"><svg class="icon" aria-hidden="true"><use href="#icon-clock"/></svg>Última asistencia</div><strong id="lastAttendance">—</strong><p id="lastAttendanceDetail">—</p></article>
                     <article class="summary-card"><div class="summary-label"><svg class="icon" aria-hidden="true"><use href="#icon-file"/></svg>Documentos por completar</div><strong id="pendingDocuments">—</strong><p>Obligatorios pendientes o rechazados</p></article>
-                    <article class="summary-card"><div class="summary-label"><svg class="icon" aria-hidden="true"><use href="#icon-permission"/></svg>Permisos pendientes</div><strong id="pendingPermissions">—</strong><p>De tus últimos 20 registros</p></article>
+                    <article class="summary-card"><div class="summary-label"><svg class="icon" aria-hidden="true"><use href="#icon-permission"/></svg>Permisos pendientes</div><strong id="pendingPermissions">—</strong><p>En todo tu historial</p></article>
                 </div>
                 <article class="panel profile-panel">
                     <div class="panel-heading"><div><h2>Mi información</h2><p>Datos de tu ficha de colaborador</p></div><span id="employmentStatus" class="badge">—</span></div>
@@ -74,10 +74,12 @@
                         <div><dt>Empresa</dt><dd id="profileCompany">—</dd></div>
                         <div><dt>Área</dt><dd id="profileArea">—</dd></div>
                         <div><dt>Cargo</dt><dd id="profilePosition">—</dd></div>
+                        <div><dt>Puesto</dt><dd id="profileJob">—</dd></div>
                         <div><dt>Documento de identidad</dt><dd id="profileDocument">—</dd></div>
                         <div><dt>Tipo de vínculo</dt><dd id="profileRelationship">—</dd></div>
                         <div><dt>Fecha de ingreso</dt><dd id="profileStartDate">—</dd></div>
-                        <div><dt>Correo de acceso</dt><dd id="profileEmail">—</dd></div>
+                        <div id="profileAgreementField" hidden><dt>Vencimiento del convenio de prácticas</dt><dd id="profileAgreementEnd">—</dd></div>
+                        <div><dt>Correo de acceso</dt><dd id="profileEmail">—</dd></div><div><dt>Teléfono</dt><dd id="profilePhone">—</dd></div><div><dt>Dirección</dt><dd id="profileAddress">—</dd></div><div><dt>Carrera</dt><dd id="profileCareer">—</dd></div><div><dt>Institución educativa</dt><dd id="profileSchool">—</dd></div><div><dt>Fecha de finalización</dt><dd id="profileEnd">—</dd></div>
                     </dl>
                 </article>
             </section>
@@ -93,22 +95,22 @@
             </section>
 
             <section id="asistencias" class="panel content-section" aria-labelledby="attendanceTitle">
-                <div class="panel-heading"><div><h2 id="attendanceTitle">Mis asistencias</h2><p>Tus últimos 30 registros de asistencia</p></div><svg class="icon section-icon" aria-hidden="true"><use href="#icon-clock"/></svg></div>
-                <div class="table-scroll" role="region" aria-label="Mis registros de asistencia" tabindex="0"><table><thead><tr><th scope="col">Fecha</th><th scope="col">Ingreso</th><th scope="col">Salida</th><th scope="col">Tardanza</th><th scope="col">Horas trabajadas</th><th scope="col">Estado</th></tr></thead><tbody id="attendanceRows"></tbody></table></div>
+                <div class="panel-heading"><div><h2 id="attendanceTitle">Mis asistencias</h2><p>Historial completo de asistencia · 30 registros por página</p></div><svg class="icon section-icon" aria-hidden="true"><use href="#icon-clock"/></svg></div>
+                <div class="table-scroll" role="region" aria-label="Mis registros de asistencia" tabindex="0"><table><thead><tr><th scope="col">Fecha</th><th scope="col">Ingreso</th><th scope="col">Salida</th><th scope="col">Tardanza</th><th scope="col">Horas trabajadas</th><th scope="col">Estado</th></tr></thead><tbody id="attendanceRows"></tbody></table></div><nav class="panel-note history-pagination" aria-label="Páginas de asistencias"><button id="attendancePrevious" class="button button-secondary" type="button">Anterior</button><span id="attendancePagination"></span><button id="attendanceNext" class="button button-secondary" type="button">Siguiente</button></nav>
             </section>
 
             <section id="documentos" class="panel content-section" aria-labelledby="documentsTitle">
                 <div class="panel-heading"><div><h2 id="documentsTitle">Mis documentos</h2><p>Estado de los documentos de tu expediente</p></div><svg class="icon section-icon" aria-hidden="true"><use href="#icon-file"/></svg></div>
-                <div class="table-scroll" role="region" aria-label="Documentos de mi expediente" tabindex="0"><table><thead><tr><th scope="col">Documento</th><th scope="col">Requisito</th><th scope="col">Archivo registrado</th><th scope="col">Fecha de carga</th><th scope="col">Estado</th></tr></thead><tbody id="documentRows"></tbody></table></div>
+                <div class="table-scroll" role="region" aria-label="Documentos de mi expediente" tabindex="0"><table><thead><tr><th scope="col">Documento</th><th scope="col">Requisito</th><th scope="col">Archivo registrado</th><th scope="col">Fecha de carga</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody id="documentRows"></tbody></table></div>
                 <p class="panel-note">Para entregar o corregir documentos, comunícate con el responsable de personal de tu empresa.</p>
             </section>
 
             <section id="permisos" class="panel content-section" aria-labelledby="permissionsTitle">
-                <div class="panel-heading"><div><h2 id="permissionsTitle">Mis permisos</h2><p>Tus últimos 20 permisos registrados</p></div><svg class="icon section-icon" aria-hidden="true"><use href="#icon-permission"/></svg></div>
-                <div class="table-scroll" role="region" aria-label="Mis permisos registrados" tabindex="0"><table><thead><tr><th scope="col">Fecha</th><th scope="col">Tipo de permiso</th><th scope="col">Motivo</th><th scope="col">Estado</th></tr></thead><tbody id="permissionRows"></tbody></table></div>
+                <div class="panel-heading"><div><h2 id="permissionsTitle">Mis permisos</h2><p>Historial completo de permisos · 20 registros por página</p></div><svg class="icon section-icon" aria-hidden="true"><use href="#icon-permission"/></svg></div>
+                <div class="table-scroll" role="region" aria-label="Mis permisos registrados" tabindex="0"><table><thead><tr><th scope="col">Desde / hasta</th><th scope="col">Horario</th><th scope="col">Tipo de permiso</th><th scope="col">Motivo</th><th scope="col">Estado</th><th scope="col">Sustento</th></tr></thead><tbody id="permissionRows"></tbody></table></div><nav class="panel-note history-pagination" aria-label="Páginas de permisos"><button id="permissionPrevious" class="button button-secondary" type="button">Anterior</button><span id="permissionPagination"></span><button id="permissionNext" class="button button-secondary" type="button">Siguiente</button></nav>
                 <p class="panel-note">La gestión de solicitudes se realiza con el responsable de personal.</p>
             </section>
-            <p id="updatedAt" class="updated-at" role="status"></p>
+            <p id="fileStatus" class="panel-note" role="status" hidden></p><p id="updatedAt" class="updated-at" role="status"></p>
         </div>
     </main>
 </body>

@@ -9,9 +9,9 @@
 
 <title>SBSS - Dashboard</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="vendor/lucide/lucide.min.js"></script>
 
 <style>
 
@@ -967,6 +967,17 @@ body{
         </section>
 
 
+        <section class="panel overflow-hidden" aria-labelledby="tituloConveniosAdmin">
+            <div class="px-4 py-3 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 text-black">
+                <h2 id="tituloConveniosAdmin" class="font-bold text-[16px]">Convenios de prácticas por vencer</h2>
+                <p class="text-[11px] text-slate-500">Vencimiento registrado en la ficha del practicante durante los próximos 30 días.</p>
+            </div>
+            <div class="p-3"><div class="table-responsive"><table class="data-table">
+                <thead><tr><th>Practicante</th><th>Empresa</th><th>Cargo</th><th>Puesto</th><th>Vencimiento</th><th>Plazo</th></tr></thead>
+                <tbody id="tbodyConveniosPorVencer"><tr><td colspan="6" class="text-center py-4 text-slate-400">Cargando convenios…</td></tr></tbody>
+            </table></div></div>
+        </section>
+
         <!-- =================================================
              ALERTAS DOCUMENTOS
              ================================================= -->
@@ -1156,6 +1167,26 @@ function escapeHtml(value) {
     return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
 }
 
+function renderizarConveniosPorVencer(rows) {
+    const body = document.getElementById('tbodyConveniosPorVencer'); body.replaceChildren();
+    if (!rows.length) {
+        const row = document.createElement('tr'), cell = document.createElement('td');
+        cell.colSpan = 6; cell.className = 'text-center py-4 text-slate-400';
+        cell.textContent = 'No hay convenios de prácticas por vencer en los próximos 30 días.';
+        row.append(cell); body.append(row); return;
+    }
+    rows.forEach(item => {
+        const row = document.createElement('tr'), person = document.createElement('td'), link = document.createElement('a');
+        link.href = 'FichaIndividual.html?vista=practicantes&empleado_id=' + encodeURIComponent(item.empleado_id);
+        link.textContent = item.colaborador; link.className = 'text-blue-700 underline'; person.append(link); row.append(person);
+        const date = String(item.fecha_vencimiento_convenio).slice(0, 10).split('-').reverse().join('/');
+        [item.empresa, item.cargo, item.puesto, date, Number(item.dias_restantes) === 0 ? 'Vence hoy' : 'En ' + Number(item.dias_restantes) + ' días'].forEach(value => {
+            const cell = document.createElement('td'); cell.textContent = value || '—'; row.append(cell);
+        });
+        body.append(row);
+    });
+}
+
 /* =====================================================
    CARGAR DASHBOARD
    ===================================================== */
@@ -1166,9 +1197,9 @@ async function cargarDashboard(empresaId = '') {
 
         const url = empresaId
 
-            ? `http://localhost:3000/api/dashboard?empresa_id=${empresaId}`
+            ? `/api/dashboard?empresa_id=${empresaId}`
 
-            : 'http://localhost:3000/api/dashboard';
+            : '/api/dashboard';
 
 
         const respuesta = await fetch(url, {
@@ -1264,9 +1295,15 @@ async function cargarDashboard(empresaId = '') {
         renderizarPracticantesProximos(
             data.practicantesProximos || []
         );
+        renderizarConveniosPorVencer(data.conveniosPorVencer || []);
 
 
     } catch (error) {
+
+        const agreements = document.getElementById('tbodyConveniosPorVencer');
+        agreements.replaceChildren();
+        const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 6;
+        cell.textContent = 'No se pudieron consultar los convenios. Vuelve a cargar el panel.'; row.append(cell); agreements.append(row);
 
         console.error(
             'Error al cargar datos del dashboard:',
@@ -1346,28 +1383,28 @@ function renderizarTurnos(lista) {
             <td>
 
                 <strong>
-                    ${c.colaborador}
+                    ${escapeHtml(c.colaborador)}
                 </strong>
 
                 <span class="text-slate-500 text-[11px]">
-                    (${c.tipo_vinculo})
+                    (${escapeHtml(c.tipo_vinculo)})
                 </span>
 
             </td>
 
 
             <td>
-                ${c.empresa}
+                ${escapeHtml(c.empresa)}
             </td>
 
 
             <td>
-                ${c.hora_entrada}
+                ${escapeHtml(c.hora_entrada)}
             </td>
 
 
             <td>
-                ${c.hora_salida}
+                ${escapeHtml(c.hora_salida)}
             </td>
 
 
@@ -1422,20 +1459,20 @@ function renderizarDocs(lista) {
             <td>
 
                 <strong>
-                    ${d.colaborador}
+                    ${escapeHtml(d.colaborador)}
                 </strong>
 
             </td>
 
 
             <td>
-                ${d.empresa}
+                ${escapeHtml(d.empresa)}
             </td>
 
 
             <td class="text-rose-600 font-semibold">
 
-                ${d.documento_faltante}
+                ${escapeHtml(d.documento_faltante)}
 
             </td>
 
@@ -1444,7 +1481,7 @@ function renderizarDocs(lista) {
 
                 <button
                     class="btn"
-                    onclick="location.href='FichaIndividual.html'">
+                    onclick="location.href='Documentos.html?empleado_id=${Number(d.empleado_id)}'">
 
                     Subir Documento
 

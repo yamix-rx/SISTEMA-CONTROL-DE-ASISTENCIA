@@ -14,6 +14,7 @@
   ]);
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   const initialEmployee = new URLSearchParams(location.search).get('empleado_id');
+  const generationView = new URLSearchParams(location.search).get('vista') === 'generar';
   const state = {
     catalogs: null, rows: [], selected: null, page: 1, total: 0, limit: 5,
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
@@ -459,7 +460,7 @@
   function setDialogBusy(id, busy) {
     const dialog = $(id);
     dialog.setAttribute('aria-busy', String(busy));
-    dialog.querySelectorAll('button, input, select').forEach(element => {
+    dialog.querySelectorAll('button, input, select, textarea').forEach(element => {
       if (busy) {
         element.dataset.previousDisabled = String(element.disabled);
         element.disabled = true;
@@ -499,99 +500,179 @@
     }
   }
 
-  function openGenerate(type = 'carta') {
-    if (!state.catalogs) return;
-    $('formGenerar').reset();
-    formError('errorGenerar');
-    $('generarTipo').value = type;
-    $('generarEmpleado').value = state.selected ? String(state.selected.empleado_id) : state.employeeId;
-    $('modalGenerar').showModal();
+  async function loadGenerationCatalogs(force = false) {
+    if (!state.generationCatalogs || force) state.generationCatalogs = await request('/documentos/generacion/catalogos');
+    const catalogs = state.generationCatalogs;
+    fillSelect('generarEmpresa', catalogs.empresas, 'razon_social', 'Selecciona una empresa');
+    fillSelect('plantillaCodigo', catalogs.plantillas.map(item => ({ ...item, id: item.codigo })), 'titulo', 'Selecciona una plantilla');
+    return catalogs;
   }
 
-  function writePrintPreview(win, ficha, type) {
-    const employee = ficha.empleado;
-    const titles = { carta: 'CARTA DE PRESENTACIÓN', horas: 'CONSTANCIA DE HORAS', trabajo: 'CERTIFICADO DE TRABAJO' };
-    const title = titles[type];
-    const doc = win.document;
-    doc.documentElement.lang = 'es';
-    doc.title = `${title} - ${employee.colaborador_completo}`;
-    const charset = doc.createElement('meta');
-    charset.setAttribute('charset', 'UTF-8');
-    const viewport = doc.createElement('meta');
-    viewport.name = 'viewport';
-    viewport.content = 'width=device-width, initial-scale=1.0';
-    const style = doc.createElement('style');
-    style.textContent = '*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#24354b;font:15px/1.8 Georgia,serif}.toolbar{padding:16px 24px;background:#114e79;color:white;display:flex;align-items:center;justify-content:space-between;gap:20px;font:13px/1.5 Arial,sans-serif}.toolbar button{border:0;border-radius:5px;padding:11px 16px;cursor:pointer;background:white;color:#135780;font-weight:700}.toolbar p{margin:0}.sheet{background:white;max-width:794px;min-height:1000px;margin:30px auto;padding:65px 70px;box-shadow:0 2px 12px #1233}.brand{font:700 19px/1.4 Arial,sans-serif;color:#174f77;border-bottom:2px solid #174f77;padding-bottom:16px;margin:0 0 8px}.draft{font:11px/1.5 Arial,sans-serif;color:#6c7989;margin:0 0 55px}h1{text-align:center;font:700 20px/1.5 Arial,sans-serif;letter-spacing:.8px;margin:0 0 45px}.sheet p{margin:0 0 23px;overflow-wrap:anywhere}.date{text-align:right;margin-top:40px!important}.signature{margin:90px 0 0;border-top:1px solid #455;width:280px;padding-top:10px;text-align:center;font:13px/1.7 Arial,sans-serif}.signature span{display:block;color:#687887;font-size:11px}.source{margin-top:60px!important;color:#6d7989;font:10px/1.6 Arial,sans-serif;border-top:1px solid #ddd;padding-top:12px}@page{size:A4;margin:20mm}@media print{body{background:white}.toolbar{display:none}.sheet{max-width:none;min-height:0;padding:0;margin:0;box-shadow:none}.draft{color:#444}.source{break-inside:avoid}}@media(max-width:600px){.sheet{padding:35px 25px;margin:15px}.toolbar{align-items:flex-start}.toolbar button{flex-shrink:0;padding:10px}.sheet h1{font-size:18px}.signature{max-width:100%}}';
-    doc.head.replaceChildren(charset, viewport, style, doc.createElement('title'));
-    doc.title = `${title} - ${employee.colaborador_completo}`;
-    const create = (tag, cls, value) => {
-      const element = doc.createElement(tag);
-      if (cls) element.className = cls;
-      if (value !== undefined) element.textContent = String(value);
-      return element;
-    };
-    const toolbar = create('div', 'toolbar');
-    const instruction = create('p', '', 'Vista previa para impresión · Revisa el contenido antes de emitirlo. En la ventana de impresión puedes elegir Guardar como PDF.');
-    const print = create('button', '', 'Imprimir / Guardar PDF');
-    print.type = 'button';
-    print.addEventListener('click', () => win.print());
-    toolbar.append(instruction, print);
-    const sheet = create('main', 'sheet');
-    sheet.append(create('div', 'brand', employee.empresa), create('p', 'draft', 'BORRADOR · Pendiente de revisión y firma del responsable'), create('h1', '', title));
-    const fullName = employee.colaborador_completo || `${employee.nombres} ${employee.apellidos}`;
-    const identity = `${employee.tipo_documento || 'Documento'} N.° ${employee.numero_documento}`;
-    if (type === 'carta') {
-      sheet.append(create('p', '', 'A quien corresponda:'), create('p', '', `Por medio de la presente, ${employee.empresa} presenta a ${fullName}, identificado(a) con ${identity}, registrado(a) como ${employee.cargo || 'colaborador(a)'} en el área de ${employee.area || 'la empresa'}.`), create('p', '', 'Esta carta se extiende para su presentación y para las gestiones que correspondan. La información consignada procede de su ficha de personal y debe ser verificada por el responsable antes de la firma.'));
-    } else if (type === 'horas') {
-      const hours = Number(ficha.progresoHoras?.horasRealizadas);
-      if (!Number.isFinite(hours)) throw new Error('No hay información válida de horas para generar la constancia.');
-      sheet.append(create('p', '', `Se deja constancia de que ${fullName}, identificado(a) con ${identity}, registra un total de ${hours.toLocaleString('es-PE', { maximumFractionDigits: 2 })} horas de asistencia en ${employee.empresa}, de acuerdo con la información disponible en el sistema al momento de esta consulta.`), create('p', '', `Área: ${employee.area || 'Sin área registrada'}. Cargo: ${employee.cargo || 'Sin cargo registrado'}.`), create('p', '', 'La cantidad corresponde a la suma de las horas registradas en las asistencias del colaborador. El responsable deberá revisar y validar estos registros antes de emitir la constancia.'));
-    } else {
-      if (employee.tipo_vinculo !== 'trabajador') throw new Error('El certificado de trabajo corresponde a colaboradores con vínculo de trabajador. Para esta persona puedes generar una carta de presentación o constancia de horas.');
-      const joining = employee.fecha_ingreso ? ` con fecha de ingreso ${displayDate(employee.fecha_ingreso)}` : '';
-      sheet.append(create('p', '', `${employee.empresa} hace constar que ${fullName}, identificado(a) con ${identity}, figura en sus registros de personal como trabajador(a) en el cargo de ${employee.cargo || 'cargo no registrado'}, en el área de ${employee.area || 'área no registrada'}${joining}.`), create('p', '', `Estado registrado en el sistema: ${employee.estado || 'No especificado'}.`), create('p', '', 'Se extiende el presente documento con base en la información de su ficha de personal. Los datos y el período laboral deberán ser confirmados por el responsable antes de su emisión.'));
+  function fillGenerationAreas() {
+    fillSelect('generarArea', (state.generationCatalogs?.areas || []).filter(item => String(item.empresa_id) === $('generarEmpresa').value), 'nombre', 'Selecciona un área');
+    fillGenerationPositions();
+  }
+
+  function fillGenerationPositions() {
+    fillSelect('generarCargo', (state.generationCatalogs?.cargos || []).filter(item => String(item.area_id) === $('generarArea').value), 'nombre', 'Selecciona un cargo');
+  }
+
+  function fillGenerationHours() {
+    const progress = state.generationFicha?.progresoHoras;
+    if (!progress) return;
+    $('generarHoras').value = Number($('generarTipo').value === 'aceptacion' ? progress.horasMeta : progress.horasRealizadas) || 0;
+    $('generarHorasAyuda').textContent = 'Expediente: ' + (Number(progress.horasRealizadas) || 0) + ' horas registradas de ' + (Number(progress.horasMeta) || 0) + ' previstas. Puedes ajustar las horas de este documento antes de emitirlo.';
+  }
+
+  async function fillGenerationEmployee() {
+    const revision = (state.employeeRevision || 0) + 1;
+    state.employeeRevision = revision;
+    state.generationFicha = null;
+    $('generarHoras').value = '';
+    const id = $('generarEmpleado').value;
+    state.employeeLoading = Boolean(id);
+    $('btnCrearVista').disabled = Boolean(id);
+    if (!id) return;
+    formError('errorGenerar');
+    try {
+      const response = await request('/personal/' + id);
+      if (revision !== state.employeeRevision) return;
+      const ficha = response.data || response;
+      if (!ficha.empleado) throw new Error('No se encontró la ficha del colaborador.');
+      state.generationFicha = ficha;
+      $('generarEmpresa').value = String(ficha.empleado.empresa_id);
+      fillGenerationAreas();
+      $('generarArea').value = String(ficha.empleado.area_id);
+      fillGenerationPositions();
+      $('generarCargo').value = String(ficha.empleado.cargo_id);
+      fillGenerationHours();
+    } catch (error) { if (revision === state.employeeRevision) formError('errorGenerar', friendlyError(error)); }
+    finally {
+      if (revision === state.employeeRevision) {
+        state.employeeLoading = false;
+        $('btnCrearVista').disabled = false;
+      }
     }
-    sheet.appendChild(create('p', 'date', `Fecha de elaboración: ${new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}`));
-    const signature = create('div', 'signature', 'Firma del responsable');
-    signature.append(create('span', '', 'Nombre y cargo: ________________________'));
-    sheet.append(signature, create('p', 'source', 'Elaborado desde SBSS con los datos actuales del sistema. Este borrador no contiene firma ni sello de autorización.'));
-    doc.body.replaceChildren(toolbar, sheet);
+  }
+
+  async function openGenerate(type = 'aceptacion') {
+    if (!state.catalogs || state.generating || $('modalGenerar').open) return;
+    $('formGenerar').reset();
+    state.generationFicha = null;
+    formError('errorGenerar');
+    $('generarTipo').value = ['aceptacion', 'constancia_practicas', 'culminacion', 'carta', 'horas', 'trabajo'].includes(type) ? type : 'aceptacion';
+    const now = new Date();
+    $('generarFecha').value = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    $('generarEmpleado').value = state.selected ? String(state.selected.empleado_id) : state.employeeId;
+    $('modalGenerar').showModal();
+    setDialogBusy('modalGenerar', true);
+    try { await loadGenerationCatalogs(true); fillGenerationAreas(); }
+    catch (error) { state.generationCatalogs = null; formError('errorGenerar', friendlyError(error)); }
+    finally { setDialogBusy('modalGenerar', false); }
+    if (state.generationCatalogs) await fillGenerationEmployee();
   }
 
   async function submitGenerate(event) {
     event.preventDefault();
-    if (state.generating) return;
+    if (state.generating || state.employeeLoading) return;
     formError('errorGenerar');
-    if (!$('generarEmpleado').value) return;
-    // Abrir durante el clic evita que los navegadores bloqueen la ventana tras el fetch.
-    const preview = window.open('', '_blank');
-    if (!preview) {
-      formError('errorGenerar', 'El navegador bloqueó la ventana. Permite ventanas emergentes para este sitio y vuelve a generar el documento.');
-      return;
-    }
-    preview.opener = null;
-    preview.document.title = 'Preparando documento';
-    preview.document.body.textContent = 'Preparando la vista previa con los datos del colaborador…';
-    const employeeId = $('generarEmpleado').value;
-    const type = $('generarTipo').value;
     state.generating = true;
+    const payload = {
+      codigo: $('generarTipo').value, empleado_id: Number($('generarEmpleado').value),
+      empresa_id: Number($('generarEmpresa').value), area_id: Number($('generarArea').value),
+      cargo_id: Number($('generarCargo').value), fecha: $('generarFecha').value, horas: $('generarHoras').value
+    };
     setDialogBusy('modalGenerar', true);
     $('btnCrearVista').textContent = 'Preparando…';
     try {
-      const data = await request(`/personal/${employeeId}`);
-      const ficha = data.data || data;
-      if (!ficha.empleado) throw new Error('No se encontraron los datos del colaborador.');
-      if (preview.closed) throw new Error('Se cerró la ventana de vista previa. Genera el documento nuevamente.');
-      writePrintPreview(preview, ficha, type);
+      const { documento } = await request('/documentos/generar/vista-previa', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      state.generatedDocument = documento;
+      state.generatedPayload = { ...payload, revision_plantilla: documento.revision_plantilla };
+      $('generadoEmpresa').textContent = documento.empresa;
+      $('generadoTitulo').textContent = documento.titulo;
+      $('generadoCuerpo').textContent = documento.cuerpo;
+      formError('errorPdf');
       $('modalGenerar').close();
-    } catch (error) {
-      if (!preview.closed) preview.close();
-      formError('errorGenerar', friendlyError(error));
-    } finally {
+      $('modalDocumentoGenerado').showModal();
+    } catch (error) { formError('errorGenerar', friendlyError(error)); }
+    finally {
       state.generating = false;
       setDialogBusy('modalGenerar', false);
       $('btnCrearVista').textContent = 'Abrir vista previa';
     }
+  }
+
+  async function downloadGenerated() {
+    if (!state.generatedPayload || state.downloadingGenerated) return;
+    state.downloadingGenerated = true;
+    $('btnPdfGenerado').disabled = true;
+    formError('errorPdf');
+    try {
+      const blob = await request('/documentos/generar/pdf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.generatedPayload)
+      }, true);
+      if (blob.type !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
+      const url = URL.createObjectURL(blob);
+      const anchor = node('a');
+      anchor.href = url;
+      anchor.download = state.generatedDocument.nombre_archivo;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) { formError('errorPdf', friendlyError(error)); }
+    finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
+  }
+
+  function fillTemplateEditor() {
+    const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
+    $('plantillaTitulo').value = template?.titulo || '';
+    $('plantillaCuerpo').value = template?.cuerpo || '';
+    formError('errorPlantilla');
+  }
+
+  async function openTemplateEditor() {
+    if ($('modalPlantillas').open) return;
+    $('modalPlantillas').showModal();
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const catalogs = await loadGenerationCatalogs(true);
+      $('plantillaCodigo').value = catalogs.plantillas[0]?.codigo || '';
+      fillTemplateEditor();
+      $('plantillaCampos').replaceChildren(...catalogs.campos.map(campo => {
+        const button = node('button', '', '{{' + campo + '}}');
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          const input = $('plantillaCuerpo');
+          input.setRangeText('{{' + campo + '}}', input.selectionStart, input.selectionEnd, 'end');
+          input.focus();
+        });
+        return button;
+      }));
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally { setDialogBusy('modalPlantillas', false); }
+  }
+
+  async function saveTemplate(event) {
+    event.preventDefault();
+    if (state.savingTemplate) return;
+    state.savingTemplate = true;
+    formError('errorPlantilla');
+    const codigo = $('plantillaCodigo').value;
+    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value };
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const { plantilla } = await request('/documentos/plantillas/' + encodeURIComponent(codigo), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      state.generationCatalogs.plantillas = state.generationCatalogs.plantillas.map(item => item.codigo === codigo ? plantilla : item);
+      $('modalPlantillas').close();
+      notify('Plantilla guardada. Se utilizará en los próximos documentos.');
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally { state.savingTemplate = false; setDialogBusy('modalPlantillas', false); }
   }
 
   function applyFilters() {
@@ -637,6 +718,16 @@
     $('btnGenerar').addEventListener('click', () => openGenerate());
     document.querySelectorAll('[data-plantilla]').forEach(button => button.addEventListener('click', () => openGenerate(button.dataset.plantilla)));
     $('formGenerar').addEventListener('submit', submitGenerate);
+    $('generarEmpleado').addEventListener('change', fillGenerationEmployee);
+    $('generarTipo').addEventListener('change', fillGenerationHours);
+    $('generarEmpresa').addEventListener('change', fillGenerationAreas);
+    $('generarArea').addEventListener('change', fillGenerationPositions);
+    $('btnPdfGenerado').addEventListener('click', downloadGenerated);
+    $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
+    $('btnPlantillas').addEventListener('click', openTemplateEditor);
+    $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('formPlantilla').addEventListener('submit', saveTemplate);
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
@@ -650,11 +741,22 @@
   async function initialize() {
     const session = await window.SBSSSession.ready;
     if (!session) return;
+    if (generationView) {
+      document.title = 'SBSS · Generar documentos';
+      document.body.classList.add('generation-view');
+      document.querySelector('.page-heading h1').textContent = 'Generar documentos';
+      document.querySelector('.page-heading p').textContent = 'Selecciona una plantilla, completa los datos y descarga el documento en PDF.';
+      const expediente = node('a', 'button button-outline', 'Ver documentos del personal');
+      expediente.href = 'Documentos.html';
+      document.querySelector('.heading-actions').append(expediente);
+    }
     bindEvents();
     const initialState = new URLSearchParams(location.search).get('estado');
     if (Object.hasOwn(STATES, initialState)) $('fEstado').value = initialState;
     setCatalogButtons();
     await loadDocuments();
+    const initialTemplate = new URLSearchParams(location.search).get('generar');
+    if ((initialTemplate || generationView) && state.catalogs) await openGenerate(initialTemplate || 'aceptacion');
   }
 
   initialize();

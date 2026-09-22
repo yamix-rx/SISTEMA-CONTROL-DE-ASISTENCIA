@@ -1,3 +1,4 @@
+-- Esquema y datos de DEMOSTRACIÓN. Para producción use npm run instalar.
 CREATE DATABASE IF NOT EXISTS gestion_personal_sbss CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE gestion_personal_sbss;
 
@@ -57,6 +58,7 @@ CREATE TABLE empleados (
     empresa_id INT NOT NULL,
     area_id INT NOT NULL,
     cargo_id INT NOT NULL,
+    puesto VARCHAR(150) NULL,
     
     tipo_vinculo VARCHAR(50) NOT NULL DEFAULT 'trabajador',
     horas_totales_asignadas DECIMAL(6,2) NULL DEFAULT 0.00,
@@ -80,6 +82,7 @@ CREATE TABLE usuarios (
     rol_id INT NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    sesion_version INT NOT NULL DEFAULT 0,
     activo BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
@@ -92,10 +95,11 @@ CREATE TABLE usuarios (
 CREATE TABLE practicante_detalles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empleado_id INT NOT NULL UNIQUE,
-    horas_meta INT NOT NULL DEFAULT 320,
+    horas_meta DECIMAL(8,2) NOT NULL DEFAULT 320,
     fecha_vencimiento_convenio DATE NULL,
     estado_completado BOOLEAN DEFAULT FALSE,
     fecha_completado DATE NULL,
+    INDEX idx_practicante_vencimiento (fecha_vencimiento_convenio),
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE
 );
 
@@ -109,7 +113,7 @@ CREATE TABLE horarios (
     turno ENUM('manana', 'tarde', 'completo') DEFAULT 'manana',
     hora_entrada TIME NOT NULL,
     hora_salida TIME NOT NULL,
-    tolerancia_minutos INT NULL DEFAULT 10,
+    tolerancia_minutos INT NULL DEFAULT 0,
     activo BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
     UNIQUE KEY uk_empleado_dia (empleado_id, dia_semana)
@@ -124,6 +128,7 @@ CREATE TABLE asistencias (
     fecha DATE NOT NULL,
     hora_programada_entrada TIME NULL,
     hora_programada_salida TIME NULL,
+    tolerancia_minutos INT NULL,
     hora_ingreso TIME NULL,
     hora_salida TIME NULL,
     minutos_tardanza INT DEFAULT 0,
@@ -155,8 +160,10 @@ CREATE TABLE permisos (
     hora_desde TIME NULL,
     hora_hasta TIME NULL,
     motivo TEXT NOT NULL,
+    observaciones TEXT NULL,
     estado ENUM('Solicitado', 'Aprobado', 'Rechazado') DEFAULT 'Solicitado',
     archivo_sustento VARCHAR(255) NULL,
+    archivo_sustento_nombre VARCHAR(200) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE
 );
@@ -177,6 +184,10 @@ CREATE TABLE documentos_empleado (
     tipo_documento_id INT NOT NULL,
     nombre_archivo VARCHAR(255) NOT NULL,
     ruta_archivo VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(100) NULL,
+    observacion TEXT NULL,
+    revisado_por INT NULL,
+    fecha_revision DATETIME NULL,
     estado ENUM('pendiente', 'validado', 'rechazado') DEFAULT 'pendiente',
     fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
@@ -280,7 +291,7 @@ CREATE TABLE historial_cambios (
     usuario_id INT NULL,
     tabla_afectada VARCHAR(60) NOT NULL,
     registro_id INT NOT NULL,
-    accion ENUM('INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGIN_FALLIDO') NOT NULL,
+    accion ENUM('INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGIN_FALLIDO', 'DENEGADO', 'ERROR') NOT NULL,
     datos_anteriores JSON NULL,
     datos_nuevos JSON NULL,
     ip_origen VARCHAR(45) NULL,
@@ -296,14 +307,18 @@ CREATE TABLE historial_cambios (
 INSERT IGNORE INTO roles (id, nombre, descripcion) VALUES
 (1, 'Administrador General', 'Acceso total al sistema'),
 (2, 'Recursos Humanos', 'Gestión de personal, asistencia y legajos'),
-(3, 'Trabajador/Practicante', 'Marcación de asistencia y visualización de perfil');
+(3, 'Trabajador/Practicante', 'Consulta de información y archivos propios, sin modificar asistencia');
 
 -- EMPRESAS
 INSERT IGNORE INTO empresas (id, razon_social, ruc, direccion, estado) VALUES
 (1, 'Importadora y Distribuidora Silsan S.A.C.', '20601234567', 'Av. América Sur 123, Trujillo', 'activo'),
 (2, 'Droguería Silsan S.A.C.', '20601234568', 'Jr. Unión 456, Trujillo', 'activo'),
 (3, 'SBSS Outsourcing S.A.C.', '20601234569', 'Av. España 789, Trujillo', 'activo'),
-(4, 'Silsan Logística Integral', '20601234570', 'Parque Industrial, Trujillo', 'activo');
+(4, 'Silsan Logística Integral', '20601234570', 'Parque Industrial, Trujillo', 'activo'),
+(5, 'Nanas & Amas', NULL, NULL, 'activo'),
+(6, 'Centro de Conciliación SBSS', NULL, NULL, 'activo'),
+(7, 'Estudio Jurídico SBSS', NULL, NULL, 'activo'),
+(8, 'ONG MESPO', NULL, NULL, 'activo');
 
 -- ÁREAS
 INSERT IGNORE INTO areas (id, nombre, empresa_id) VALUES

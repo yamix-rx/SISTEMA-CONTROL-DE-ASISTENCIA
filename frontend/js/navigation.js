@@ -6,6 +6,9 @@
     dashboard: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     empresas: '<rect x="4" y="7" width="7" height="14" rx="1"/><path d="M11 21h9V3H9v4M7 11v1m0 3v1m8-9h1m-1 4h1m-1 4h1m-1 4h1"/>',
     personal: '<circle cx="12" cy="7" r="4"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/>',
+    practicantes: '<path d="m2 8 10-5 10 5-10 5L2 8Zm4 2v7c3 3 9 3 12 0v-7M22 8v8"/>',
+    permisos: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 5 3 3 5-5"/>',
+    generar: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 15h8m-4-4v8"/>',
     documentos: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 12h8M8 16h8"/>',
     contratos: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6M14 2v6h6V8l-6-6M14 18l3 3 5-6"/>',
     capacitaciones: '<path d="m2 9 10-5 10 5-10 5L2 9Zm4 2v6c3 3 9 3 12 0v-6M22 9v7"/>',
@@ -29,7 +32,7 @@
   }
 
   function filename(path) {
-    return decodeURIComponent(path.split('/').pop() || '').toLowerCase();
+    return decodeURIComponent(new URL(path, location.href).pathname.split('/').pop() || '').toLowerCase();
   }
 
   function render(session) {
@@ -38,6 +41,10 @@
     const allowed = new Set(session.acceso.modulos || []);
     const panel = session.acceso.panel;
     const currentPage = filename(location.pathname);
+    const params = new URLSearchParams(location.search);
+    const requestedView = params.get('vista') || (currentPage === 'documentos.html' && params.has('generar') ? 'generar' : '');
+    const availableViews = { 'fichaindividual.html': 'practicantes', 'registros.html': 'permisos', 'documentos.html': 'generar' };
+    const currentView = availableViews[currentPage] === requestedView ? requestedView : '';
     const homeLabel = filename(panel) === 'recursoshumanos.html' ? 'Inicio RRHH'
       : filename(panel) === 'dashboard.html' ? 'Dashboard' : 'Mi inicio';
     const groups = [
@@ -47,15 +54,19 @@
       ] },
       { label: 'Gestión de personal', id: 'sbss-menu-personal', links: [
         { label: 'Registro Personal', href: 'FichaIndividual.html', icon: 'personal', module: 'personal', primary: true },
+        { label: 'Practicantes', href: 'FichaIndividual.html?vista=practicantes', view: 'practicantes', icon: 'practicantes', module: 'personal', primary: true },
         { label: 'Documentos', href: 'Documentos.html', icon: 'documentos', module: 'documentos', primary: true },
+        { label: 'Generar documentos', href: 'Documentos.html?vista=generar', view: 'generar', icon: 'generar', module: 'documentos', primary: true },
         { label: 'Contratos', href: 'Contratos.html', icon: 'contratos', module: 'contratos', primary: true },
         { label: 'Capacitaciones', href: 'Capacitaciones.html', icon: 'capacitaciones', module: 'capacitaciones', primary: true }
       ] },
       { label: 'Control y reportes', id: 'sbss-menu-control', links: [
         { label: 'Horarios', href: 'Horarios.html', icon: 'horarios', module: 'horarios', primary: true },
         { label: 'Asistencia', href: 'Registros.html', icon: 'asistencia', module: 'asistencia', primary: true },
+        { label: 'Permisos', href: 'Registros.html?vista=permisos', view: 'permisos', icon: 'permisos', module: 'asistencia', primary: true },
         { label: 'Reportes', href: 'Reportes.html', icon: 'reportes', module: 'reportes', primary: true },
-        { label: 'Auditoría', href: 'Auditoria.html', icon: 'auditoria', module: 'auditoria', primary: true }
+        { label: 'Auditoría', href: 'Auditoria.html', icon: 'auditoria', module: 'auditoria', primary: true },
+        { label: 'Usuarios y configuración', href: 'Administracion.html', icon: 'personal', module: 'administracion', primary: true }
       ] }
     ];
     const heading = document.createElement('div');
@@ -93,7 +104,7 @@
         link.className = 'sbss-nav-link';
         link.setAttribute('href', item.href);
         if (item.module) link.dataset.module = item.module;
-        if (!currentAssigned && item.primary && filename(item.href) === currentPage) {
+        if (!currentAssigned && item.primary && filename(item.href) === currentPage && (item.view || '') === currentView) {
           link.setAttribute('aria-current', 'page');
           currentAssigned = true;
         }

@@ -7,9 +7,9 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
 <title>SBSS - Registro de Asistencia</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="vendor/lucide/lucide.min.js"></script>
 <style>
 :root{--line:#d8e6ef;--blue:#075985;--blue2:#0b75b5}
 *{box-sizing:border-box}
@@ -37,6 +37,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 .modalbg{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
 </style>
 <link rel="stylesheet" href="css/navigation.css">
+<link rel="stylesheet" href="css/asistencia-core.css">
 </head>
 <body>
 <div class="app min-h-screen">
@@ -73,7 +74,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
   <!-- Contenido Principal -->
   <main class="flex-1 p-3 bg-[#f8fbfd] space-y-3 transition-all duration-300">
-    <section class="panel overflow-hidden">
+    <h1 id="tituloVistaPermisos" class="text-xl font-extrabold text-[#174d72] pl-9" hidden>Permisos</h1>
+    <section id="seccionAsistencia" class="panel overflow-hidden">
       <div class="px-4 py-3 border-b border-[#dce8f0] flex gap-3 items-start">
         <div class="w-9 h-9 rounded bg-[#0c78bb] text-white grid place-items-center"><i data-lucide="calendar-days" class="w-6 h-6"></i></div>
         <div>
@@ -81,11 +83,11 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <p class="text-[10px] text-[#3c718f]">Registre diariamente la asistencia de su personal. El sistema calculará automáticamente las horas trabajadas y controlará las tardanzas.</p>
         </div>
       </div>
-      <div class="p-3 grid grid-cols-12 gap-4 items-end">
+      <div class="core-filters p-3 grid grid-cols-12 gap-4 items-end">
         <label class="col-span-2 text-[9px] font-bold">Fecha<input id="fFecha" type="date" class="control mt-1"></label>
         <label class="col-span-2 text-[9px] font-bold">Empresa<select id="fEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
         <label class="col-span-2 text-[9px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
-        <label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Cargo<select id="fCargo" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Trabajador<select id="fTrabajador" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
         <div class="col-span-2"><input id="fBuscar" class="control" placeholder="Buscar trabajador..."></div>
         <button id="btnNuevaAsistencia" class="col-span-2 h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-[10px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Registrar Asistencia</button>
       </div>
@@ -104,18 +106,18 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       </div>
     </section>
 
-    <div class="grid grid-cols-2 gap-3">
-      <section class="panel overflow-hidden">
+    <div id="resumenControl" class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+      <section id="seccionTardanzas" class="panel overflow-hidden">
         <div class="px-4 py-3 border-b border-[#dce8f0]">
           <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="clock-3" class="w-6 h-6 text-[#0b72ad]"></i>CONTROL DE TARDANZAS</h2>
           <p class="text-[9px] ml-8 text-[#49758f]">Visualice el acumulado de tardanzas por trabajador en diferentes periodos.</p>
         </div>
         <div class="p-3">
-          <div class="grid grid-cols-4 gap-3 items-end">
+          <div class="core-filters grid grid-cols-4 gap-3 items-end">
             <label class="text-[9px] font-bold">Empresa<select id="tEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
             <label class="text-[9px] font-bold">Área<select id="tArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
             <label class="text-[9px] font-bold">Trabajador<select id="tTrabajador" class="control mt-1"><option value="">Todos</option></select></label>
-            <button id="btnVerReporte" class="h-8 rounded-md bg-[#0b78ba] text-white text-[9px] font-bold flex justify-center gap-2 items-center"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>Actualizar</button>
+            <label class="col-span-2 text-[9px] font-bold">Cargo<select id="tCargo" class="control mt-1"></select></label><label class="text-[9px] font-bold">Fecha de referencia<input id="tFecha" type="date" class="control mt-1"></label><button id="btnVerReporte" class="h-8 rounded-md bg-[#0b78ba] text-white text-[9px] font-bold flex justify-center gap-2 items-center"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>Actualizar</button>
           </div>
           <div class="grid grid-cols-4 mt-3">
             <button class="seg on rounded-l-md" data-period="diario">▣ Diario</button>
@@ -150,18 +152,18 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         </div>
       </section>
 
-      <section class="panel overflow-hidden">
+      <section id="seccionPermisos" class="panel overflow-hidden">
         <div class="px-4 py-3 border-b border-[#dce8f0]">
           <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="file-text" class="w-6 h-6 text-[#0b72ad]"></i>MÓDULO DE PERMISOS</h2>
           <p class="text-[9px] ml-8 text-[#49758f]">Registre, gestione y consulte los permisos del personal. Mantenga el historial completo por trabajador.</p>
         </div>
         <div class="p-3">
-          <div class="grid grid-cols-6 gap-3 items-end">
+          <div class="core-filters grid grid-cols-6 gap-3 items-end">
             <label class="text-[8px] font-bold">Fecha desde<input id="pDesde" type="date" class="control mt-1"></label>
             <label class="text-[8px] font-bold">Fecha hasta<input id="pHasta" type="date" class="control mt-1"></label>
             <label class="text-[8px] font-bold">Empresa<select id="pEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
             <label class="text-[8px] font-bold">Área<select id="pArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
-            <label class="text-[8px] font-bold">Estado<select id="pEstado" class="control mt-1"><option value="">Todos</option><option>Solicitado</option><option>Aprobado</option><option>Rechazado</option></select></label>
+            <label class="col-span-2 text-[9px] font-bold">Cargo<select id="pCargo" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Trabajador<select id="pEmpleado" class="control mt-1"></select></label><label class="text-[8px] font-bold">Estado<select id="pEstado" class="control mt-1"><option value="">Todos</option><option>Solicitado</option><option>Aprobado</option><option>Rechazado</option></select></label>
             <button id="btnNuevoPermiso" class="h-8 rounded-md bg-[#0a7bc2] text-white text-[9px] font-bold flex gap-2 justify-center items-center"><i data-lucide="plus" class="w-4 h-4"></i>Nuevo Permiso</button>
           </div>
           <div class="mt-3 overflow-x-auto rounded-md border border-[#d9e7f0]">
@@ -190,14 +192,27 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Registrar Asistencia</b><button type="button" data-close="modalAsistencia">✕</button></div>
     <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
       <label class="col-span-2">Trabajador<select id="aTrabajador" class="control mt-1" required></select></label>
-      <label>Hora de ingreso<input id="aIngreso" type="time" class="control mt-1"></label>
+      <label class="col-span-2">Fecha<input id="aFecha" type="date" required class="control mt-1"></label><label>Hora de ingreso<input id="aIngreso" type="time" class="control mt-1"></label>
       <label>Hora de salida<input id="aSalida" type="time" class="control mt-1"></label>
       <label class="col-span-2">Estado<select id="aEstado" class="control mt-1" required>
         <option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option>
         <option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option>
         <option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option>
       </select></label>
-      <label class="col-span-2">Observación<input id="aObs" class="control mt-1" placeholder="Opcional"></label>
+      <label class="col-span-2">Observación<input id="aObs" maxlength="255" class="control mt-1" placeholder="Opcional"></label>
+      <p id="aAvisoHistorico" class="col-span-2 text-xs text-amber-800 hidden">La programación original de este registro está incompleta. Al mantener el ingreso se conserva la tardanza registrada. Para corregir el ingreso, confirme abajo el horario que correspondía a esa fecha.</p>
+      <section id="aProgramacionHistorica" class="col-span-2 border border-amber-200 bg-amber-50 rounded-lg p-3 hidden">
+        <label class="flex gap-2 items-start font-bold"><input id="aConfirmarHistorico" type="checkbox" class="mt-1"> He verificado la programación original y deseo completar los datos faltantes.</label>
+        <div id="aDetalleHistorico" class="hidden grid grid-cols-2 gap-3 mt-3">
+          <p class="col-span-2 text-xs">Utilice el horario original de esta fecha. No se copiará el horario vigente. Los valores que ya están registrados se conservan.</p>
+          <label>Entrada programada original<input id="aOriginalEntrada" type="time" class="control mt-1" disabled></label>
+          <label>Salida programada original<input id="aOriginalSalida" type="time" class="control mt-1" disabled></label>
+          <label>Tolerancia original (minutos)<input id="aOriginalTolerancia" type="number" min="0" max="120" step="1" class="control mt-1" disabled></label>
+          <label class="flex gap-2 items-center"><input id="aOriginalNocturno" type="checkbox" disabled> La salida corresponde al día siguiente.</label>
+          <label class="col-span-2">Motivo y fuente de la confirmación<textarea id="aOriginalMotivo" maxlength="500" rows="3" class="control mt-1" style="height:auto" placeholder="Ejemplo: horario firmado del 10/08, validado por RR. HH." disabled></textarea></label>
+          <p class="col-span-2 text-xs">Al guardar se recalcularán las horas y tardanzas con estos datos. Quedarán registrados el responsable, el motivo y los valores anteriores.</p>
+        </div>
+      </section>
     </div>
     <div class="px-5 pb-5 flex justify-end gap-2">
       <button type="button" data-close="modalAsistencia" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
@@ -219,7 +234,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       <label>Hora desde<input id="pHoraDesde" type="time" class="control mt-1"></label>
       <label>Hora hasta<input id="pHoraHasta" type="time" class="control mt-1"></label>
       <label>Observaciones<input id="pObservaciones" class="control mt-1" placeholder="Observaciones adicionales"></label>
-      <label>Documento sustentatorio<input id="pDocumento" class="control mt-1" placeholder="Nombre del documento"></label>
+      <label class="col-span-2">Documento sustentatorio (PDF, Word o imagen; máximo 5 MB)<input id="pDocumento" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="control mt-1"></label>
     </div>
     <div class="px-5 pb-5 flex justify-end gap-2">
       <button type="button" data-close="modalPermiso" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
@@ -229,334 +244,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 </div>
 
 <script src="js/sidebar.js"></script>
-<script>
-  lucide.createIcons();
-
-  const token = localStorage.getItem('sbss_token');
-  const $ = id => document.getElementById(id);
-
-  // 2. Variables de datos
-  let listaAsistencias = [];
-  let periodoTardanzasActual = 'diario';
-
-  function toast(m) {
-    let x = document.createElement('div');
-    x.className = 'toast';
-    x.textContent = m;
-    document.body.appendChild(x);
-    setTimeout(() => x.remove(), 2500);
-  }
-
-  function pill(e) {
-    const val = (e || '').toLowerCase();
-    const cls = (val === 'presente' || val === 'aprobado') ? 'ok' : (val === 'tardanza') ? 'late' : (val === 'rechazado' || val === 'falta') ? 'no' : 'info';
-    return `<span class="pill ${cls}">● ${e || 'Pendiente'}</span>`;
-  }
-
-  function fdate(s) {
-    if (!s) return '-';
-    let d = new Date(s);
-    return isNaN(d) ? s : d.toISOString().split('T')[0];
-  }
-
-  // 3. Consumir API Asistencias
-  async function cargarAsistencias() {
-    const fecha = $('fFecha').value;
-    const empresa_id = $('fEmpresa').value || $('empresaGlobal').value;
-    const area_id = $('fArea').value;
-    const estado = $('fEstado').value;
-    const buscar = $('fBuscar').value.trim();
-
-    $('fechaGrupo').textContent = fecha ? `Fecha: ${fecha}` : 'Hoy';
-
-    try {
-      let params = new URLSearchParams();
-      if (fecha) params.append('fecha', fecha);
-      if (empresa_id) params.append('empresa_id', empresa_id);
-      if (area_id) params.append('area_id', area_id);
-      if (estado) params.append('estado', estado);
-      if (buscar) params.append('buscar', buscar);
-
-      const res = await fetch(`http://localhost:3000/api/asistencias?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.status === 401 || res.status === 403) {
-        window.location.href = 'login.html';
-        return;
-      }
-
-      const resp = await res.json();
-      if (!resp.ok) return;
-
-      listaAsistencias = resp.data || [];
-      renderTablaAsistencias();
-      llenarSelectTrabajadores();
-
-    } catch (e) {
-      console.error(e);
-      $('tbodyAsistencia').innerHTML = '<tr><td colspan="14" class="text-center py-5 text-rose-500">Error al conectar con la API</td></tr>';
-    }
-  }
-
-  function renderTablaAsistencias() {
-    if (listaAsistencias.length === 0) {
-      $('tbodyAsistencia').innerHTML = '<tr><td colspan="14" class="text-center py-5">Sin registros de asistencia para esta fecha</td></tr>';
-      return;
-    }
-
-    $('tbodyAsistencia').innerHTML = listaAsistencias.map((x, i) => `
-      <tr>
-        <td><input type="checkbox"></td>
-        <td>${i + 1}</td>
-        <td><strong>${x.colaborador}</strong></td>
-        <td>${x.empresa}</td>
-        <td>${x.area}</td>
-        <td>${x.cargo}</td>
-        <td>${x.hora_programada || '-'}</td>
-        <td class="font-bold text-sky-800">${x.hora_ingreso || '-'}</td>
-        <td>${x.hora_salida || '-'}</td>
-        <td>${x.horas_trabajadas ? x.horas_trabajadas + ' hrs' : '-'}</td>
-        <td>${pill(x.estado)}</td>
-        <td class="text-center font-bold ${x.minutos_tardanza > 0 ? 'text-amber-600' : ''}">
-          ${x.minutos_tardanza > 0 ? x.minutos_tardanza + ' min' : '0'}
-        </td>
-        <td>${x.observacion || '-'}</td>
-        <td class="text-center">
-          <button class="text-[#0870ad] font-bold p-1 editA" data-empid="${x.empleado_id}">✎</button>
-        </td>
-      </tr>
-    `).join('');
-
-    document.querySelectorAll('.editA').forEach(b => {
-      b.onclick = () => {
-        const item = listaAsistencias.find(x => String(x.empleado_id) === String(b.dataset.empid));
-        $('aTrabajador').value = b.dataset.empid;
-        $('aIngreso').value = item?.hora_ingreso || '';
-        $('aSalida').value = item?.hora_salida || '';
-        $('aEstado').value = item?.estado || 'presente';
-        $('aObs').value = item?.observacion || '';
-        openM('modalAsistencia');
-      };
-    });
-  }
-
-  // 4. Consumir API Tardanzas
-  async function cargarTardanzas() {
-    try {
-      const res = await fetch(`http://localhost:3000/api/asistencias/tardanzas?periodo=${periodoTardanzasActual}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const resp = await res.json();
-      if (!resp.ok) return;
-
-      const tard = resp.data || [];
-      $('kTard').textContent = resp.kpis.totalTardanzas;
-      $('kMin').textContent = `${resp.kpis.minutosAcumulados} min`;
-      $('kPct').textContent = resp.kpis.porcentajeConTardanzas;
-
-      if (tard.length === 0) {
-        $('tbodyTardanzas').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">Sin tardanzas en este periodo</td></tr>';
-        return;
-      }
-
-      $('tbodyTardanzas').innerHTML = tard.map(x => `
-        <tr>
-          <td><strong>${x.colaborador}</strong></td>
-          <td>${x.area}</td>
-          <td class="text-center font-bold text-amber-700">${x.total_tardanzas}</td>
-          <td class="text-center">${x.minutos_acumulados} min</td>
-          <td class="text-center">${fdate(x.ultima_tardanza)}</td>
-          <td class="text-center">${pill(x.total_tardanzas == 0 ? 'Sin tardanzas' : x.total_tardanzas >= 3 ? 'Alerta' : 'Con tardanzas')}</td>
-        </tr>
-      `).join('');
-
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // 5. Consumir API Permisos
-  async function cargarPermisos() {
-    try {
-      const params = new URLSearchParams();
-      if ($('pDesde').value) params.set('fecha_desde', $('pDesde').value);
-      if ($('pHasta').value) params.set('fecha_hasta', $('pHasta').value);
-      if ($('pEmpresa').value) params.set('empresa_id', $('pEmpresa').value);
-      if ($('pArea').value) params.set('area_id', $('pArea').value);
-      if ($('pEstado').value) params.set('estado', $('pEstado').value);
-      const res = await fetch(`http://localhost:3000/api/asistencias/permisos?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const resp = await res.json();
-      if (!resp.ok) return;
-
-      const p = resp.data || [];
-      $('pCount').textContent = `Mostrando ${p.length} registros`;
-
-      if (p.length === 0) {
-        $('tbodyPermisos').innerHTML = '<tr><td colspan="11" class="text-center py-4 text-slate-400">No hay permisos registrados</td></tr>';
-        return;
-      }
-
-      $('tbodyPermisos').innerHTML = p.map((x, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td><strong>${x.colaborador}</strong></td>
-          <td>${fdate(x.fecha_inicio)}</td>
-          <td>${x.hora_desde || '-'}</td>
-          <td>${x.hora_hasta || '-'}</td>
-          <td>${x.tipo_permiso}</td>
-          <td>${x.motivo}</td>
-          <td>${x.observaciones || '-'}</td>
-          <td>${pill(x.estado)}</td>
-          <td>${x.archivo_sustento ? '▧ ' + x.archivo_sustento : '-'}</td>
-          <td class="text-center">${x.estado === 'Solicitado' ? `<button onclick="cambiarEstadoPermiso(${x.id}, 'Aprobado')" class="text-emerald-700 font-bold mr-2">Aprobar</button><button onclick="cambiarEstadoPermiso(${x.id}, 'Rechazado')" class="text-rose-600 font-bold">Rechazar</button>` : '-'}</td>
-        </tr>
-      `).join('');
-
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  function llenarSelectTrabajadores() {
-    if (listaAsistencias.length > 0) {
-      $('aTrabajador').innerHTML = listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
-      $('tTrabajador').innerHTML = '<option value="">Todos</option>' + listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
-    }
-  }
-
-  // 6. Guardar Marcación Manual (POST API)
-  $('formAsistencia').onsubmit = async e => {
-    e.preventDefault();
-    const btn = $('btnGuardarAsist');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    const payload = {
-      empleado_id: $('aTrabajador').value,
-      fecha: $('fFecha').value,
-      hora_ingreso: $('aIngreso').value,
-      hora_salida: $('aSalida').value || null,
-      estado: $('aEstado').value,
-      observacion: $('aObs').value || null
-    };
-
-    try {
-      const res = await fetch('http://localhost:3000/api/asistencias/marcar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const resp = await res.json();
-      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'Error al guardar');
-
-      toast('Marcación registrada con cálculo automático');
-      closeM('modalAsistencia');
-      $('formAsistencia').reset();
-      cargarAsistencias();
-      cargarTardanzas();
-
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Guardar';
-    }
-  };
-
-  // Modales
-  function openM(id) { $(id).classList.remove('hidden'); $(id).classList.add('flex'); }
-  function closeM(id) { $(id).classList.add('hidden'); $(id).classList.remove('flex'); }
-  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeM(b.dataset.close));
-  $('btnNuevaAsistencia').onclick = () => openM('modalAsistencia');
-
-  $('btnNuevoPermiso').onclick = () => {
-    const opts = listaAsistencias.map(x => `<option value="${x.empleado_id}">${x.colaborador}</option>`).join('');
-    $('pTrabajador').innerHTML = opts;
-    $('pInicio').value = $('fFecha').value || new Date().toISOString().split('T')[0];
-    $('pFin').value = $('pInicio').value;
-    openM('modalPermiso');
-  };
-
-  window.cambiarEstadoPermiso = async (id, estado) => {
-    if (!confirm(`¿Desea marcar el permiso como ${estado.toLowerCase()}?`)) return;
-    try {
-      const res = await fetch(`http://localhost:3000/api/asistencias/permisos/${id}/estado`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ estado })
-      });
-      const resp = await res.json();
-      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'No se pudo actualizar el permiso');
-      toast(`Permiso ${estado.toLowerCase()} correctamente`);
-      cargarPermisos();
-    } catch (err) { alert(err.message); }
-  };
-
-  $('formPermiso').onsubmit = async e => {
-    e.preventDefault();
-    const btn = $('btnGuardarPermiso');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-    try {
-      const payload = {
-        empleado_id: $('pTrabajador').value,
-        tipo_permiso: $('pTipo').value,
-        fecha_inicio: $('pInicio').value,
-        fecha_fin: $('pFin').value,
-        hora_desde: $('pHoraDesde').value || null,
-        hora_hasta: $('pHoraHasta').value || null,
-        motivo: $('pMotivo').value.trim(),
-        observaciones: $('pObservaciones').value.trim() || null,
-        archivo_sustento: $('pDocumento').value.trim() || null
-      };
-      const res = await fetch('http://localhost:3000/api/asistencias/permisos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      const resp = await res.json();
-      if (!res.ok || !resp.ok) throw new Error(resp.mensaje || 'Error al guardar permiso');
-      toast('Permiso registrado correctamente');
-      closeM('modalPermiso');
-      $('formPermiso').reset();
-      cargarPermisos();
-    } catch (err) { alert(err.message); }
-    finally { btn.disabled = false; btn.textContent = 'Guardar'; }
-  };
-
-
-  const hoy = new Date().toISOString().split('T')[0];
-  $('fFecha').value = hoy;
-
-  ['fFecha', 'fEmpresa', 'fArea', 'fEstado', 'fBuscar', 'empresaGlobal', 'pDesde', 'pHasta', 'pEmpresa', 'pArea', 'pEstado'].forEach(id => {
-    const el = $(id);
-    if (el) el.addEventListener('input', id.startsWith('p') ? cargarPermisos : cargarAsistencias);
-  });
-
-  document.querySelectorAll('.seg').forEach(b => {
-    b.onclick = () => {
-      document.querySelectorAll('.seg').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      periodoTardanzasActual = b.dataset.period;
-      cargarTardanzas();
-    };
-  });
-
-  $('btnVerReporte').onclick = () => {
-    cargarTardanzas();
-    toast('Tardanzas actualizadas');
-  };
-
-  cargarAsistencias();
-  cargarTardanzas();
-  cargarPermisos();
-</script>
+<script src="js/asistencia-ui.js"></script>
+<script src="js/registros.js"></script>
 </body>
 </html>

@@ -7,9 +7,9 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
 <title>SBSS - Empresas</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="vendor/lucide/lucide.min.js"></script>
 <style>
 :root{--line:#d8e6ef;--blue:#075985;--blue2:#0b75b5}
 *{box-sizing:border-box}
@@ -112,8 +112,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         <input id="mRazonSocial" class="control" required placeholder="Ej. Droguería Silsan">
       </div>
       <div>
-        <label class="font-bold block mb-1">RUC *</label>
-        <input id="mRuc" class="control" maxlength="11" required placeholder="20XXXXXXXXX">
+        <label class="font-bold block mb-1">RUC (si corresponde)</label>
+        <input id="mRuc" class="control" maxlength="11" pattern="[0-9]{11}" placeholder="20XXXXXXXXX">
       </div>
       <div>
         <label class="font-bold block mb-1">Dirección</label>
@@ -147,6 +147,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 <script src="js/sidebar.js"></script>
 <script>
   const token = localStorage.getItem('sbss_token');
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let listaEmpresas = [];
   const tbodyEmpresas = document.getElementById('tbodyEmpresas');
 
@@ -160,7 +161,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
   async function cargarEmpresas() {
     try {
-      const res = await fetch('http://localhost:3000/api/empresas', {
+      const res = await fetch('/api/empresas', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -181,16 +182,16 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     tbodyEmpresas.innerHTML = lista.map((e, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td><strong class="text-sky-900">${e.razon_social}</strong></td>
-        <td>${e.ruc || '-'}</td>
-        <td>${e.direccion || '-'}</td>
-        <td>${e.email_contacto || e.telefono || '-'}</td>
-        <td class="text-center font-bold">${e.total_empleados} colaboradores</td>
+        <td><strong class="text-sky-900">${escapeHtml(e.razon_social)}</strong></td>
+        <td>${escapeHtml(e.ruc || '-')}</td>
+        <td>${escapeHtml(e.direccion || '-')}</td>
+        <td>${escapeHtml(e.email_contacto || e.telefono || '-')}</td>
+        <td class="text-center font-bold">${Number(e.total_empleados) || 0} colaboradores</td>
         <td class="text-center">
           <span class="pill ${e.estado === 'activo' ? 'ok' : 'no'}">● ${e.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>
         </td>
         <td class="text-center">
-          <button class="text-[#0870ad] font-bold p-1 editEmp" data-id="${e.id}" title="Editar">✎</button>
+          <button class="text-[#0870ad] font-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar">✎</button>
         </td>
       </tr>
     `).join('');
@@ -241,7 +242,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     };
 
     try {
-      const res = await fetch('http://localhost:3000/api/empresas', {
+      const res = await fetch('/api/empresas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
