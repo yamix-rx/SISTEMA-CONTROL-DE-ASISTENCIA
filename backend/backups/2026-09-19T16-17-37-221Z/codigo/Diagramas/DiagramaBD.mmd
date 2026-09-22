@@ -1,0 +1,239 @@
+%% SBSS V1: esquema base + scripts/migrar-v1.js.
+%% Las relaciones dibujadas corresponden a claves foráneas del esquema.
+%% permisos.tipo_permiso almacena texto: tipo_permisos no tiene FK hacia permisos.
+%% documentos_empleado.revisado_por es una referencia lógica, sin FK declarada.
+%% historial_cambios.registro_id referencia distintas tablas según tabla_afectada.
+%% Los archivos físicos se guardan fuera de la base; se conserva su nombre privado.
+erDiagram
+    roles ||--o{ usuarios : asigna
+    empresas ||--o{ areas : contiene
+    areas ||--o{ cargos : contiene
+    empresas ||--o{ empleados : agrupa
+    areas ||--o{ empleados : organiza
+    cargos ||--o{ empleados : asigna
+    empleados ||--o| usuarios : accede
+    empleados ||--o| practicante_detalles : define_meta
+    empleados ||--o{ horarios : programa
+    empleados ||--o{ asistencias : registra
+    usuarios o|--o{ asistencias : registrado_por
+    empleados ||--o{ permisos : solicita
+    empleados ||--o{ documentos_empleado : conserva
+    tipo_documentos ||--o{ documentos_empleado : clasifica
+    empleados ||--o{ contratos : vincula
+    documentos_empleado o|--o{ contratos : adjunta
+    usuarios o|--o{ contratos : crea
+    usuarios o|--o{ contratos : actualiza
+    empresas o|--o{ capacitaciones : organiza
+    usuarios o|--o{ capacitaciones : crea
+    usuarios o|--o{ capacitaciones : actualiza
+    capacitaciones ||--o{ capacitacion_participantes : inscribe
+    empleados ||--o{ capacitacion_participantes : participa
+    documentos_empleado o|--o{ capacitacion_participantes : certifica
+    usuarios o|--o{ historial_cambios : realiza
+
+    roles {
+        int id PK
+        varchar nombre UK
+        varchar descripcion
+        timestamp created_at
+    }
+    empresas {
+        int id PK
+        varchar razon_social
+        varchar ruc
+        varchar direccion
+        enum estado
+        timestamp created_at
+    }
+    areas {
+        int id PK
+        varchar nombre
+        int empresa_id FK
+    }
+    cargos {
+        int id PK
+        varchar nombre
+        int area_id FK
+    }
+    empleados {
+        int id PK
+        enum tipo_documento
+        varchar numero_documento UK
+        varchar nombres
+        varchar apellidos
+        varchar foto_perfil
+        date fecha_nacimiento
+        varchar telefono
+        varchar correo_personal
+        varchar direccion
+        varchar carrera
+        varchar institucion_educativa
+        int empresa_id FK
+        int area_id FK
+        int cargo_id FK
+        varchar puesto "Descripción del puesto, separada del cargo"
+        varchar tipo_vinculo
+        decimal horas_totales_asignadas
+        decimal horas_completadas "Campo legado; progreso calculado desde asistencias"
+        enum estado
+        date fecha_ingreso
+        date fecha_finalizacion
+        text observaciones_rrhh
+        timestamp created_at
+        timestamp updated_at
+    }
+    usuarios {
+        int id PK
+        int empleado_id FK, UK
+        int rol_id FK
+        varchar email UK
+        varchar password "Hash bcrypt"
+        boolean activo
+        int sesion_version
+        timestamp created_at
+    }
+    practicante_detalles {
+        int id PK
+        int empleado_id FK, UK
+        decimal horas_meta
+        date fecha_vencimiento_convenio
+        boolean estado_completado
+        date fecha_completado
+    }
+    horarios {
+        int id PK
+        int empleado_id FK "Unico con dia_semana"
+        tinyint dia_semana "1 lunes a 7 domingo"
+        enum turno
+        time hora_entrada
+        time hora_salida
+        int tolerancia_minutos
+        boolean activo
+    }
+    asistencias {
+        int id PK
+        int empleado_id FK "Unico con fecha"
+        date fecha
+        time hora_programada_entrada
+        time hora_programada_salida
+        int tolerancia_minutos "Programacion conservada de la jornada"
+        time hora_ingreso
+        time hora_salida
+        int minutos_tardanza
+        decimal horas_trabajadas
+        enum estado
+        varchar observacion
+        int registrado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    tipo_permisos {
+        int id PK
+        varchar nombre UK
+    }
+    permisos {
+        int id PK
+        int empleado_id FK
+        varchar tipo_permiso
+        date fecha_inicio
+        date fecha_fin
+        time hora_desde
+        time hora_hasta
+        text motivo
+        text observaciones
+        enum estado
+        varchar archivo_sustento "Nombre privado del archivo"
+        varchar archivo_sustento_nombre "Nombre original"
+        timestamp created_at
+    }
+    tipo_documentos {
+        int id PK
+        varchar nombre UK
+        text descripcion
+        boolean es_obligatorio
+    }
+    documentos_empleado {
+        int id PK
+        int empleado_id FK
+        int tipo_documento_id FK
+        varchar nombre_archivo
+        varchar ruta_archivo "Nombre privado; se conserva cada version"
+        enum estado
+        timestamp fecha_subida
+        text observacion
+        int revisado_por "Referencia logica a usuarios"
+        datetime fecha_revision
+        varchar mime_type
+    }
+    plantillas_documentos {
+        int id PK
+        varchar codigo UK
+        varchar titulo
+        longtext cuerpo_html "Texto plano con marcadores permitidos"
+        timestamp updated_at
+    }
+    contratos {
+        int id PK
+        int empleado_id FK
+        varchar codigo UK
+        varchar tipo_contrato
+        varchar modalidad
+        date fecha_inicio
+        date fecha_fin
+        decimal remuneracion
+        char moneda
+        decimal horas_semanales
+        enum estado
+        text observaciones
+        int documento_empleado_id FK
+        int creado_por_usuario_id FK
+        int actualizado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    capacitaciones {
+        int id PK
+        varchar titulo
+        varchar categoria
+        text descripcion
+        enum modalidad
+        varchar proveedor
+        int empresa_id FK
+        date fecha_inicio
+        date fecha_fin
+        time hora_inicio
+        time hora_fin
+        decimal horas
+        varchar lugar
+        varchar enlace
+        int cupo
+        boolean obligatorio
+        enum estado
+        int creado_por_usuario_id FK
+        int actualizado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    capacitacion_participantes {
+        int id PK
+        int capacitacion_id FK "Unico con empleado_id"
+        int empleado_id FK
+        enum estado
+        decimal asistencia_porcentaje
+        decimal nota
+        timestamp fecha_inscripcion
+        datetime fecha_completado
+        text observaciones
+        int certificado_documento_id FK
+    }
+    historial_cambios {
+        bigint id PK
+        int usuario_id FK
+        varchar tabla_afectada
+        int registro_id "Referencia polimorfica sin FK"
+        enum accion "INSERT UPDATE DELETE LOGIN LOGIN_FALLIDO DENEGADO ERROR"
+        json datos_anteriores
+        json datos_nuevos
+        varchar ip_origen
+        timestamp created_at
+    }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SBSS · Personal y expediente</title>
+<link rel="stylesheet" href="css/session.css"><link rel="stylesheet" href="css/expediente.css"><link rel="stylesheet" href="css/navigation.css">
+<script src="js/navigation.js"></script><script src="js/session.js"></script><script src="js/sidebar.js" defer></script><script src="js/ficha-individual.js" defer></script>
+</head><body>
+<header class="sbss-header expediente-header"><strong class="sbss-brand">✦ SBSS</strong><div class="header-account"><span id="avatarLetra" class="avatar">U</span><div><strong id="nombreUsuarioSesion">Usuario</strong><small id="rolUsuarioSesion">Rol</small></div><button id="btnCerrarSesion" type="button">Salir</button></div></header>
+<div class="sbss-navigation-layout">
+<button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false">☰</button><aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+<main class="expediente-main">
+<div class="page-heading"><div><p class="eyebrow">GESTIÓN DE PERSONAL</p><h1>Personal y expediente</h1><p>Consulta la información y el historial de cada colaborador.</p></div><button id="btnNuevoPersonal" class="button primary" type="button">＋ Nuevo personal</button></div>
+<p id="mensaje" class="notice" role="status" hidden></p>
+<section class="panel filters" aria-label="Buscar personal">
+<label>Nombre, DNI, empresa, área o cargo<input id="buscar" type="search" placeholder="Buscar personal"></label>
+<label>Empresa<select id="filtroEmpresa"><option value="">Todas las empresas</option></select></label>
+<label>Área<select id="filtroArea"><option value="">Todas las áreas</option></select></label>
+<label>Cargo<select id="filtroCargo"><option value="">Todos los cargos</option></select></label>
+<label>Estado<select id="filtroEstado"><option value="">Todos los estados</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="finalizado">Finalizado</option><option value="suspendido">Suspendido</option></select></label>
+<button id="btnLimpiarFiltros" class="button" type="button">Limpiar filtros</button>
+<label class="full">Colaborador <span id="totalColaboradores"></span><select id="selectColaborador"><option value="">Cargando personal…</option></select></label>
+</section>
+<p id="estadoFicha" class="notice" role="status">Cargando expediente…</p>
+<div id="expediente" hidden>
+<section class="panel"><div class="section-heading"><h2 id="nombre">Colaborador</h2><div class="actions"><span id="badgeEstado" class="badge"></span><button id="btnEditarPersonal" class="button" type="button">Editar ficha</button></div></div><dl id="datosPersonales" class="profile-grid"></dl></section>
+<section class="panel" aria-labelledby="tituloAlertas"><div class="section-heading"><h2 id="tituloAlertas">Alertas del expediente</h2></div><ul id="alertasFicha" class="alerts"></ul></section>
+<div class="two-columns">
+<section class="panel"><div class="section-heading"><h2>Horario individual</h2><a class="text-link" href="Horarios.html">Gestionar horarios</a></div><div class="table-scroll"><table><thead><tr><th>Día</th><th>Entrada</th><th>Salida</th><th>Tolerancia</th></tr></thead><tbody id="horariosRows"></tbody></table></div></section>
+<section class="panel"><div class="section-heading"><h2>Control de horas</h2></div><div class="panel-body"><div id="horasResumen" class="metrics"></div><progress id="progress" max="100" value="0" aria-label="Avance de horas de prácticas"></progress><p id="progressText"></p><p id="estadoProgreso" class="badge"></p></div></section>
+</div>
+<section class="panel"><div class="section-heading"><h2>Observaciones internas de Recursos Humanos</h2></div><form id="formObservaciones" class="panel-body"><label for="obs">Notas del expediente</label><textarea id="obs" rows="4" maxlength="10000"></textarea><div class="actions"><button id="btnGuardarObs" class="button primary" type="submit">Guardar observaciones</button><span id="estadoObs" role="status"></span></div></form></section>
+<section class="panel"><div class="section-heading"><h2>Documentos del expediente</h2><a id="abrirDocumentos" class="button" href="Documentos.html">Gestionar documentos</a></div><div class="table-scroll"><table><thead><tr><th>Documento</th><th>Requisito</th><th>Archivo</th><th>Fecha</th><th>Estado</th></tr></thead><tbody id="documentosRows"></tbody></table></div><div id="docsGenerated" class="generation-links"></div></section>
+<section class="panel"><div class="section-heading"><h2>Asistencia y tardanzas</h2><a id="abrirReportes" class="button" href="Reportes.html">Reportes PDF / Excel</a></div><div id="resumenHistorial" class="metrics panel-body"></div><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Programada</th><th>Ingreso</th><th>Salida</th><th>Horas</th><th>Tardanza</th><th>Estado</th><th>Observación</th></tr></thead><tbody id="asistenciasRows"></tbody></table></div><nav class="pagination" aria-label="Páginas de asistencias"><button id="asistenciasAnterior" class="button" type="button">Anterior</button><span id="asistenciasPagina"></span><button id="asistenciasSiguiente" class="button" type="button">Siguiente</button></nav></section>
+<section class="panel"><div class="section-heading"><h2>Historial de permisos</h2><a class="text-link" href="Registros.html">Gestionar permisos</a></div><div class="table-scroll"><table><thead><tr><th>Desde / hasta</th><th>Horario</th><th>Tipo</th><th>Motivo</th><th>Observaciones</th><th>Estado</th><th>Sustento</th></tr></thead><tbody id="permisosRows"></tbody></table></div><nav class="pagination" aria-label="Páginas de permisos"><button id="permisosAnterior" class="button" type="button">Anterior</button><span id="permisosPagina"></span><button id="permisosSiguiente" class="button" type="button">Siguiente</button></nav></section>
+</div></main></div>
+<dialog id="modalPersonal" aria-labelledby="modalTitulo"><form id="formPersonal"><div class="section-heading"><h2 id="modalTitulo">Registrar personal</h2><button id="btnCerrarModal" class="button" type="button" aria-label="Cerrar formulario">×</button></div><div class="personal-form">
+<input type="hidden" id="pId">
+<label>Tipo de documento<select id="pTipoDocumento"><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></label><label>Número de documento *<input id="pDocumento" required maxlength="15"></label><label>Nombres *<input id="pNombres" required maxlength="100"></label><label>Apellidos *<input id="pApellidos" required maxlength="100"></label>
+<label>Fecha de nacimiento<input id="pNacimiento" type="date"></label><label>Teléfono<input id="pTelefono" maxlength="20"></label><label>Correo personal<input id="pCorreo" type="email" maxlength="150"></label><label>Dirección<input id="pDireccion" maxlength="255"></label><label>Carrera<input id="pCarrera" maxlength="150"></label><label>Universidad / Instituto<input id="pInstitucion" maxlength="150"></label>
+<label>Empresa *<select id="pEmpresa" required></select></label><label>Área *<select id="pArea" required></select></label><label>Cargo / Puesto *<select id="pCargo" required></select></label>
+<label>Tipo de vínculo *<select id="pVinculo" required><option value="trabajador">Trabajador</option><option value="practicante preprofesional">Practicante preprofesional</option><option value="practicante profesional">Practicante profesional</option><option value="voluntario">Voluntario</option><option value="otro">Otro</option></select></label><label>Estado *<select id="pEstado" required><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="finalizado">Finalizado</option><option value="suspendido">Suspendido</option></select></label>
+<label>Fecha de ingreso *<input id="pIngreso" type="date" required></label><label>Fecha de finalización<input id="pFinalizacion" type="date"></label><label id="horasPracticasField">Horas de prácticas a cumplir *<input id="pHorasPracticas" type="number" min="0.01" step="0.01" value="320"><small>320 por defecto; admite otra cantidad.</small></label><label class="full">Observaciones internas de RRHH<textarea id="pObservaciones" rows="3" maxlength="10000"></textarea></label>
+</div><p id="errorPersonal" class="notice error" role="alert" hidden></p><div class="dialog-actions"><button id="btnCancelarModal" class="button" type="button">Cancelar</button><button id="btnGuardarPersonal" class="button primary" type="submit">Guardar ficha</button></div></form></dialog>
+</body></html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+<title>SBSS - Reportes Consolidados</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/estilos.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--line:#d7e5ee;--ink:#174b70}
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-serif}
+.app{
+    min-width:0;
+}
+.top{background:linear-gradient(105deg,#174d73,#075d91 58%,#063e65)}
+.active{background:linear-gradient(#2a97dd,#147bc0)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 5px rgba(14,65,98,.06)}
+.control{height:36px;border:1px solid #cedfe9;border-radius:6px;background:#fff;padding:0 10px;font-size:11px;color:#245575;width:100%;outline:none}
+.control:focus{border-color:#2890d0;box-shadow:0 0 0 2px rgba(40,144,208,.12)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:linear-gradient(#0d6fa9,#075b8d);color:white;font-size:10px;padding:9px 8px;text-align:left;border-right:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.tbl td{font-size:10px;padding:8px;color:#275675;border-right:1px solid #e1eaf0;border-bottom:1px solid #e3ecf2;white-space:nowrap}
+.tbl tbody tr:hover td{background:#f7fbfe}
+.toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:white;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+</style>
+<link rel="stylesheet" href="css/navigation.css">
+<link rel="stylesheet" href="css/asistencia-core.css">
+</head>
+<body>
+<div class="app min-h-screen">
+<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+  <div class="h-full flex items-center">
+    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]">
+      <span class="text-sky-300 text-3xl leading-none">✦</span><span>SBSS</span>
+    </div>
+    <div class="ml-auto pr-5 flex gap-4 items-center">
+      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
+        <div class="flex flex-col text-left">
+          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+        </div>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="sbss-navigation-layout">
+  <!-- Botón pestaña flotante para abrir el sidebar -->
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+
+  <!-- Sidebar Lateral Colapsable -->
+  <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+  <!-- Contenido Principal -->
+  <main class="flex-1 p-4 bg-[#f8fbfd] space-y-4 max-w-7xl mx-auto transition-all duration-300">
+    <div class="core-heading flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold text-[#174d72]">REPORTES CONSOLIDADOS Y AUDITORÍA DE ASISTENCIA</h1>
+        <p class="text-xs text-[#3c718f]">Genere resúmenes de horas efectivas laboradas, incidencias de tardanzas y avance de horas de prácticas.</p>
+      </div>
+      <div class="flex gap-2 w-full sm:w-auto">
+  <button id="btnExportarExcel"
+    class="h-9 px-3.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition flex-1 sm:flex-none">
+    <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+    <span>Exportar Excel</span>
+  </button>
+
+  <button id="btnExportarPDF"
+    class="h-9 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition flex-1 sm:flex-none">
+    <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+    <span>Exportar PDF</span>
+  </button>
+</div>
+    </div>
+
+    <!-- Filtros combinados -->
+    <section class="panel p-3">
+      <div class="core-filters grid grid-cols-12 gap-3 items-end">
+        <label class="col-span-3 text-[10px] font-bold">
+          Desde:
+          <input id="fInicio" type="date" class="control mt-1">
+        </label>
+        <label class="col-span-3 text-[10px] font-bold">
+          Hasta:
+          <input id="fFin" type="date" class="control mt-1">
+        </label>
+        <label class="col-span-3 text-[10px] font-bold">
+          Empresa:
+          <select id="fEmpresa" class="control mt-1">
+            <option value="">Todas las Empresas</option>
+          </select>
+        </label>
+        <label class="col-span-2 text-[10px] font-bold">
+          Vínculo:
+          <select id="fVinculo" class="control mt-1">
+            <option value="">Todos</option>
+            <option value="trabajador">Trabajador</option>
+            <option value="practicante">Todos los practicantes</option><option value="practicante preprofesional">Practicante preprofesional</option><option value="practicante profesional">Practicante profesional</option><option value="voluntario">Voluntario</option><option value="otro">Otro</option>
+          </select>
+        </label>
+        <label class="col-span-3 text-[10px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Cargo<select id="fCargo" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Trabajador<select id="fTrabajador" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option>presente</option><option>falta</option><option>tardanza</option><option>permiso</option><option>descanso</option><option>feriado</option><option>vacaciones</option><option>justificado</option></select></label><label class="col-span-3 text-[10px] font-bold">Periodo<select id="fPeriodo" class="control mt-1"><option value="personalizado">Personalizado</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option></select></label><div class="col-span-1">
+          <button id="btnFiltrar" aria-label="Aplicar filtros" class="w-full h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center justify-center">
+            <i data-lucide="filter" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tarjetas de métricas -->
+    <section class="core-kpis grid grid-cols-4 gap-4">
+      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-emerald-600">
+        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">
+          <i data-lucide="check-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-500 font-bold block">Asistencias</span>
+          <strong id="kpiPuntuales" class="text-lg text-emerald-800">0</strong>
+        </div>
+      </div>
+
+      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-amber-500">
+        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 grid place-items-center shrink-0">
+          <i data-lucide="clock-alert" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-500 font-bold block">Tardanzas Registradas</span>
+          <strong id="kpiTardanzas" class="text-lg text-amber-800">0</strong>
+        </div>
+      </div>
+
+      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-rose-500">
+        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-700 grid place-items-center shrink-0">
+          <i data-lucide="timer-reset" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-500 font-bold block">Minutos Perdidos</span>
+          <strong id="kpiMinutos" class="text-lg text-rose-800">0 min</strong>
+        </div>
+      </div>
+
+      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-sky-600">
+        <div class="w-10 h-10 rounded-full bg-sky-100 text-sky-800 grid place-items-center shrink-0">
+          <i data-lucide="briefcase" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-500 font-bold block">Total Horas Laboradas</span>
+          <strong id="kpiHoras" class="text-lg text-sky-900">0 hrs</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Faltas</span><strong id="kpiFaltas" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Permisos</span><strong id="kpiPermisos" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Horas pendientes</span><strong id="kpiPendientes" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">% Asistencia</span><strong id="kpiAsistencia" class="text-lg text-sky-900">0</strong></div></section><p id="criterioReporte" class="text-xs text-slate-600 p-3"></p><!-- Tabla de resultados -->
+    <section class="panel overflow-hidden">
+      <div class="p-3 border-b border-[#dce8f0] flex justify-between items-center bg-slate-50">
+        <h2 class="font-bold text-xs text-sky-900 flex items-center gap-2">
+          <i data-lucide="table" class="w-4 h-4"></i>CONSOLIDADO POR COLABORADOR
+        </h2>
+        <span id="lblConteoResultados" class="text-[10px] text-slate-500">Mostrando 0 colaboradores</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl" id="tablaReporte">
+          <thead><tr><th>Colaborador</th><th>DNI</th><th>Empresa</th><th>Área</th><th>Cargo</th><th>Vínculo</th><th>Puntual</th><th>Tardanza</th><th>Falta</th><th>Min. tardanza</th><th>Horas periodo</th><th>Horas acumuladas</th><th>Horas pendientes</th><th>Permisos</th><th>% asistencia</th><th>Avance horas %</th></tr></thead>
+          <tbody id="tbodyReportes">
+            <tr><td colspan="16" class="text-center py-6 text-slate-400">Cargando reporte...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script src="js/asistencia-ui.js"></script>
+<script src="js/reportes.js"></script>
+</body>
+</html>

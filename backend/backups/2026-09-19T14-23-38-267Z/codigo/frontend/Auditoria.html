@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/navigation.css">
+<script src="js/session.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/sidebar.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<title>SBSS - Auditoría</title>
+<style>
+body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-serif}
+.app{min-height:100vh}
+.top{height:54px;background:linear-gradient(105deg,#174d73 0%,#075d91 58%,#063e65 100%);color:#fff}
+.panel{background:#fff;border:1px solid #d4e2ea;border-radius:7px;box-shadow:0 1px 5px rgba(20,70,100,.06)}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{background:#f7fbfd;color:#111;font-size:12px;padding:9px;border:1px solid #cfd8df;text-align:left;white-space:nowrap}
+.data-table td{font-size:11.5px;color:#111;padding:8px;border:1px solid #cfd8df;vertical-align:top}
+.data-table tbody tr:nth-child(odd){background:#f8fafb}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px}
+.filters input,.filters select{width:100%;padding:8px;border:1px solid #cbd8e0;border-radius:5px;font-size:12px;background:#fff}
+.btn{background:#0d679f;color:#fff;border:0;border-radius:5px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer}
+.btn:hover{background:#075987}
+.btn-light{background:#eef5f8;color:#154866}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:#fff;border:1px solid #d4e2ea;border-radius:7px;padding:12px}
+.kpi small{display:block;color:#71808a;font-size:10px}.kpi strong{display:block;font-size:22px;margin-top:4px}
+.badge{display:inline-block;padding:3px 7px;border-radius:20px;background:#eef5f8;font-size:10px;font-weight:700}
+.details{white-space:pre-wrap;max-width:330px;word-break:break-word}
+@media(max-width:900px){.filters{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.filters,.kpis{grid-template-columns:1fr}.table-wrap{overflow-x:auto}.data-table{min-width:1050px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="sbss-header top flex items-center px-4">
+  <div class="font-bold text-lg">SBSS</div>
+  <div class="ml-auto text-right">
+    <div id="nombreUsuarioSesion" class="text-xs font-semibold"></div>
+    <div id="rolUsuarioSesion" class="text-[10px] opacity-80"></div>
+  </div>
+  <div id="avatarLetra" class="ml-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold"></div>
+</header>
+<div class="sbss-navigation-layout">
+  <aside id="sidebarMenu" class="sbss-sidebar"></aside>
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú"></button>
+  <main class="flex-1 min-w-0 p-4">
+    <div class="mb-4">
+      <h1 class="text-xl font-bold text-slate-800 pl-9 md:pl-0">Auditoría del sistema</h1>
+      <p class="text-xs text-slate-500">Registro de accesos y operaciones realizadas por los usuarios.</p>
+    </div>
+
+    <div class="kpis mb-4">
+      <div class="kpi"><small>Inicios de sesión</small><strong id="kpiLogin">0</strong></div>
+      <div class="kpi"><small>Altas / registros</small><strong id="kpiInsert">0</strong></div>
+      <div class="kpi"><small>Modificaciones</small><strong id="kpiUpdate">0</strong></div>
+      <div class="kpi"><small>Eliminaciones</small><strong id="kpiDelete">0</strong></div>
+      <div class="kpi"><small>Intentos fallidos</small><strong id="kpiFail">0</strong></div>
+    </div>
+
+    <section class="panel p-4 mb-4">
+      <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <div>
+          <h2 class="font-bold text-sm text-slate-800">Filtros del historial</h2>
+          <p class="text-[10px] text-slate-500">Consulta quién realizó la operación, cuándo y sobre qué módulo.</p>
+        </div>
+        <button class="btn btn-light" id="btnLimpiar">LIMPIAR</button>
+      </div>
+      <div class="filters">
+        <input id="fUsuario" placeholder="Usuario / correo">
+        <select id="fAccion">
+          <option value="">Todas las acciones</option>
+          <option value="LOGIN">Inicio de sesión</option>
+          <option value="LOGIN_FALLIDO">Inicio fallido</option>
+          <option value="INSERT">Registro</option>
+          <option value="UPDATE">Modificación</option>
+          <option value="DELETE">Eliminación</option>
+          <option value="DENEGADO">Operación denegada</option>
+          <option value="ERROR">Operación sin completar</option>
+        </select>
+        <select id="fTabla">
+          <option value="">Todos los módulos</option>
+          <option value="empleados">Personal</option>
+          <option value="asistencias">Asistencia</option>
+          <option value="permisos">Permisos</option>
+          <option value="documentos_empleado">Documentos</option>
+          <option value="horarios">Horarios</option>
+          <option value="empresas">Empresas</option>
+          <option value="contratos">Contratos</option>
+          <option value="capacitaciones">Capacitaciones</option>
+          <option value="sesiones">Sesiones</option>
+          <option value="usuarios">Usuarios</option>
+          <option value="areas">Áreas</option>
+          <option value="cargos">Cargos</option>
+          <option value="plantillas_documentos">Plantillas</option>
+        </select>
+        <input type="date" id="fDesde">
+        <input type="date" id="fHasta">
+        <button class="btn" id="btnBuscar">CONSULTAR</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="p-4 flex items-center justify-between">
+        <div><h2 class="font-bold text-sm text-slate-800">Historial de actividades</h2><span id="contador" class="text-[10px] text-slate-500"></span></div>
+        <span class="badge">Solo Administrador General</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr>
+            <th>Fecha / hora</th><th>Usuario</th><th>Rol</th><th>Acción</th><th>Módulo / tabla</th><th>Registro</th><th>Detalle de operación</th><th>IP</th>
+          </tr></thead>
+          <tbody id="tbodyAuditoria"><tr><td colspan="8">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+<script>
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pretty = value => value == null ? '' : JSON.stringify(value, null, 2);
+function labelAccion(a){
+  return ({LOGIN:'INICIO DE SESIÓN',LOGIN_FALLIDO:'INICIO FALLIDO',INSERT:'REGISTRO',UPDATE:'MODIFICACIÓN',DELETE:'ELIMINACIÓN',DENEGADO:'DENEGADO',ERROR:'SIN COMPLETAR'})[a] || a;
+}
+function renderResumen(rows){
+  const map=Object.fromEntries(rows.map(x=>[x.accion,Number(x.cantidad)]));
+  kpiLogin.textContent=map.LOGIN||0; kpiInsert.textContent=map.INSERT||0;
+  kpiUpdate.textContent=map.UPDATE||0; kpiDelete.textContent=map.DELETE||0; kpiFail.textContent=(map.LOGIN_FALLIDO||0)+(map.DENEGADO||0)+(map.ERROR||0);
+}
+async function cargarResumen(){
+  const r=await SBSSSession.fetch(`${SBSSSession.API_BASE}/auditoria/resumen`); const d=await r.json();
+  if(d.ok) renderResumen(d.resumen||[]);
+}
+async function cargarAuditoria(){
+  const params=new URLSearchParams();
+  const u=fUsuario.value.trim(), a=fAccion.value, t=fTabla.value, d=fDesde.value, h=fHasta.value;
+  if(u) params.set('usuario_id', u);
+  if(a) params.set('accion',a); if(t) params.set('tabla',t); if(d) params.set('desde',d); if(h) params.set('hasta',h);
+  params.set('limite','500');
+  const tbody=document.getElementById('tbodyAuditoria');
+  tbody.innerHTML='<tr><td colspan="8">Cargando...</td></tr>';
+  try{
+    const r=await SBSSSession.fetch(`${SBSSSession.API_BASE}/auditoria?${params.toString()}`); const data=await r.json();
+    if(!r.ok || !data.ok) throw new Error(data.mensaje||'No se pudo cargar');
+    const rows=data.registros||[]; contador.textContent=rows.length+' registro(s)';
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="8">No hay registros para los filtros seleccionados.</td></tr>';return;}
+    tbody.innerHTML=rows.map(x=>{
+      const fecha=new Date(x.created_at).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'medium'});
+      const user=x.usuario_nombre?.trim() || x.email || 'Sistema / desconocido';
+      const detail = x.accion==='UPDATE' && x.datos_anteriores
+        ? 'ANTES:\\n'+pretty(x.datos_anteriores)+'\\n\\nOPERACIÓN:\\n'+pretty(x.datos_nuevos)
+        : pretty(x.datos_nuevos);
+      return `<tr><td>${esc(fecha)}</td><td><b>${esc(user)}</b><br><span class="text-slate-500">${esc(x.email||'')}</span></td><td>${esc(x.rol||'-')}</td><td><span class="badge">${esc(labelAccion(x.accion))}</span></td><td>${esc(x.tabla_afectada)}</td><td>${esc(x.registro_id || '-')}</td><td class="details">${esc(detail)}</td><td>${esc(x.ip_origen||'-')}</td></tr>`;
+    }).join('');
+  }catch(e){
+    console.error('Error al cargar auditoría:', e);
+    const mensaje = e?.message ? `No se pudo cargar el historial. ${e.message}` : 'No se pudo cargar el historial.';
+    tbody.innerHTML=`<tr><td colspan="8">${esc(mensaje)}</td></tr>`;
+  }
+}
+btnBuscar.onclick=cargarAuditoria;
+btnLimpiar.onclick=()=>{fUsuario.value='';fAccion.value='';fTabla.value='';fDesde.value='';fHasta.value='';cargarAuditoria();};
+SBSSSession.ready.then(()=>Promise.all([cargarResumen(),cargarAuditoria()]));
+</script>
+</body>
+</html>

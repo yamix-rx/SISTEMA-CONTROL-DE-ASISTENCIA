@@ -1,0 +1,17 @@
+{
+  "fecha": "2026-09-19T16:12:04.354Z",
+  "base": "sbss_validacion_20260919",
+  "comprobaciones": [
+    "inicio de sesión con MySQL real",
+    "cuentas y aislamiento de los tres perfiles",
+    "puesto separado, convenio editable y alerta independiente de contratos",
+    "horas, tardanzas, corrección sin duplicados e histórico del horario",
+    "progreso completo y privacidad de notas internas",
+    "tres documentos PDF, carga y descarga privada",
+    "permisos, aprobación y archivo sustentatorio",
+    "reportes filtrados y seguimiento de RRHH",
+    "auditoría identifica entidad, registro y antes/después",
+    "consulta de suspendidos y revocación por cambio de contraseña",
+    "confirmación explícita del horario antiguo, cálculo y auditoría sin duplicados"
+  ]
+}

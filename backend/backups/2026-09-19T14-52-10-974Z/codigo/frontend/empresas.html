@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+<title>SBSS - Empresas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/estilos.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--line:#d8e6ef;--blue:#075985;--blue2:#0b75b5}
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-serif}
+.app{
+    min-width:0;
+}
+.top{background:linear-gradient(105deg,#174d73,#075d91 58%,#063e65)}
+.active{background:linear-gradient(180deg,#2a97dd,#147bc0)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 5px rgba(14,65,98,.06)}
+.control{height:32px;border:1px solid #cee0ea;border-radius:5px;background:#fff;padding:0 9px;font-size:11px;outline:none;width:100%}
+.control:focus{border-color:#2b8ccd;box-shadow:0 0 0 2px rgba(43,140,205,.1)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:linear-gradient(#0d6fa9,#075b8d);color:white;font-size:10px;padding:9px 8px;text-align:left;border-right:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.tbl td{font-size:10px;padding:8px;color:#275675;border-right:1px solid #e1eaf0;border-bottom:1px solid #e3ecf2;white-space:nowrap}
+.tbl tbody tr:hover td{background:#f7fbfe}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:9px;font-weight:700}
+.ok{background:#d7f6e8;color:#19855c}
+.no{background:#ffe0e3;color:#c73b49}
+.toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:#fff;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.modalbg{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
+</style>
+<link rel="stylesheet" href="css/navigation.css">
+</head>
+<body>
+<div class="app min-h-screen">
+<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+  <div class="h-full flex items-center">
+    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]"><span class="text-sky-300 text-3xl">✦</span>SBSS</div>
+    <div class="ml-auto pr-5 flex gap-4 items-center">
+      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
+        <div class="flex flex-col text-left">
+          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+        </div>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="sbss-navigation-layout">
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+
+  <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+  <main class="flex-1 p-4 bg-[#f8fbfd] space-y-4 max-w-7xl mx-auto transition-all duration-300">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold text-[#174d72]">GESTIÓN DE EMPRESAS DEL HOLDING</h1>
+        <p class="text-xs text-[#3c718f]">Administre las entidades empresariales, información fiscal y estado operativo.</p>
+      </div>
+      <button id="btnNuevaEmpresa" class="h-9 px-4 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition">
+        <i data-lucide="plus" class="w-4 h-4"></i>Nueva Empresa
+      </button>
+    </div>
+
+    <section class="panel overflow-hidden">
+      <div class="p-3 border-b border-[#dce8f0] flex gap-3">
+        <input id="txtBuscarEmpresa" class="control max-w-sm" placeholder="Buscar por razón social o RUC...">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Razón Social</th>
+              <th>RUC</th>
+              <th>Dirección</th>
+              <th>Contacto</th>
+              <th class="text-center">Personal Activo</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyEmpresas">
+            <tr><td colspan="8" class="text-center py-6 text-slate-400">Cargando empresas...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+
+<!-- Modal Empresa -->
+<div id="modalEmpresa" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
+  <form id="formEmpresa" class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between items-center">
+      <b id="modalTitulo">Registrar Empresa</b>
+      <button type="button" data-close="modalEmpresa" class="text-white hover:text-rose-200">✕</button>
+    </div>
+    <div class="p-5 space-y-3 text-xs">
+      <input type="hidden" id="empresaId">
+      <div>
+        <label class="font-bold block mb-1">Razón Social *</label>
+        <input id="mRazonSocial" class="control" required placeholder="Ej. Droguería Silsan">
+      </div>
+      <div>
+        <label class="font-bold block mb-1">RUC (si corresponde)</label>
+        <input id="mRuc" class="control" maxlength="11" pattern="[0-9]{11}" placeholder="20XXXXXXXXX">
+      </div>
+      <div>
+        <label class="font-bold block mb-1">Dirección</label>
+        <input id="mDireccion" class="control" placeholder="Dirección fiscal">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="font-bold block mb-1">Teléfono</label>
+          <input id="mTelefono" class="control" disabled placeholder="No disponible">
+        </div>
+        <div>
+          <label class="font-bold block mb-1">Estado</label>
+          <select id="mEstado" class="control">
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="font-bold block mb-1">Correo de Contacto</label>
+        <input id="mEmail" type="email" class="control" disabled placeholder="No disponible">
+      </div>
+    </div>
+    <div class="px-5 pb-5 flex justify-end gap-2">
+      <button type="button" data-close="modalEmpresa" class="border rounded px-4 py-2 text-xs">Cancelar</button>
+      <button type="submit" id="btnGuardarEmpresa" class="bg-[#0a78b9] hover:bg-[#086aa7] text-white rounded px-4 py-2 text-xs font-bold transition">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script>
+  const token = localStorage.getItem('sbss_token');
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let listaEmpresas = [];
+  const tbodyEmpresas = document.getElementById('tbodyEmpresas');
+
+  function toast(m) {
+    let x = document.createElement('div');
+    x.className = 'toast';
+    x.textContent = m;
+    document.body.appendChild(x);
+    setTimeout(() => x.remove(), 2500);
+  }
+
+  async function cargarEmpresas() {
+    try {
+      const res = await fetch('/api/empresas', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!data.ok) return;
+      listaEmpresas = data.data || [];
+      renderEmpresas(listaEmpresas);
+    } catch (e) {
+      console.error(e);
+      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-rose-500">Error al conectar con la base de datos</td></tr>`;
+    }
+  }
+
+  function renderEmpresas(lista) {
+    if (lista.length === 0) {
+      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No se encontraron empresas registradas</td></tr>`;
+      return;
+    }
+    tbodyEmpresas.innerHTML = lista.map((e, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong class="text-sky-900">${escapeHtml(e.razon_social)}</strong></td>
+        <td>${escapeHtml(e.ruc || '-')}</td>
+        <td>${escapeHtml(e.direccion || '-')}</td>
+        <td>${escapeHtml(e.email_contacto || e.telefono || '-')}</td>
+        <td class="text-center font-bold">${Number(e.total_empleados) || 0} colaboradores</td>
+        <td class="text-center">
+          <span class="pill ${e.estado === 'activo' ? 'ok' : 'no'}">● ${e.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>
+        </td>
+        <td class="text-center">
+          <button class="text-[#0870ad] font-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar">✎</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.editEmp').forEach(b => {
+      b.onclick = () => {
+        const id = b.dataset.id;
+        const item = listaEmpresas.find(x => x.id == id);
+        if (!item) return;
+        document.getElementById('modalTitulo').textContent = 'Editar Empresa';
+        document.getElementById('empresaId').value = item.id;
+        document.getElementById('mRazonSocial').value = item.razon_social;
+        document.getElementById('mRuc').value = item.ruc;
+        document.getElementById('mDireccion').value = item.direccion || '';
+        document.getElementById('mTelefono').value = item.telefono || '';
+        document.getElementById('mEstado').value = item.estado || 'activo';
+        document.getElementById('mEmail').value = item.email_contacto || '';
+        openM('modalEmpresa');
+      };
+    });
+  }
+
+  function openM(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+  function closeM(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeM(b.dataset.close));
+
+  document.getElementById('btnNuevaEmpresa').onclick = () => {
+    document.getElementById('modalTitulo').textContent = 'Registrar Empresa';
+    document.getElementById('formEmpresa').reset();
+    document.getElementById('empresaId').value = '';
+    openM('modalEmpresa');
+  };
+
+  document.getElementById('formEmpresa').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnGuardarEmpresa');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const payload = {
+      id: document.getElementById('empresaId').value || null,
+      razon_social: document.getElementById('mRazonSocial').value.trim(),
+      ruc: document.getElementById('mRuc').value.trim(),
+      direccion: document.getElementById('mDireccion').value.trim(),
+      telefono: document.getElementById('mTelefono').value.trim(),
+      estado: document.getElementById('mEstado').value,
+      email_contacto: document.getElementById('mEmail').value.trim()
+    };
+
+    try {
+      const res = await fetch('/api/empresas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar');
+
+      toast(data.mensaje);
+      closeM('modalEmpresa');
+      cargarEmpresas();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
+    }
+  };
+
+  document.getElementById('txtBuscarEmpresa').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtradas = listaEmpresas.filter(x => 
+      x.razon_social.toLowerCase().includes(q) || (x.ruc && x.ruc.includes(q))
+    );
+    renderEmpresas(filtradas);
+  });
+
+  cargarEmpresas();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-09-19T16:04:16.058Z",
+  "api": "simulada; sin acceso a base de datos",
+  "results": [
+    {
+      "action": "Alta, edición y borrado opcional de puesto/convenio; contexto exclusivo de practicantes",
+      "width": 390,
+      "ok": true,
+      "bounds": {
+        "documentWidth": 390,
+        "width": 390,
+        "dialogWidth": 352,
+        "scrollWidth": 350,
+        "clientWidth": 350
+      }
+    },
+    {
+      "action": "Alta, edición y borrado opcional de puesto/convenio; contexto exclusivo de practicantes",
+      "width": 1440,
+      "ok": true,
+      "bounds": {
+        "documentWidth": 1425,
+        "width": 1440,
+        "dialogWidth": 900,
+        "scrollWidth": 898,
+        "clientWidth": 898
+      }
+    },
+    {
+      "action": "Personal normal: trabajador inicial y cambio de vínculo conserva fecha histórica por omisión",
+      "ok": true
+    },
+    {
+      "action": "Mi panel muestra cargo, puesto y vencimiento por separado",
+      "ok": true
+    },
+    {
+      "action": "RecursosHumanos.html: alerta independiente de Contratos, filtro empresa y estado vacío",
+      "ok": true
+    },
+    {
+      "action": "Dashboard.html: alerta independiente de Contratos, filtro empresa y estado vacío",
+      "ok": true
+    },
+    {
+      "action": "Convenio de prácticas disponible en formulario y filtro por catálogo API",
+      "ok": true
+    }
+  ],
+  "javascript": []
+}

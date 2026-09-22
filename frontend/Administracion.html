@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SBSS · Usuarios y configuración</title>
+  <link rel="stylesheet" href="css/session.css"><link rel="stylesheet" href="css/navigation.css"><link rel="stylesheet" href="css/administracion.css">
+  <script src="js/navigation.js"></script><script src="js/session.js"></script>
+  <script src="js/sidebar.js" defer></script><script src="js/administracion.js" defer></script>
+</head>
+<body>
+  <header class="sbss-header admin-header"><a class="sbss-brand" href="Dashboard.html">✦ SBSS</a><div class="admin-account"><span id="avatarLetra" aria-hidden="true">U</span><div><strong id="nombreUsuarioSesion">Usuario</strong><small id="rolUsuarioSesion"></small></div><button id="btnCerrarSesion" type="button">Cerrar sesión</button></div></header>
+  <div class="sbss-navigation-layout">
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú" aria-controls="sidebarMenu"></button>
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+    <main>
+      <h1>Usuarios y configuración</h1><p class="muted">Administra los accesos, las áreas y los cargos de tus empresas.</p>
+      <p id="adminStatus" role="status" aria-live="polite">Cargando configuración…</p>
+      <nav class="admin-tabs" aria-label="Secciones de configuración"><a href="#cuentas">Usuarios</a><a href="#areas">Áreas</a><a href="#cargos">Cargos</a><a href="empresas.html">Empresas</a></nav>
+      <section id="cuentas" class="admin-section"><h2>Cuentas de acceso</h2><div class="admin-grid">
+        <form id="userForm" class="admin-form"><fieldset id="userFields" disabled><legend id="userTitle">Crear cuenta</legend>
+          <input id="userId" type="hidden">
+          <label for="userEmployee">Colaborador</label><select id="userEmployee" required></select>
+          <label for="userEmail">Correo de acceso</label><input id="userEmail" type="email" maxlength="120" autocomplete="off" required>
+          <label for="userRole">Perfil</label><select id="userRole" required></select>
+          <div id="newPasswordField"><label for="userPassword">Contraseña inicial</label><input id="userPassword" type="password" minlength="10" autocomplete="new-password" required><small>Al menos 10 caracteres. Entrega la contraseña al titular por un canal privado.</small></div>
+          <label for="userActive">Estado</label><select id="userActive"><option value="1">Activo</option><option value="0">Inactivo</option></select>
+          <div class="actions"><button type="submit">Guardar cuenta</button><button id="cancelUser" class="secondary" type="button">Limpiar</button></div>
+        </fieldset></form>
+        <div class="admin-panel"><label for="searchUsers">Buscar usuario</label><input id="searchUsers" type="search" placeholder="Nombre, correo o perfil"><div class="table-wrap"><table><caption class="sr-only">Usuarios registrados</caption><thead><tr><th>Colaborador / correo</th><th>Perfil</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div></div>
+      </div></section>
+      <section id="areas" class="admin-section"><h2>Áreas por empresa</h2><div class="admin-grid">
+        <form id="areaForm" class="admin-form"><fieldset id="areaFields" disabled><legend id="areaTitle">Crear área</legend><input id="areaId" type="hidden"><label for="areaCompany">Empresa</label><select id="areaCompany" required></select><label for="areaName">Nombre del área</label><input id="areaName" maxlength="100" required><div class="actions"><button type="submit">Guardar área</button><button id="cancelArea" class="secondary" type="button">Limpiar</button></div></fieldset></form>
+        <div class="admin-panel table-wrap"><table><caption class="sr-only">Áreas registradas</caption><thead><tr><th>Área</th><th>Empresa</th><th>Acciones</th></tr></thead><tbody id="areasBody"></tbody></table></div>
+      </div></section>
+      <section id="cargos" class="admin-section"><h2>Cargos por área</h2><div class="admin-grid">
+        <form id="positionForm" class="admin-form"><fieldset id="positionFields" disabled><legend id="positionTitle">Crear cargo</legend><input id="positionId" type="hidden"><label for="positionArea">Área / empresa</label><select id="positionArea" required></select><label for="positionName">Nombre del cargo</label><input id="positionName" maxlength="100" required><div class="actions"><button type="submit">Guardar cargo</button><button id="cancelPosition" class="secondary" type="button">Limpiar</button></div></fieldset></form>
+        <div class="admin-panel table-wrap"><table><caption class="sr-only">Cargos registrados</caption><thead><tr><th>Cargo</th><th>Área / empresa</th><th>Acciones</th></tr></thead><tbody id="positionsBody"></tbody></table></div>
+      </div></section>
+    </main>
+  </div>
+  <dialog id="passwordDialog"><form id="passwordForm"><h2>Restablecer contraseña</h2><p id="passwordAccount"></p><input id="passwordUserId" type="hidden"><label for="resetPassword">Nueva contraseña</label><input id="resetPassword" type="password" minlength="10" autocomplete="new-password" required><p class="muted">Se cerrarán las sesiones anteriores de esta cuenta.</p><p id="passwordError" role="alert"></p><div class="actions"><button type="submit">Guardar contraseña</button><button id="closePassword" class="secondary" type="button">Cancelar</button></div></form></dialog>
+</body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBSS · Documentos</title>
+  <link rel="stylesheet" href="css/session.css">
+  <link rel="stylesheet" href="css/documentos.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <script src="js/navigation.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/sidebar.js" defer></script>
+  <script src="js/documentos.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-document" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 3v1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 15v6h16v-6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </defs></svg>
+  <a class="skip-link" href="#contenido">Ir al contenido</a>
+  <header class="sbss-header docs-header">
+    <div class="sbss-brand">SBSS</div><span class="header-context">Gestión de personal</span>
+    <div class="user-details"><strong id="nombreUsuarioSesion">Usuario</strong><span id="rolUsuarioSesion"></span></div>
+    <span class="avatar" id="avatarLetra" aria-hidden="true">U</span>
+    <button class="logout-button" id="btnCerrarSesion" type="button">Salir</button>
+  </header>
+  <div class="sbss-navigation-layout">
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"></button>
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú de módulos"></aside>
+    <main id="contenido" class="docs-main">
+      <div class="page-heading">
+        <div><h1>Documentos</h1><p>Gestiona los expedientes de trabajadores y practicantes.</p></div>
+        <div class="heading-actions"><button class="button button-outline" id="btnGenerar" type="button"><svg class="icon"><use href="#i-document"/></svg>Generar documento</button><button class="button button-primary" id="btnSubir" type="button"><svg class="icon"><use href="#i-plus"/></svg>Subir documento</button></div>
+      </div>
+      <div id="mensajeGlobal" class="notice" role="status" hidden></div>
+      <section class="summary-grid" aria-label="Resumen de documentos">
+        <button class="summary-card tone-red" type="button" data-estado="sin_entregar" aria-pressed="false"><span class="summary-icon"><svg class="icon"><use href="#i-document"/></svg></span><span><span class="summary-label">Sin entregar</span><strong id="totalSinEntregar">—</strong></span></button>
+        <button class="summary-card tone-amber" type="button" data-estado="pendiente" aria-pressed="false"><span class="summary-icon"><svg class="icon"><use href="#i-clock"/></svg></span><span><span class="summary-label">Por revisar</span><strong id="totalPendiente">—</strong></span></button>
+        <button class="summary-card tone-green" type="button" data-estado="validado" aria-pressed="false"><span class="summary-icon"><svg class="icon"><use href="#i-check"/></svg></span><span><span class="summary-label">Validados</span><strong id="totalValidado">—</strong></span></button>
+        <button class="summary-card tone-red" type="button" data-estado="rechazado" aria-pressed="false"><span class="summary-icon"><svg class="icon"><use href="#i-alert"/></svg></span><span><span class="summary-label">Observados</span><strong id="totalRechazado">—</strong></span></button>
+      </section>
+      <form id="filtrosDocumentos" class="panel filters" role="search" aria-label="Buscar documentos">
+        <label class="search-field">Nombre o DNI<span class="search-input"><svg class="icon"><use href="#i-search"/></svg><input id="fBuscar" type="search" placeholder="Buscar por nombre o DNI…" maxlength="120" autocomplete="off"></span></label>
+        <label>Empresa<select id="fEmpresa"><option value="">Todas las empresas</option></select></label>
+        <label>Tipo de documento<select id="fTipo"><option value="">Todos los tipos</option></select></label>
+        <label>Estado<select id="fEstado"><option value="">Todos los estados</option><option value="sin_entregar">Sin entregar</option><option value="pendiente">Por revisar</option><option value="validado">Validado</option><option value="rechazado">Observado</option></select></label>
+        <button class="button button-outline filter-reset" type="button" id="btnLimpiar">Limpiar</button>
+        <div id="filtroPersona" class="person-filter" hidden><span></span><button type="button" id="btnQuitarPersona">Quitar filtro de persona</button></div>
+      </form>
+      <div class="documents-layout">
+        <section class="panel documents-panel" aria-labelledby="tituloListado">
+          <div class="panel-heading"><h2 id="tituloListado">Documentos del personal</h2><div class="list-heading-actions"><span id="conteoDocumentos" class="muted" aria-live="polite">Cargando…</span><button id="btnActualizarLista" class="button button-outline" type="button">Actualizar</button></div></div>
+          <div id="estadoLista" class="list-status" role="status"><svg class="icon"><use href="#i-document"/></svg><p id="textoEstadoLista">Cargando documentos…</p><button type="button" id="btnReintentar" class="button button-outline" hidden>Volver a intentar</button></div>
+          <div id="tablaContenedor" class="table-container" hidden>
+            <table><caption class="sr-only">Documentos del personal. Usa Ver para abrir su detalle.</caption><thead><tr><th scope="col">Colaborador</th><th scope="col">Documento</th><th scope="col">Fecha</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody id="filasDocumentos"></tbody></table>
+          </div>
+          <div class="pagination"><span id="rangoDocumentos">Sin registros</span><nav aria-label="Páginas de documentos"><button id="btnAnterior" class="page-button" type="button" disabled aria-label="Página anterior">‹</button><span id="paginaActual">1 / 1</span><button id="btnSiguiente" class="page-button" type="button" disabled aria-label="Página siguiente">›</button></nav></div>
+        </section>
+        <section class="panel preview-panel" id="panelVista" aria-labelledby="tituloVista" tabindex="-1">
+          <div class="panel-heading"><h2 id="tituloVista">Vista previa</h2><button id="btnCerrarVista" type="button" class="icon-button" aria-label="Cerrar vista previa" hidden><svg class="icon"><use href="#i-close"/></svg></button></div>
+          <div id="vistaVacia" class="preview-empty"><span class="empty-document"><svg class="icon"><use href="#i-document"/></svg></span><h3>Todo en un solo lugar</h3><p>Selecciona un documento para ver el archivo, revisar su estado o registrar una observación.</p></div>
+          <div id="vistaDetalle" class="preview-detail" hidden>
+            <div class="detail-heading"><div><h3 id="detalleTipo"></h3><p id="detallePersona" class="muted"></p></div><span id="detalleEstado" class="badge"></span></div>
+            <p id="detalleEmpresa" class="detail-company"></p>
+            <div id="archivoVista" class="file-preview" aria-live="polite"></div>
+            <div class="file-information"><svg class="icon"><use href="#i-document"/></svg><div><strong id="detalleArchivo"></strong><span id="detalleFecha" class="muted"></span></div><button id="btnDescargar" type="button" class="icon-button" aria-label="Descargar documento"><svg class="icon"><use href="#i-download"/></svg></button></div>
+            <p id="observacionAnterior" class="previous-note" hidden></p>
+            <div id="revisionCampos"><label for="observacion">Observación de revisión</label><textarea id="observacion" rows="2" maxlength="1000" placeholder="Indica una corrección o comentario…"></textarea><p class="field-help">Para observar el documento, escribe el motivo.</p><div class="review-actions"><button type="button" id="btnObservar" class="button button-outline">Observar</button><button type="button" id="btnValidar" class="button button-success"><svg class="icon"><use href="#i-check"/></svg>Validar</button></div></div>
+            <button id="btnNuevaVersion" class="button button-subtle full-width" type="button"><svg class="icon"><use href="#i-upload"/></svg>Subir nueva versión</button>
+          </div>
+        </section>
+      </div>
+      <section class="panel templates-panel" aria-labelledby="tituloPlantillas"><div class="panel-heading"><h2 id="tituloPlantillas">Documentos del sistema</h2><button id="btnPlantillas" class="button button-outline" type="button">Editar plantillas</button></div><div class="template-grid">
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de aceptación</h3><p>Confirma la aceptación y las horas previstas.</p></div><button class="button button-outline" type="button" data-plantilla="aceptacion">Generar<span class="sr-only"> carta de aceptación</span></button></article>
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Constancia de prácticas</h3><p>Incluye las horas y los datos del colaborador.</p></div><button class="button button-outline" type="button" data-plantilla="constancia_practicas">Generar<span class="sr-only"> constancia de prácticas</span></button></article>
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de culminación</h3><p>Deja constancia de la finalización de prácticas.</p></div><button class="button button-outline" type="button" data-plantilla="culminacion">Generar<span class="sr-only"> carta de culminación</span></button></article>
+      </div></section>
+      <p class="page-footnote">Los estados se actualizan al revisar los archivos. “Sin entregar” corresponde a requisitos obligatorios pendientes.</p>
+    </main>
+  </div>
+  <dialog id="modalSubir" aria-labelledby="tituloSubir"><form id="formSubir"><div class="dialog-heading"><div><p class="eyebrow">EXPEDIENTE DIGITAL</p><h2 id="tituloSubir">Subir documento</h2></div><button type="button" class="icon-button" data-cerrar="modalSubir" aria-label="Cerrar formulario"><svg class="icon"><use href="#i-close"/></svg></button></div><p>El archivo se guardará en el expediente del colaborador y quedará pendiente de revisión.</p><label for="subirEmpleado">Colaborador</label><select id="subirEmpleado" required><option value="">Selecciona un colaborador</option></select><label for="subirTipo">Tipo de documento</label><select id="subirTipo" required><option value="">Selecciona un tipo</option></select><label for="subirArchivo">Archivo</label><input id="subirArchivo" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png" required aria-describedby="ayudaArchivo"><p id="ayudaArchivo" class="field-help">PDF, Word (DOC/DOCX), JPG o PNG. Tamaño máximo: 5 MB (5 MiB).</p><p id="avisoVersion" class="notice notice-info">Si ya existe un archivo de este tipo para la persona, se guardará una nueva versión y volverá a revisión.</p><p id="errorSubir" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="button button-outline" data-cerrar="modalSubir">Cancelar</button><button id="btnGuardarArchivo" type="submit" class="button button-primary"><svg class="icon"><use href="#i-upload"/></svg>Guardar documento</button></div></form></dialog>
+  <dialog id="modalGenerar" class="generation-dialog" aria-labelledby="tituloGenerar">
+    <form id="formGenerar">
+      <div class="dialog-heading"><div><p class="eyebrow">DOCUMENTOS DEL SISTEMA</p><h2 id="tituloGenerar">Generar documento</h2></div><button type="button" class="icon-button" data-cerrar="modalGenerar" aria-label="Cerrar formulario"><svg class="icon"><use href="#i-close"/></svg></button></div>
+      <p>Revisa los datos, abre la vista previa y descarga el PDF para su firma.</p>
+      <label for="generarEmpleado">Colaborador</label><select id="generarEmpleado" required><option value="">Selecciona un colaborador</option></select>
+      <label for="generarTipo">Documento</label><select id="generarTipo" required><option value="aceptacion">Carta de aceptación</option><option value="constancia_practicas">Constancia de prácticas</option><option value="culminacion">Carta de culminación</option></select>
+      <div class="generation-fields">
+        <label>Empresa<select id="generarEmpresa" required><option value="">Selecciona una empresa</option></select></label>
+        <label>Fecha de emisión<input id="generarFecha" type="date" required></label>
+        <label>Área<select id="generarArea" required><option value="">Selecciona un área</option></select></label>
+        <label>Cargo<select id="generarCargo" required><option value="">Selecciona un cargo</option></select></label>
+        <label>Número de horas<input id="generarHoras" type="number" min="0" max="999999.99" step="0.01" required></label>
+      </div>
+      <p id="generarHorasAyuda" class="field-help">Las horas se completan desde el expediente y pueden ajustarse antes de emitir.</p>
+      <p id="errorGenerar" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button button-outline" data-cerrar="modalGenerar">Cancelar</button><button id="btnCrearVista" type="submit" class="button button-primary">Abrir vista previa</button></div>
+    </form>
+  </dialog>
+  <dialog id="modalDocumentoGenerado" class="generated-dialog" aria-labelledby="tituloDocumentoGenerado">
+    <div class="dialog-heading"><h2 id="tituloDocumentoGenerado">Vista previa</h2><button type="button" class="icon-button" data-cerrar="modalDocumentoGenerado" aria-label="Cerrar vista previa"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <article id="documentoGenerado" class="generated-sheet"><p id="generadoEmpresa" class="generated-brand"></p><h3 id="generadoTitulo"></h3><div id="generadoCuerpo"></div></article>
+    <p id="errorPdf" class="form-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="btnVolverGenerar" type="button" class="button button-outline">Editar datos</button><button id="btnPdfGenerado" type="button" class="button button-primary">Descargar PDF</button></div>
+  </dialog>
+  <dialog id="modalPlantillas" class="generation-dialog" aria-labelledby="tituloEditorPlantillas">
+    <form id="formPlantilla"><div class="dialog-heading"><h2 id="tituloEditorPlantillas">Editar plantillas</h2><button type="button" class="icon-button" data-cerrar="modalPlantillas" aria-label="Cerrar editor"><svg class="icon"><use href="#i-close"/></svg></button></div>
+      <p>Los cambios se usarán en los próximos documentos. Escribe el contenido y coloca los campos disponibles donde necesites los datos del expediente.</p>
+      <label for="plantillaCodigo">Documento</label><select id="plantillaCodigo" required></select>
+      <label for="plantillaTitulo">Título</label><input id="plantillaTitulo" maxlength="150" required>
+      <label for="plantillaCuerpo">Contenido</label><textarea id="plantillaCuerpo" rows="13" maxlength="12000" required></textarea>
+      <p class="field-help">Campos disponibles (pulsa para insertar en el contenido):</p><div id="plantillaCampos" class="template-fields"></div>
+      <p id="errorPlantilla" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button button-outline" data-cerrar="modalPlantillas">Cancelar</button><button id="btnGuardarPlantilla" type="submit" class="button button-primary">Guardar plantilla</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

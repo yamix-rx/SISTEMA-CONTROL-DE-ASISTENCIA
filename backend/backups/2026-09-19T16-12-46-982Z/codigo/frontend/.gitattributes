@@ -1,0 +1,2 @@
+# Conservar los bytes exactos de las distribuciones y sus hashes SHA-256.
+vendor/** -text

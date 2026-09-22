@@ -1,0 +1,29 @@
+html.sbss-session-pending body > :not(.sbss-session-status) {
+    display: none !important;
+}
+[data-sbss-denied] { display: none !important; }
+.sbss-session-status {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    background: #f3f6f8;
+    color: #174d73;
+    font: 15px/1.5 Arial, Helvetica, sans-serif;
+    text-align: center;
+}
+.sbss-session-status strong { font-size: 28px; }
+.sbss-session-status p { max-width: 440px; margin: 0; }
+.sbss-session-status button {
+    border: 0;
+    border-radius: 7px;
+    padding: 12px 20px;
+    background: #075d91;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
+.sbss-session-status button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 3px; }

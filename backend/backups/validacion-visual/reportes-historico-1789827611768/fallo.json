@@ -1,0 +1,30 @@
+{
+  "results": [
+    {
+      "action": "Excel: filtro individual septiembre 2026",
+      "ok": true,
+      "file": "CONTROL_DE_ASISTENCIA_2026-09-01_al_2026-09-30.xlsx",
+      "bytes": 42157,
+      "signature": "PK0304",
+      "sheets": [
+        "CONTROL ASISTENCIA",
+        "RESUMEN",
+        "DETALLE",
+        "CRITERIOS"
+      ],
+      "employees": 1,
+      "attendanceRows": 2
+    },
+    {
+      "action": "PDF: filtro individual septiembre 2026",
+      "ok": true,
+      "file": "Reporte_Consolidado_2026-09-01_2026-09-30.pdf",
+      "bytes": 12032,
+      "signature": "%PDF-",
+      "matchingPeriod": true
+    }
+  ],
+  "message": "Casilla sobredimensionada: {\"viewport\":390,\"documentWidth\":390,\"formWidth\":370,\"formScrollWidth\":370,\"formClientWidth\":370,\"top\":38.40625,\"bottom\":921.59375,\"scrollHeight\":958,\"clientHeight\":883,\"checkboxWidth\":127.296875}",
+  "javascript": [],
+  "http": []
+}

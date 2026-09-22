@@ -1,0 +1,32 @@
+{
+  "fecha": "2026-09-19T14:22:49.357Z",
+  "total": 7,
+  "disponibles": 2,
+  "faltantes": [
+    {
+      "id": 1,
+      "nombre_archivo": "DNI_Agreda_Yenci.pdf",
+      "motivo": 404
+    },
+    {
+      "id": 2,
+      "nombre_archivo": "CV_Agreda_Yenci.pdf",
+      "motivo": 404
+    },
+    {
+      "id": 3,
+      "nombre_archivo": "DNI_Paredes_Carlos.pdf",
+      "motivo": 404
+    },
+    {
+      "id": 4,
+      "nombre_archivo": "Convenio_Paredes_Carlos.pdf",
+      "motivo": 404
+    },
+    {
+      "id": 5,
+      "nombre_archivo": "DNI_Yamanaka_Luciana.pdf",
+      "motivo": 404
+    }
+  ]
+}

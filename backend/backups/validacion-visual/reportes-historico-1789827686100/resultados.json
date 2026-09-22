@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-09-19T14:21:28.681Z",
+  "results": [
+    {
+      "action": "Programación histórica: activar, validar y cancelar",
+      "width": 390,
+      "ok": true,
+      "emptyOriginalValues": true,
+      "dimensions": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "formWidth": 370,
+        "formScrollWidth": 370,
+        "formClientWidth": 370,
+        "top": 38.40625,
+        "bottom": 921.59375,
+        "scrollHeight": 941,
+        "clientHeight": 883,
+        "checkboxWidth": 16
+      }
+    },
+    {
+      "action": "Programación histórica: activar, validar y cancelar",
+      "width": 768,
+      "ok": true,
+      "emptyOriginalValues": true,
+      "dimensions": {
+        "viewport": 768,
+        "documentWidth": 753,
+        "formWidth": 733,
+        "formScrollWidth": 733,
+        "formClientWidth": 733,
+        "top": 56,
+        "bottom": 904,
+        "scrollHeight": 848,
+        "clientHeight": 848,
+        "checkboxWidth": 16
+      }
+    },
+    {
+      "action": "Programación histórica: activar, validar y cancelar",
+      "width": 1440,
+      "ok": true,
+      "emptyOriginalValues": true,
+      "dimensions": {
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "formWidth": 512,
+        "formScrollWidth": 512,
+        "formClientWidth": 512,
+        "top": 40,
+        "bottom": 920,
+        "scrollHeight": 880,
+        "clientHeight": 880,
+        "checkboxWidth": 16
+      }
+    }
+  ],
+  "javascript": [],
+  "http": []
+}

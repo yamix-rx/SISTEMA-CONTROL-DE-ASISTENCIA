@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-09-19T14:07:49.535Z",
+  "results": [
+    {
+      "action": "Cuenta: editar, limpiar y abrir/cancelar restablecimiento",
+      "ok": true
+    },
+    {
+      "action": "Editor: cargar plantilla e insertar campo sin guardar",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF aceptacion",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF constancia_practicas",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF culminacion",
+      "ok": true
+    }
+  ],
+  "pdfResponses": [
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    },
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    },
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    }
+  ],
+  "javascript": []
+}

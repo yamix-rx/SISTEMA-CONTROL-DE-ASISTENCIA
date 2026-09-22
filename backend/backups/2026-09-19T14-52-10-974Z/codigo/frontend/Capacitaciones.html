@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBSS · Capacitaciones</title>
+  <link rel="stylesheet" href="css/session.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/capacitaciones.css">
+  <script src="js/navigation.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/sidebar.js" defer></script>
+  <script src="js/capacitaciones.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5L2 9Zm4 2v6c3 3 9 3 12 0v-6M22 9v7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 17.9 15"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M14 14a5 5 0 0 1 7 4.5V20"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M8 11v7M12 11v7M16 11v7M6 7l1 14h10l1-14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </defs></svg>
+
+  <header class="sbss-header module-header">
+    <div class="sbss-brand">SBSS</div><span class="header-context">Gestión de personal</span>
+    <div class="user-details"><strong id="nombreUsuarioSesion">Usuario</strong><span id="rolUsuarioSesion"></span></div>
+    <span class="avatar" id="avatarLetra">U</span>
+    <button class="logout-button" id="btnCerrarSesion" type="button">Salir</button>
+  </header>
+
+  <div class="sbss-navigation-layout">
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú lateral"></button>
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú de módulos"></aside>
+
+    <main class="module-main" id="contenido">
+      <section class="page-heading">
+        <div class="heading-copy">
+          <span class="title-icon"><svg class="icon"><use href="#i-cap"/></svg></span>
+          <div><h1>Gestión de Capacitaciones</h1><p>Organiza y administra las capacitaciones del personal.</p></div>
+        </div>
+        <button class="button button-primary" id="btnNuevaCapacitacion" type="button"><svg class="icon"><use href="#i-plus"/></svg>Nueva capacitación</button>
+      </section>
+
+      <div id="mensajeCapacitaciones" class="notice" hidden role="status"></div>
+
+      <section class="filters panel" aria-label="Filtros de capacitaciones">
+        <label class="search-field">Buscar
+          <span class="search-box"><svg class="icon"><use href="#i-search"/></svg><input id="buscarCapacitacion" type="search" placeholder="Título, categoría o proveedor..."></span>
+        </label>
+        <label>Empresa<select id="filtroEmpresaCap"><option value="">Todas las empresas</option></select></label>
+        <label>Modalidad<select id="filtroModalidad"><option value="">Todas las modalidades</option></select></label>
+        <label>Estado<select id="filtroEstadoCap"><option value="">Todos los estados</option></select></label>
+        <div class="filter-actions"><button class="button button-primary" id="btnBuscarCap" type="button"><svg class="icon"><use href="#i-search"/></svg>Buscar</button><button class="button button-outline" id="btnLimpiarCap" type="button"><svg class="icon"><use href="#i-refresh"/></svg>Limpiar</button></div>
+      </section>
+
+      <section class="summary-grid" aria-label="Resumen de capacitaciones">
+        <button class="summary-card tone-blue" data-resumen-estado="" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-cap"/></svg></span><span><small>Total de capacitaciones</small><strong id="capTotal">0</strong></span></button>
+        <button class="summary-card tone-green" data-resumen-estado="en_curso" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-check"/></svg></span><span><small>En curso</small><strong id="capEnCurso">0</strong></span></button>
+        <button class="summary-card tone-amber" data-resumen-estado="programada" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-clock"/></svg></span><span><small>Próximas</small><strong id="capProgramadas">0</strong></span></button>
+        <button class="summary-card tone-violet" data-resumen-estado="finalizada" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-calendar"/></svg></span><span><small>Finalizadas</small><strong id="capFinalizadas">0</strong></span></button>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="panel-heading"><div><h2>Capacitaciones registradas</h2><p id="contadorCapacitaciones">Cargando...</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Título de la capacitación</th><th>Empresa</th><th>Modalidad</th><th>Fecha inicio</th><th>Fecha fin</th><th>Cupos</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaCapacitaciones"><tr><td colspan="9" class="table-message">Cargando capacitaciones...</td></tr></tbody>
+          </table>
+        </div>
+        <footer class="pagination"><span id="textoPaginacionCap">Mostrando 0 registros</span><div><button id="paginaAnteriorCap" type="button" aria-label="Página anterior">‹</button><span id="paginasCapacitaciones"></span><button id="paginaSiguienteCap" type="button" aria-label="Página siguiente">›</button></div></footer>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="dialogCapacitacion" class="form-dialog">
+    <form id="formCapacitacion">
+      <input type="hidden" id="capacitacionId">
+      <div class="dialog-heading"><div><span class="eyebrow">CAPACITACIONES</span><h2 id="tituloFormCapacitacion">Nueva capacitación</h2></div><button class="icon-button" type="button" data-close-dialog="dialogCapacitacion"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      <p class="dialog-help">Registra la actividad y luego administra a sus participantes.</p>
+      <div class="form-grid">
+        <label class="span-2">Título *<input id="capTitulo" maxlength="160" required placeholder="Ej. Seguridad y Salud en el Trabajo"></label>
+        <label>Categoría<input id="capCategoria" maxlength="100" placeholder="Seguridad, ofimática..."></label>
+        <label>Proveedor<input id="capProveedor" maxlength="150" placeholder="Proveedor o instructor"></label>
+        <label>Empresa<select id="capEmpresa"><option value="">Todas las empresas</option></select></label>
+        <label>Modalidad *<select id="capModalidad" required><option value="presencial">Presencial</option><option value="virtual">Virtual</option><option value="hibrida">Híbrida</option></select></label>
+        <label>Fecha inicio *<input id="capInicio" type="date" required></label>
+        <label>Fecha fin *<input id="capFin" type="date" required></label>
+        <label>Hora inicio<input id="capHoraInicio" type="time"></label>
+        <label>Hora fin<input id="capHoraFin" type="time"></label>
+        <label>Horas *<input id="capHoras" type="number" min="0.25" step="0.25" required placeholder="8"></label>
+        <label>Cupo<input id="capCupo" type="number" min="1" step="1" placeholder="30"></label>
+        <label>Lugar<input id="capLugar" maxlength="255" placeholder="Sala, sede..."></label>
+        <label>Enlace<input id="capEnlace" maxlength="1000" placeholder="https://..."></label>
+        <label>Estado<select id="capEstado"><option value="borrador">Borrador</option><option value="programada">Programada</option><option value="en_curso">En curso</option><option value="finalizada">Finalizada</option><option value="cancelada">Cancelada</option></select></label>
+        <label class="check-field"><input id="capObligatoria" type="checkbox">Capacitación obligatoria</label>
+        <label class="span-2">Descripción<textarea id="capDescripcion" rows="3" maxlength="5000" placeholder="Objetivo y contenido de la capacitación..."></textarea></label>
+      </div>
+      <p id="errorFormCapacitacion" class="form-error" hidden></p>
+      <div class="dialog-actions"><button class="button button-outline" type="button" data-close-dialog="dialogCapacitacion">Cancelar</button><button class="button button-primary" id="btnGuardarCapacitacion" type="submit">Guardar capacitación</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogParticipantes" class="participants-dialog">
+    <div class="dialog-heading"><div><span class="eyebrow">PARTICIPANTES</span><h2 id="tituloParticipantes">Capacitación</h2></div><button class="icon-button" type="button" data-close-dialog="dialogParticipantes"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div id="resumenCapacitacion" class="training-detail"></div>
+    <section class="participant-adder"><label>Agregar colaborador<select id="participanteNuevo"><option value="">Seleccione un colaborador</option></select></label><button class="button button-primary" id="btnAgregarParticipante" type="button"><svg class="icon"><use href="#i-plus"/></svg>Agregar</button></section>
+    <div class="participant-table-wrap"><table class="participant-table"><thead><tr><th>Colaborador</th><th>Estado</th><th>Asistencia %</th><th>Nota</th><th>Acciones</th></tr></thead><tbody id="tablaParticipantes"></tbody></table></div>
+    <p id="errorParticipantes" class="form-error" hidden></p>
+    <div class="dialog-actions"><button class="button button-primary" type="button" data-close-dialog="dialogParticipantes">Cerrar</button></div>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,75 @@
+/* Estilos de Horarios.html */
+
+/* Bloque de estilos 1 extraído de Horarios.html */
+:root {
+      --sbss-blue: #0b5487;
+      --sbss-blue-2: #1578b8;
+      --sbss-border: #d9e6ef;
+      --sbss-soft: #f4f8fb;
+    }
+
+    body { background: #eef4f8; }
+
+    .app-shell { min-width: 1180px; }
+    .soft-shadow { box-shadow: 0 2px 8px rgba(15, 58, 86, .08); }
+    .panel-border { border: 1px solid var(--sbss-border); }
+    .top-gradient { background: linear-gradient(105deg, #164b71 0%, #0e5e92 55%, #063b5f 100%); }
+    .active-nav { background: linear-gradient(180deg, #2f9ade 0%, #1680c5 100%); }
+    .area-btn.active { color: white; background: linear-gradient(180deg, #2586c6 0%, #0c68a8 100%); border-color: #0b679f; }
+    .area-btn.active svg { color: white; }
+    .area-btn { transition: all .15s ease; }
+    .area-btn:hover { transform: translateY(-1px); }
+
+    .schedule-table { min-width: 1250px; border-collapse: separate; border-spacing: 0; }
+    .schedule-table th, .schedule-table td { border-right: 1px solid #dfeaf1; border-bottom: 1px solid #e6eef4; }
+    .schedule-table th:last-child, .schedule-table td:last-child { border-right: 0; }
+    .schedule-table thead th { background: linear-gradient(180deg, #176da5 0%, #0d5b91 100%); color: white; }
+    .schedule-table .hour-cell { background: #f8fbfd; color: #36576e; font-weight: 700; }
+    .schedule-table .turn-row td { background: #edf4f8; color: #335a73; font-weight: 800; letter-spacing: .04em; }
+    .schedule-table .slot-cell { min-height: 44px; vertical-align: middle; background: #fff; }
+    .schedule-table .slot-cell:hover { background: #f8fbfe; }
+
+    .person-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 62px;
+      padding: 4px 8px;
+      margin: 2px 3px 2px 0;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .chip-green { background:#d8f5e7; color:#21885e; border-color:#c9ebdd; }
+    .chip-blue { background:#dceeff; color:#2472b3; border-color:#cbe2f7; }
+    .chip-purple { background:#eee4fa; color:#7451a7; border-color:#e1d4f2; }
+    .chip-pink { background:#fde5ef; color:#b84370; border-color:#f7d6e3; }
+    .chip-red { background:#ffdfe3; color:#c33f4e; border-color:#f7ccd2; }
+    .chip-cyan { background:#d8f4f6; color:#1d8792; border-color:#c7eaed; }
+    .chip-yellow { background:#fff0cc; color:#b87c13; border-color:#f5e2b8; }
+    .chip-slate { background:#e4edf4; color:#58728a; border-color:#d4e0e9; }
+
+    .legend-dot { width: 11px; height: 11px; border-radius: 999px; display:inline-block; }
+    .modal-backdrop { background: rgba(15, 23, 42, .58); backdrop-filter: blur(2px); }
+    .toast { animation: slideIn .2s ease-out; }
+    @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    @media (max-width: 1180px) {
+      body { overflow-x: auto; }
+    }
+
+/* Bloque de estilos 2 extraído de Horarios.html */
+html.sbss-embedded,html.sbss-embedded body{height:100%;}
+    html.sbss-embedded body{margin:0!important;background:#f3f7fa!important;}
+    html.sbss-embedded .app > header,
+    html.sbss-embedded body > header{display:none!important;}
+    html.sbss-embedded body > .flex > aside:first-child,
+    html.sbss-embedded .app > .flex > aside:first-child{display:none!important;}
+    html.sbss-embedded body > .flex,
+    html.sbss-embedded .app > .flex{min-height:100vh!important;}
+    html.sbss-embedded body > .flex > main,
+    html.sbss-embedded .app > .flex > main{width:100%!important;max-width:none!important;}

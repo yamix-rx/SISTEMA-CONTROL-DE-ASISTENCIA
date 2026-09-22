@@ -1,0 +1,21 @@
+{
+  "fecha": "2026-09-19T16:12:47.508Z",
+  "respaldo": "C:\\Users\\dr891\\OneDrive\\Desktop\\Promo de Asistencia\\SISTEMA-CONTROL-DE-ASISTENCIA\\backend\\backups\\2026-09-19T16-12-46-982Z",
+  "antes": {
+    "usuarios": 4,
+    "empleados": 8,
+    "asistencias": 11,
+    "permisos": 3,
+    "documentos_empleado": 7,
+    "empresas": 8
+  },
+  "despues": {
+    "usuarios": 4,
+    "empleados": 8,
+    "asistencias": 11,
+    "permisos": 3,
+    "documentos_empleado": 7,
+    "empresas": 8
+  },
+  "cuentasYClavesConservadas": true
+}

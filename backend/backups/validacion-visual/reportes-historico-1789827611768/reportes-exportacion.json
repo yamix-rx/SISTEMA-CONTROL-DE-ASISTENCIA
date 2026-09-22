@@ -1,0 +1,34 @@
+{
+    "checkedAt":  "2026-09-19T14:20:14.4825049Z",
+    "results":  [
+                    {
+                        "action":  "Excel: filtro individual septiembre 2026",
+                        "ok":  true,
+                        "file":  "CONTROL_DE_ASISTENCIA_2026-09-01_al_2026-09-30.xlsx",
+                        "bytes":  42157,
+                        "signature":  "PK0304",
+                        "sheets":  [
+                                       "CONTROL ASISTENCIA",
+                                       "RESUMEN",
+                                       "DETALLE",
+                                       "CRITERIOS"
+                                   ],
+                        "employees":  1,
+                        "attendanceRows":  2
+                    },
+                    {
+                        "action":  "PDF: filtro individual septiembre 2026",
+                        "ok":  true,
+                        "file":  "Reporte_Consolidado_2026-09-01_2026-09-30.pdf",
+                        "bytes":  12032,
+                        "signature":  "%PDF-",
+                        "matchingPeriod":  true
+                    }
+                ],
+    "javascript":  [
+
+                   ],
+    "http":  [
+
+             ]
+}
