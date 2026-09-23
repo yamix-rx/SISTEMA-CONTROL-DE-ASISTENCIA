@@ -50,13 +50,14 @@ app.use('/api/capacitaciones', capacitacionRoutes);
 app.get('/favicon.ico', (req, res) => res.sendFile(path.resolve(__dirname, '../frontend/favicon.svg')));
 const frontendDir = path.resolve(__dirname, '../frontend');
 // Publicar solo las pantallas y los recursos preparados; las herramientas de compilación quedan fuera.
-for (const carpeta of ['css', 'js', 'vendor']) {
+for (const carpeta of ['assets', 'css', 'js', 'vendor']) {
   app.use(`/${carpeta}`, express.static(path.join(frontendDir, carpeta)));
 }
 app.get(['/', /^\/[A-Za-z0-9_-]+\.html$/, '/favicon.svg'], express.static(frontendDir));
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
+  if (error.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ ok: false, mensaje: 'El logo no puede superar los 2 MB.' });
   if (error.type === 'entity.too.large') return res.status(413).json({ ok: false, mensaje: 'El archivo supera el tamaño permitido.' });
   if (error.type === 'entity.parse.failed') return res.status(400).json({ ok: false, mensaje: 'El cuerpo de la solicitud no es JSON válido.' });
   console.error('Error de solicitud:', error.code || error.name);

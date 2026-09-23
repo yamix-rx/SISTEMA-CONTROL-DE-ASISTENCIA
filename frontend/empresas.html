@@ -79,6 +79,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <thead>
             <tr>
               <th>N°</th>
+              <th>Logo</th>
               <th>Razón Social</th>
               <th>RUC</th>
               <th>Dirección</th>
@@ -89,7 +90,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
             </tr>
           </thead>
           <tbody id="tbodyEmpresas">
-            <tr><td colspan="8" class="text-center py-6 text-slate-400">Cargando empresas...</td></tr>
+            <tr><td colspan="9" class="text-center py-6 text-slate-400">Cargando empresas...</td></tr>
           </tbody>
         </table>
       </div>
@@ -110,6 +111,12 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       <div>
         <label class="font-bold block mb-1">Razón Social *</label>
         <input id="mRazonSocial" class="control" required placeholder="Ej. Droguería Silsan">
+      </div>
+      <div>
+        <label class="font-bold block mb-1">Logo de la empresa</label>
+        <input id="mLogo" type="file" class="control" accept="image/png,image/jpeg,image/webp">
+        <p class="text-[10px] text-slate-500 mt-1">PNG, JPG o WebP. Máximo 2 MB.</p>
+        <img id="mLogoPreview" class="hidden mt-2 h-14 max-w-40 object-contain rounded border border-slate-200 bg-slate-50 p-1" alt="Vista previa del logo">
       </div>
       <div>
         <label class="font-bold block mb-1">RUC (si corresponde)</label>
@@ -176,12 +183,13 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
   function renderEmpresas(lista) {
     if (lista.length === 0) {
-      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No se encontraron empresas registradas</td></tr>`;
+      tbodyEmpresas.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">No se encontraron empresas registradas</td></tr>`;
       return;
     }
     tbodyEmpresas.innerHTML = lista.map((e, idx) => `
       <tr>
         <td>${idx + 1}</td>
+        <td>${e.logo_url ? `<img data-logo-url="${escapeHtml(e.logo_url)}" alt="Logo de ${escapeHtml(e.razon_social)}" class="h-9 w-14 object-contain rounded border border-slate-200 bg-slate-50 p-1">` : '<span class="text-slate-400">Sin logo</span>'}</td>
         <td><strong class="text-sky-900">${escapeHtml(e.razon_social)}</strong></td>
         <td>${escapeHtml(e.ruc || '-')}</td>
         <td>${escapeHtml(e.direccion || '-')}</td>
@@ -196,6 +204,14 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       </tr>
     `).join('');
 
+    document.querySelectorAll('[data-logo-url]').forEach(async image => {
+      try {
+        const response = await fetch(image.dataset.logoUrl, { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) return;
+        image.src = URL.createObjectURL(await response.blob());
+      } catch (_) { /* La empresa conserva el texto alternativo si no se puede cargar. */ }
+    });
+
     document.querySelectorAll('.editEmp').forEach(b => {
       b.onclick = () => {
         const id = b.dataset.id;
@@ -209,6 +225,10 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         document.getElementById('mTelefono').value = item.telefono || '';
         document.getElementById('mEstado').value = item.estado || 'activo';
         document.getElementById('mEmail').value = item.email_contacto || '';
+        document.getElementById('mLogo').value = '';
+        const preview = document.getElementById('mLogoPreview');
+        preview.src = item.logo_url || '';
+        preview.classList.toggle('hidden', !item.logo_url);
         openM('modalEmpresa');
       };
     });
@@ -222,7 +242,16 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
     document.getElementById('modalTitulo').textContent = 'Registrar Empresa';
     document.getElementById('formEmpresa').reset();
     document.getElementById('empresaId').value = '';
+    document.getElementById('mLogoPreview').classList.add('hidden');
     openM('modalEmpresa');
+  };
+
+  document.getElementById('mLogo').onchange = () => {
+    const file = document.getElementById('mLogo').files[0];
+    const preview = document.getElementById('mLogoPreview');
+    if (!file) { preview.classList.add('hidden'); return; }
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove('hidden');
   };
 
   document.getElementById('formEmpresa').onsubmit = async (e) => {
@@ -252,6 +281,20 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar');
+
+      const empresaId = payload.id || data.id;
+      const logo = document.getElementById('mLogo').files[0];
+      if (logo) {
+        const logoData = new FormData();
+        logoData.append('logo', logo);
+        const logoRes = await fetch(`/api/empresas/${empresaId}/logo`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: logoData
+        });
+        const logoResult = await logoRes.json();
+        if (!logoRes.ok || !logoResult.ok) throw new Error(logoResult.mensaje || 'No se pudo guardar el logo');
+      }
 
       toast(data.mensaje);
       closeM('modalEmpresa');

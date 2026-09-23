@@ -20,6 +20,11 @@ CREATE TABLE empresas (
     razon_social VARCHAR(150) NOT NULL,
     ruc VARCHAR(11) NULL,
     direccion VARCHAR(255) NULL,
+    logo_url VARCHAR(255) NULL,
+    logo_data MEDIUMBLOB NULL,
+    logo_iv VARBINARY(12) NULL,
+    logo_tag VARBINARY(16) NULL,
+    logo_mime VARCHAR(50) NULL,
     estado ENUM('activo', 'inactivo') DEFAULT 'activo',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

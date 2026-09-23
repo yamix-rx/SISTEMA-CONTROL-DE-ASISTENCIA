@@ -35,9 +35,21 @@
     return decodeURIComponent(new URL(path, location.href).pathname.split('/').pop() || '').toLowerCase();
   }
 
+  function decorateBrand() {
+    document.querySelectorAll('.sbss-brand').forEach(brand => {
+      if (brand.querySelector('.sbss-logo-image')) return;
+      const logo = document.createElement('img');
+      logo.className = 'sbss-logo-image';
+      logo.src = 'assets/logo-sbss.png';
+      logo.alt = 'SBSS Grupo';
+      brand.replaceChildren(logo);
+    });
+  }
+
   function render(session) {
     const sidebar = document.getElementById('sidebarMenu');
     if (!sidebar || !session?.acceso) return;
+    decorateBrand();
     const allowed = new Set(session.acceso.modulos || []);
     const panel = session.acceso.panel;
     const currentPage = filename(location.pathname);

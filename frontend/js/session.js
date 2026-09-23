@@ -4,6 +4,13 @@
 
   const API_BASE = new URL('/api', location.href).href;
   const nativeFetch = window.fetch.bind(window);
+  if (!document.querySelector('link[rel="icon"]')) {
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/png';
+    favicon.href = 'assets/logo-sbss.png';
+    document.head.appendChild(favicon);
+  }
   const domReady = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))
     : Promise.resolve();
@@ -66,12 +73,11 @@
   }
 
   function abbreviateUserName(usuario) {
-    // Conserva el primer nombre y apellido; abrevia los demás con su inicial.
     return [usuario.nombres, usuario.apellidos]
       .map(value => (value || '').trim().split(/\s+/).filter(Boolean)
-        .map((part, index) => index === 0 ? part : `${part.charAt(0).toUpperCase()}.`)
-        .join(' '))
-      .filter(Boolean).join(' ');
+        .map(part => part.charAt(0).toUpperCase())
+        .join(''))
+      .filter(Boolean).join('');
   }
 
   function configureNavigation(session) {

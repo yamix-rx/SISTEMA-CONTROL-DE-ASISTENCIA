@@ -7,12 +7,12 @@
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
   <style>
     :root{
-      --ink:#1E2732;
-      --brass:#A9793E;
-      --brass-light:#D2A968;
-      --text:#232B35;
-      --muted:#8B8F96;
-      --field:#F1EDE7;
+      --ink:#174675;
+      --blue:#075D91;
+      --blue-light:#DCECF6;
+      --text:#203447;
+      --muted:#718394;
+      --field:#EEF5F9;
     }
     *{box-sizing:border-box;}
     body{
@@ -25,17 +25,18 @@
       font-family:'Inter',sans-serif;
       color:var(--text);
       background:
-        radial-gradient(120% 90% at 50% -10%, #F0DCC9 0%, #EADFCD 35%, #E4E1D3 60%, #DCDCD4 100%);
+        radial-gradient(120% 90% at 50% -10%, #E5F2F9 0%, #D7E8F1 38%, #DDE5E8 70%, #E8ECEB 100%);
     }
 
     .card{
       position:relative;
       width:100%;
       max-width:380px;
-      background:#FFFFFF;
+      background:#EAF4F9;
       border-radius:32px;
       padding:64px 36px 36px;
-      box-shadow:0 30px 60px -20px rgba(30,39,50,0.25);
+      border:1px solid #D4E7F0;
+      box-shadow:0 30px 60px -20px rgba(23,70,117,0.28);
       text-align:center;
     }
 
@@ -44,13 +45,13 @@
       top:-44px;
       left:50%;
       transform:translateX(-50%);
-      width:88px;height:88px;
-      border-radius:50%;
-      background:linear-gradient(155deg, var(--brass-light), var(--brass));
+      width:260px;height:76px;
+      border-radius:0;
+      background:#FFFFFF;
       display:flex;align-items:center;justify-content:center;
-      box-shadow:0 16px 28px -10px rgba(169,121,62,0.55);
+      box-shadow:0 16px 28px -10px rgba(23,70,117,0.2);
     }
-    .avatar svg{width:38px;height:38px;color:#FFFFFF;}
+    .avatar img{width:240px;height:68px;object-fit:contain;}
 
     .brand{
       font-family:'Fraunces',serif;
@@ -99,11 +100,11 @@
       transition:border-color .15s ease, background .15s ease;
     }
     .field:focus-within{
-      border-color:var(--brass);
+      border-color:var(--blue);
       background:#FFFFFF;
     }
     .field svg{width:17px;height:17px;color:#9A9A9A;flex-shrink:0;}
-    .field:focus-within svg{color:var(--brass);}
+    .field:focus-within svg{color:var(--blue);}
     .field input{
       border:none;outline:none;background:transparent;
       width:100%;
@@ -117,36 +118,34 @@
     }
 
     .row-between{
-      display:flex;align-items:center;justify-content:space-between;
+      display:flex;align-items:center;justify-content:flex-start;
       margin:10px 4px 24px;
     }
     .remember{display:flex;align-items:center;gap:7px;}
-    .remember input{width:14px;height:14px;accent-color:var(--brass);}
+    .remember input{width:14px;height:14px;accent-color:var(--blue);}
     .remember span{font-size:11.5px;color:var(--muted);}
-    .forgot{font-size:11.5px;color:var(--muted);text-decoration:none;font-style:italic;}
-    .forgot:hover{color:var(--brass);}
 
     .btn-submit{
       width:100%;
       padding:15px 18px;
-      background:linear-gradient(120deg, var(--ink), #0F151C);
-      color:#F2EFE9;
+      background:linear-gradient(120deg, var(--ink), var(--blue));
+      color:#FFFFFF;
       border:none;
       border-radius:100px;
       font-size:12.5px;
       font-weight:700;
       letter-spacing:0.08em;
       cursor:pointer;
-      box-shadow:0 14px 24px -10px rgba(30,39,50,0.45);
+      box-shadow:0 14px 24px -10px rgba(23,70,117,0.4);
       transition:transform .12s ease, box-shadow .12s ease;
     }
-    .btn-submit:hover{transform:translateY(-1px); box-shadow:0 18px 28px -10px rgba(30,39,50,0.5);}
+    .btn-submit:hover{transform:translateY(-1px); box-shadow:0 18px 28px -10px rgba(23,70,117,0.5);}
     .btn-submit:active{transform:translateY(0);}
 
     .roles-note{
       margin-top:22px;
       padding-top:18px;
-      border-top:1px solid #EEEBE5;
+      border-top:1px solid #D9E7EE;
     }
     .roles-note p{font-size:10.5px;color:var(--muted);margin:0 0 10px;}
     .role-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
@@ -159,13 +158,13 @@
       text-decoration:none;
       transition:background .15s ease, color .15s ease;
     }
-    .role-chip:hover{background:var(--brass); color:#FFFFFF;}
+    .role-chip:hover{background:var(--blue); color:#FFFFFF;}
   </style>
 </head>
 <body>
 
   <div class="card">
-    <div class="avatar"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div>
+    <div class="avatar"><img src="assets/logo-sbss.png" alt="SBSS Grupo"></div>
 
     <p class="brand">SBSS</p>
     <p class="brand-sub">Personal · Asistencia · Expediente digital</p>
@@ -199,7 +198,6 @@
           <input type="checkbox" id="recordarSesion" checked>
           <span>Recordar sesión</span>
         </label>
-        <details class="forgot"><summary>¿Olvidó su contraseña?</summary><p>Solicite al administrador de SBSS que restablezca su acceso desde Usuarios y configuración.</p></details>
       </div>
 
       <button type="submit" class="btn-submit" id="btnIngresar" disabled>INGRESAR</button>

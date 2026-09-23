@@ -18,6 +18,11 @@ async function migrar(connection, informar=()=>{}) {
     await connection.query('ALTER TABLE documentos_empleado CHANGE COLUMN ruta_almacenamiento ruta_archivo VARCHAR(255) NOT NULL');
   }
   await add('usuarios','sesion_version','INT NOT NULL DEFAULT 0');
+  await add('empresas','logo_url','VARCHAR(255) NULL');
+  await add('empresas','logo_data','MEDIUMBLOB NULL');
+  await add('empresas','logo_iv','VARBINARY(12) NULL');
+  await add('empresas','logo_tag','VARBINARY(16) NULL');
+  await add('empresas','logo_mime','VARCHAR(50) NULL');
   await add('empleados','puesto','VARCHAR(150) NULL');
   await add('practicante_detalles','fecha_vencimiento_convenio','DATE NULL');
   await add('permisos','observaciones','TEXT NULL');

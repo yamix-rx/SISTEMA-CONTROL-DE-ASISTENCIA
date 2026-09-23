@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" aria-labelledby="title desc">
+  <title id="title">SBSS Grupo</title>
+  <desc id="desc">Logotipo de SBSS Grupo con tres chevrones azules y texto gris</desc>
+  <g fill="#174675">
+    <path d="M24 90 112 40 82 90l30 50Z"/>
+    <path d="M96 22h74l70 68-70 68H96l70-68Z"/>
+    <path d="M184 22h74l70 68-70 68h-74l70-68Z"/>
+  </g>
+  <path d="m164 22 70 68-70 68h-18l70-68-70-68Z" fill="#fff"/>
+  <text x="320" y="116" fill="#74767b" font-family="Arial, Helvetica, sans-serif" font-size="116" font-weight="700" letter-spacing="3">SBSS</text>
+  <text x="330" y="153" fill="#174675" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="38">GRUPO</text>
+</svg>
