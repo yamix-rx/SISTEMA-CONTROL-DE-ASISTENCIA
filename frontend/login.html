@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SBSS · Inicio de Sesión</title>
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="css/login-logo-animation.css">
+  <link rel="stylesheet" href="css/login-background-animation.css">
   <style>
     :root{
       --ink:#174675;
@@ -162,9 +164,34 @@
   </style>
 </head>
 <body>
+  <div class="ambient-background" aria-hidden="true">
+    <div class="tech-glow glow-left"></div>
+    <div class="tech-glow glow-right"></div>
+    <div class="hex-grid"></div>
+    <div class="hex-vignette"></div>
+    <div class="energy-ring ring-large"></div>
+    <div class="energy-ring ring-small"></div>
+    <div class="energy-core"></div>
+    <div class="energy-sweep sweep-a"></div>
+    <div class="energy-sweep sweep-b"></div>
+    <div class="neon-beam beam-a"></div>
+    <div class="neon-beam beam-b"></div>
+    <div class="ambient-particles">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="scan-lines"></div>
+  </div>
 
   <div class="card">
-    <div class="avatar"><img src="assets/logo-sbss.png" alt="SBSS Grupo"></div>
+    <div class="avatar logo-entry" aria-label="SBSS Grupo">
+      <span class="logo-orbit logo-orbit-1" aria-hidden="true"></span>
+      <span class="logo-orbit logo-orbit-2" aria-hidden="true"></span>
+      <span class="logo-glow" aria-hidden="true"></span>
+      <img src="assets/logo-sbss.png" alt="SBSS Grupo">
+    </div>
 
     <p class="brand">SBSS</p>
     <p class="brand-sub">Personal · Asistencia · Expediente digital</p>

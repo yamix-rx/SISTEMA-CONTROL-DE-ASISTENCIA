@@ -504,8 +504,122 @@
     if (!state.generationCatalogs || force) state.generationCatalogs = await request('/documentos/generacion/catalogos');
     const catalogs = state.generationCatalogs;
     fillSelect('generarEmpresa', catalogs.empresas, 'razon_social', 'Selecciona una empresa');
-    fillSelect('plantillaCodigo', catalogs.plantillas.map(item => ({ ...item, id: item.codigo })), 'titulo', 'Selecciona una plantilla');
+    fillSelect('plantillaCodigo', catalogs.plantillas.map(item => ({ ...item, id: item.codigo })),
+      item => catalogs.modelos?.find(model => model.id === item.codigo)?.nombre || item.titulo, 'Selecciona una plantilla');
     return catalogs;
+  }
+
+  function normalizedName(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/&/g, ' y ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  }
+
+  function generationModel() {
+    return state.generationCatalogs?.modelos?.find(item => item.id === $('generarModelo').value);
+  }
+
+  function matchingCompanyModel(models) {
+    const company = state.generationCatalogs?.empresas.find(item => String(item.id) === $('generarEmpresa').value);
+    if (!company) return null;
+    if (Object.hasOwn(company, 'empresa_modelo_clave')) return models.find(item => item.empresa_clave === company.empresa_modelo_clave) || null;
+    const ruc = String(company.ruc || '').replace(/[\s-]/g, '');
+    if (ruc) return models.find(item => String(item.empresa_ruc || item.datos_predeterminados?.ruc || '') === ruc) || null;
+    const normalizeCompany = value => normalizedName(value).replace(/\s+(?:s a c|sac|s a|sa|e i r l|eirl)$/, '').trim();
+    const name = normalizeCompany(company.razon_social);
+    return models.find(item => (item.empresa_aliases || [item.empresa_clave]).some(alias => {
+      const candidate = normalizeCompany(alias);
+      return candidate && name === candidate;
+    })) || null;
+  }
+
+  function matchingModel(models) {
+    const employee = state.generationFicha?.empleado;
+    if (!employee) return null;
+    if ($('generarTipo').value === 'aceptacion') return matchingCompanyModel(models);
+    const career = normalizedName(employee.carrera);
+    if (!career) return null;
+    return models.find(item => [item.carrera, ...(item.carrera_aliases || [])].some(alias => normalizedName(alias) === career));
+  }
+
+  function dateInputValue(value) {
+    const iso = String(value || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
+  }
+
+  function modelFieldGroup(key) {
+    if (key.startsWith('institucion_') || key.startsWith('destinatario')) return 'Institución educativa y destinatario';
+    if (key.startsWith('empresa_') || key.startsWith('representante') || key === 'actividad_economica') return 'Empresa y representante';
+    if (['carrera', 'direccion', 'fecha_nacimiento'].includes(key)) return 'Datos personales y formación';
+    return 'Fechas, horario y responsable';
+  }
+
+  function renderModelFields() {
+    const model = generationModel();
+    $('generarDatosModelo').replaceChildren();
+    const template = state.generationCatalogs?.plantillas.find(item => item.codigo === (model?.id || $('generarTipo').value)) || model;
+    if (!template) return;
+    const employee = state.generationFicha?.empleado || {};
+    const company = state.generationCatalogs.empresas.find(item => String(item.id) === $('generarEmpresa').value) || {};
+    const defaults = { ...model?.datos_predeterminados };
+    const companyModel = matchingCompanyModel((state.generationCatalogs.modelos || []).filter(item => item.codigo === 'aceptacion'));
+    Object.entries(companyModel?.datos_predeterminados || {}).forEach(([key, value]) => {
+      if (/^(empresa_|representante|supervisor)/.test(key) || key === 'actividad_economica') defaults[key] = value;
+    });
+    ['carrera', 'institucion_educativa', 'direccion', 'fecha_nacimiento', 'fecha_ingreso'].forEach(key => {
+      if (employee[key]) defaults[key] = employee[key];
+    });
+    const endDate = model ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
+    if (endDate) defaults.fecha_finalizacion = endDate;
+    if (company.direccion) defaults.empresa_direccion = company.direccion;
+    if (model?.carrera) defaults.carrera = model.carrera;
+    const required = new Set(model?.campos_requeridos || []);
+    const placeholders = new Set([...`${template.titulo || ''}\n${template.cuerpo || ''}`.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
+    if (model || template.personalizada) placeholders.forEach(key => required.add(key));
+    if (placeholders.has('formacion_academica')) { placeholders.add('carrera'); placeholders.add('institucion_educativa'); }
+    if (placeholders.has('lugar_fecha')) placeholders.add('ciudad');
+    const groups = new Map();
+    (state.generationCatalogs.campos_modelo || []).filter(field => required.has(field.clave) || placeholders.has(field.clave)).forEach(field => {
+      const groupName = modelFieldGroup(field.clave);
+      if (!groups.has(groupName)) {
+        const fieldset = node('fieldset', 'model-fieldset');
+        fieldset.appendChild(node('legend', '', groupName));
+        const grid = node('div', 'generation-fields');
+        fieldset.appendChild(grid);
+        groups.set(groupName, grid);
+        $('generarDatosModelo').appendChild(fieldset);
+      }
+      const label = node('label', '', field.etiqueta + (required.has(field.clave) ? ' *' : ''));
+      const input = node(field.tipo === 'textarea' ? 'textarea' : 'input');
+      if (input.tagName === 'INPUT') input.type = ['date', 'number', 'tel', 'email'].includes(field.tipo) ? field.tipo : 'text';
+      if (input.tagName === 'TEXTAREA') { input.rows = 3; label.classList.add('model-wide'); }
+      input.id = 'generarDato_' + field.clave;
+      input.name = field.clave;
+      input.dataset.documentField = field.clave;
+      input.required = required.has(field.clave);
+      input.maxLength = field.maximo || 1000;
+      if (input.type === 'number') { input.min = '0'; input.step = '0.01'; }
+      input.value = input.type === 'date' ? dateInputValue(defaults[field.clave]) : String(defaults[field.clave] ?? '');
+      label.htmlFor = input.id;
+      label.appendChild(input);
+      groups.get(groupName).appendChild(label);
+    });
+  }
+
+  function fillGenerationModels() {
+    const models = (state.generationCatalogs?.modelos || []).filter(item => item.codigo === $('generarTipo').value);
+    const acceptance = $('generarTipo').value === 'aceptacion';
+    $('generarModeloSelector').hidden = !models.length;
+    fillSelect('generarModelo', models, 'nombre', acceptance ? 'Plantilla general de aceptación' : 'Selecciona un modelo');
+    const selected = matchingModel(models);
+    $('generarModelo').required = Boolean(models.length) && (!acceptance || Boolean(selected));
+    $('generarModelo').options[0].disabled = acceptance && Boolean(selected);
+    $('generarModelo').value = selected?.id || '';
+    $('generarModeloAyuda').textContent = selected
+      ? 'Modelo seleccionado según los datos del expediente. Revisa la información antes de emitir.'
+      : acceptance ? 'Se usará la plantilla general. Puedes elegir un modelo si corresponde a la empresa seleccionada.'
+        : 'Selecciona el modelo correspondiente a la carrera del colaborador.';
+    renderModelFields();
+    $('generarModeloCampos').hidden = !models.length && !$('generarDatosModelo').children.length;
   }
 
   function fillGenerationAreas() {
@@ -520,7 +634,7 @@
   function fillGenerationHours() {
     const progress = state.generationFicha?.progresoHoras;
     if (!progress) return;
-    $('generarHoras').value = Number($('generarTipo').value === 'aceptacion' ? progress.horasMeta : progress.horasRealizadas) || 0;
+    $('generarHoras').value = Number(['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes($('generarTipo').value) ? progress.horasMeta : progress.horasRealizadas) || 0;
     $('generarHorasAyuda').textContent = 'Expediente: ' + (Number(progress.horasRealizadas) || 0) + ' horas registradas de ' + (Number(progress.horasMeta) || 0) + ' previstas. Puedes ajustar las horas de este documento antes de emitirlo.';
   }
 
@@ -529,6 +643,9 @@
     state.employeeRevision = revision;
     state.generationFicha = null;
     $('generarHoras').value = '';
+    $('generarEmpresa').value = '';
+    fillGenerationAreas();
+    fillGenerationModels();
     const id = $('generarEmpleado').value;
     state.employeeLoading = Boolean(id);
     $('btnCrearVista').disabled = Boolean(id);
@@ -546,6 +663,7 @@
       fillGenerationPositions();
       $('generarCargo').value = String(ficha.empleado.cargo_id);
       fillGenerationHours();
+      fillGenerationModels();
     } catch (error) { if (revision === state.employeeRevision) formError('errorGenerar', friendlyError(error)); }
     finally {
       if (revision === state.employeeRevision) {
@@ -560,7 +678,9 @@
     $('formGenerar').reset();
     state.generationFicha = null;
     formError('errorGenerar');
-    $('generarTipo').value = ['aceptacion', 'constancia_practicas', 'culminacion', 'carta', 'horas', 'trabajo'].includes(type) ? type : 'aceptacion';
+    $('generarTipo').value = Array.from($('generarTipo').options).some(option => option.value === type) ? type : 'aceptacion';
+    $('generarDatosModelo').replaceChildren();
+    $('generarModeloCampos').hidden = true;
     const now = new Date();
     $('generarFecha').value = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
     $('generarEmpleado').value = state.selected ? String(state.selected.empleado_id) : state.employeeId;
@@ -582,17 +702,46 @@
       empresa_id: Number($('generarEmpresa').value), area_id: Number($('generarArea').value),
       cargo_id: Number($('generarCargo').value), fecha: $('generarFecha').value, horas: $('generarHoras').value
     };
+    const model = generationModel();
+    if (model) payload.modelo_id = model.id;
+    const documentFields = Array.from($('generarDatosModelo').querySelectorAll('[data-document-field]'));
+    if (documentFields.length) payload.datos_documento = Object.fromEntries(documentFields.map(input => [input.dataset.documentField, input.value.trim()]));
     setDialogBusy('modalGenerar', true);
     $('btnCrearVista').textContent = 'Preparando…';
     try {
       const { documento } = await request('/documentos/generar/vista-previa', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
+      const generatedPayload = { ...payload, revision_plantilla: documento.revision_plantilla };
+      const blob = await request('/documentos/generar/pdf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(generatedPayload)
+      }, true);
+      if (blob.type !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
+      if (state.generatedUrl) URL.revokeObjectURL(state.generatedUrl);
+      state.generatedUrl = URL.createObjectURL(blob);
       state.generatedDocument = documento;
-      state.generatedPayload = { ...payload, revision_plantilla: documento.revision_plantilla };
+      state.generatedPayload = generatedPayload;
+      state.generatedZoom = 'Fit';
+      $('generadoPdf').src = state.generatedUrl + '#toolbar=0&navpanes=0&view=Fit';
+      $('generadoPdf').hidden = false;
+      $('documentoGenerado').hidden = true;
+      $('btnAmpliarPdf').textContent = 'Ampliar';
+      $('btnAmpliarPdf').setAttribute('aria-pressed', 'false');
+      $('btnAmpliarPdf').setAttribute('aria-label', 'Ampliar documento al ancho');
+      $('btnAmpliarPdf').disabled = false;
+      $('tituloDocumentoGenerado').textContent = documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo;
+      $('generadoColaborador').textContent = documento.trabajador;
+      $('generadoEmpresaContexto').textContent = documento.empresa;
+      const career = documento.carrera ?? payload.datos_documento?.carrera ?? state.generationFicha?.empleado?.carrera ?? '';
+      $('generadoCarrera').textContent = career;
+      $('generadoCarreraDato').hidden = !career;
+      $('btnTextoGenerado').textContent = 'Ver texto';
+      $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
+      $('generadoModelo').textContent = documento.modelo_nombre || '';
+      $('generadoModelo').hidden = !documento.modelo_nombre;
       $('generadoEmpresa').textContent = documento.empresa;
       $('generadoTitulo').textContent = documento.titulo;
-      $('generadoCuerpo').textContent = documento.cuerpo;
+      $('generadoCuerpo').textContent = documento.cuerpo.replace(/\f/g, '\n\n');
       formError('errorPdf');
       $('modalGenerar').close();
       $('modalDocumentoGenerado').showModal();
@@ -605,23 +754,17 @@
   }
 
   async function downloadGenerated() {
-    if (!state.generatedPayload || state.downloadingGenerated) return;
+    if (!state.generatedPayload || !state.generatedUrl || state.downloadingGenerated) return;
     state.downloadingGenerated = true;
     $('btnPdfGenerado').disabled = true;
     formError('errorPdf');
     try {
-      const blob = await request('/documentos/generar/pdf', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.generatedPayload)
-      }, true);
-      if (blob.type !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
-      const url = URL.createObjectURL(blob);
       const anchor = node('a');
-      anchor.href = url;
+      anchor.href = state.generatedUrl;
       anchor.download = state.generatedDocument.nombre_archivo;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (error) { formError('errorPdf', friendlyError(error)); }
     finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
   }
@@ -719,10 +862,31 @@
     document.querySelectorAll('[data-plantilla]').forEach(button => button.addEventListener('click', () => openGenerate(button.dataset.plantilla)));
     $('formGenerar').addEventListener('submit', submitGenerate);
     $('generarEmpleado').addEventListener('change', fillGenerationEmployee);
-    $('generarTipo').addEventListener('change', fillGenerationHours);
-    $('generarEmpresa').addEventListener('change', fillGenerationAreas);
+    $('generarTipo').addEventListener('change', () => { fillGenerationHours(); fillGenerationModels(); });
+    $('generarEmpresa').addEventListener('change', () => { fillGenerationAreas(); fillGenerationModels(); });
+    $('generarModelo').addEventListener('change', () => {
+      $('generarModeloAyuda').textContent = 'Revisa y completa los datos del modelo seleccionado. Los campos con * son obligatorios.';
+      renderModelFields();
+    });
     $('generarArea').addEventListener('change', fillGenerationPositions);
     $('btnPdfGenerado').addEventListener('click', downloadGenerated);
+    $('btnAmpliarPdf').addEventListener('click', () => {
+      if (!state.generatedUrl) return;
+      const expand = state.generatedZoom !== 'FitH';
+      state.generatedZoom = expand ? 'FitH' : 'Fit';
+      $('generadoPdf').src = state.generatedUrl + '#toolbar=0&navpanes=0&view=' + state.generatedZoom;
+      $('btnAmpliarPdf').textContent = expand ? 'Página completa' : 'Ampliar';
+      $('btnAmpliarPdf').setAttribute('aria-pressed', String(expand));
+      $('btnAmpliarPdf').setAttribute('aria-label', expand ? 'Mostrar página completa' : 'Ampliar documento al ancho');
+    });
+    $('btnTextoGenerado').addEventListener('click', () => {
+      const showText = $('documentoGenerado').hidden;
+      $('documentoGenerado').hidden = !showText;
+      $('generadoPdf').hidden = showText;
+      $('btnAmpliarPdf').disabled = showText;
+      $('btnTextoGenerado').textContent = showText ? 'Ver PDF' : 'Ver texto';
+      $('btnTextoGenerado').setAttribute('aria-pressed', String(showText));
+    });
     $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
     $('btnPlantillas').addEventListener('click', openTemplateEditor);
     $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
@@ -735,6 +899,7 @@
       state.listController?.abort();
       state.previewController?.abort();
       if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+      if (state.generatedUrl) URL.revokeObjectURL(state.generatedUrl);
     });
   }
 

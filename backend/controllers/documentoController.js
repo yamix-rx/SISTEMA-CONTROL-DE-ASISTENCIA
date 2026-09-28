@@ -93,6 +93,6 @@ exports.pdfGenerado = async (req, res) => {
       'Content-Type': 'application/pdf',
       'Content-Disposition': archivos.disposicionArchivo(documento.nombre_archivo, true),
       'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store'
-    }).send(generarPdf(documento));
+    }).send(await generarPdf(documento));
   } catch (error) { return responderError(res, error); }
 };

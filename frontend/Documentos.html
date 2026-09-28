@@ -79,9 +79,9 @@
         </section>
       </div>
       <section class="panel templates-panel" aria-labelledby="tituloPlantillas"><div class="panel-heading"><h2 id="tituloPlantillas">Documentos del sistema</h2><button id="btnPlantillas" class="button button-outline" type="button">Editar plantillas</button></div><div class="template-grid">
-        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de aceptación</h3><p>Confirma la aceptación y las horas previstas.</p></div><button class="button button-outline" type="button" data-plantilla="aceptacion">Generar<span class="sr-only"> carta de aceptación</span></button></article>
-        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Constancia de prácticas</h3><p>Incluye las horas y los datos del colaborador.</p></div><button class="button button-outline" type="button" data-plantilla="constancia_practicas">Generar<span class="sr-only"> constancia de prácticas</span></button></article>
-        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de culminación</h3><p>Deja constancia de la finalización de prácticas.</p></div><button class="button button-outline" type="button" data-plantilla="culminacion">Generar<span class="sr-only"> carta de culminación</span></button></article>
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de aceptación</h3><p>Modelo y membrete según la empresa del practicante.</p></div><button class="button button-outline" type="button" data-plantilla="aceptacion">Generar<span class="sr-only"> carta de aceptación</span></button></article>
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Convenio de pasantía</h3><p>Convenio UPN según la carrera, con el plan de capacitación anexo.</p></div><button class="button button-outline" type="button" data-plantilla="convenio_pasantia">Generar<span class="sr-only"> convenio de pasantía</span></button></article>
+        <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Plan de capacitación</h3><p>Emite por separado el plan correspondiente a la carrera.</p></div><button class="button button-outline" type="button" data-plantilla="plan_capacitacion">Generar<span class="sr-only"> plan de capacitación</span></button></article>
       </div></section>
       <p class="page-footnote">Los estados se actualizan al revisar los archivos. “Sin entregar” corresponde a requisitos obligatorios pendientes.</p>
     </main>
@@ -90,9 +90,9 @@
   <dialog id="modalGenerar" class="generation-dialog" aria-labelledby="tituloGenerar">
     <form id="formGenerar">
       <div class="dialog-heading"><div><p class="eyebrow">DOCUMENTOS DEL SISTEMA</p><h2 id="tituloGenerar">Generar documento</h2></div><button type="button" class="icon-button" data-cerrar="modalGenerar" aria-label="Cerrar formulario"><svg class="icon"><use href="#i-close"/></svg></button></div>
-      <p>Revisa los datos, abre la vista previa y descarga el PDF para su firma.</p>
+      <p>Selecciona al colaborador y revisa el modelo de su empresa o carrera. Completa los datos y descarga el PDF para su firma.</p>
       <label for="generarEmpleado">Colaborador</label><select id="generarEmpleado" required><option value="">Selecciona un colaborador</option></select>
-      <label for="generarTipo">Documento</label><select id="generarTipo" required><option value="aceptacion">Carta de aceptación</option><option value="constancia_practicas">Constancia de prácticas</option><option value="culminacion">Carta de culminación</option><option value="carta">Carta de presentación</option><option value="horas">Constancia de horas</option><option value="trabajo">Certificado de trabajo</option></select>
+      <label for="generarTipo">Documento</label><select id="generarTipo" required><optgroup label="Modelos de prácticas"><option value="aceptacion">Carta de aceptación</option><option value="convenio_pasantia">Convenio de pasantía y plan anexo</option><option value="plan_capacitacion">Plan de capacitación</option></optgroup><optgroup label="Otros documentos"><option value="constancia_practicas">Constancia de prácticas</option><option value="culminacion">Carta de culminación</option><option value="carta">Carta de presentación</option><option value="horas">Constancia de horas</option><option value="trabajo">Certificado de trabajo</option></optgroup></select>
       <div class="generation-fields">
         <label>Empresa<select id="generarEmpresa" required><option value="">Selecciona una empresa</option></select></label>
         <label>Fecha de emisión<input id="generarFecha" type="date" required></label>
@@ -101,22 +101,31 @@
         <label>Número de horas<input id="generarHoras" type="number" min="0" max="999999.99" step="0.01" required></label>
       </div>
       <p id="generarHorasAyuda" class="field-help">Las horas se completan desde el expediente y pueden ajustarse antes de emitir.</p>
+      <div id="generarModeloCampos" hidden>
+        <div id="generarModeloSelector"><label for="generarModelo">Modelo de documento</label><select id="generarModelo" aria-describedby="generarModeloAyuda"><option value="">Selecciona un modelo</option></select>
+        <p id="generarModeloAyuda" class="field-help" aria-live="polite"></p></div>
+        <div id="generarDatosModelo" class="model-fields"></div>
+        <p class="field-help">Los ajustes se aplican a este documento. La ficha del colaborador conserva sus datos registrados.</p>
+      </div>
       <p id="errorGenerar" class="form-error" role="alert" hidden></p>
       <div class="dialog-actions"><button type="button" class="button button-outline" data-cerrar="modalGenerar">Cancelar</button><button id="btnCrearVista" type="submit" class="button button-primary">Abrir vista previa</button></div>
     </form>
   </dialog>
   <dialog id="modalDocumentoGenerado" class="generated-dialog" aria-labelledby="tituloDocumentoGenerado">
-    <div class="dialog-heading"><h2 id="tituloDocumentoGenerado">Vista previa</h2><button type="button" class="icon-button" data-cerrar="modalDocumentoGenerado" aria-label="Cerrar vista previa"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="dialog-heading"><div><p class="eyebrow">VISTA PREVIA DEL DOCUMENTO</p><h2 id="tituloDocumentoGenerado">Vista previa</h2></div><button type="button" class="icon-button" data-cerrar="modalDocumentoGenerado" aria-label="Cerrar vista previa"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <dl class="generated-context"><div><dt>Colaborador</dt><dd id="generadoColaborador"></dd></div><div><dt>Empresa</dt><dd id="generadoEmpresaContexto"></dd></div><div id="generadoCarreraDato"><dt>Carrera</dt><dd id="generadoCarrera"></dd></div></dl>
+    <p id="generadoModelo" class="generated-model" hidden></p>
+    <iframe id="generadoPdf" class="generated-pdf" title="Vista previa del documento PDF" hidden></iframe>
     <article id="documentoGenerado" class="generated-sheet"><p id="generadoEmpresa" class="generated-brand"></p><h3 id="generadoTitulo"></h3><div id="generadoCuerpo"></div></article>
     <p id="errorPdf" class="form-error" role="alert" hidden></p>
-    <div class="dialog-actions"><button id="btnVolverGenerar" type="button" class="button button-outline">Editar datos</button><button id="btnPdfGenerado" type="button" class="button button-primary">Descargar PDF</button></div>
+    <div class="dialog-actions"><button id="btnAmpliarPdf" type="button" class="button button-outline" aria-pressed="false" aria-label="Ampliar documento al ancho">Ampliar</button><button id="btnTextoGenerado" type="button" class="button button-outline" aria-pressed="false">Ver texto</button><button id="btnVolverGenerar" type="button" class="button button-outline">Editar datos</button><button id="btnPdfGenerado" type="button" class="button button-primary">Descargar PDF</button></div>
   </dialog>
   <dialog id="modalPlantillas" class="generation-dialog" aria-labelledby="tituloEditorPlantillas">
     <form id="formPlantilla"><div class="dialog-heading"><h2 id="tituloEditorPlantillas">Editar plantillas</h2><button type="button" class="icon-button" data-cerrar="modalPlantillas" aria-label="Cerrar editor"><svg class="icon"><use href="#i-close"/></svg></button></div>
       <p>Los cambios se usarán en los próximos documentos. Escribe el contenido y coloca los campos disponibles donde necesites los datos del expediente.</p>
       <label for="plantillaCodigo">Documento</label><select id="plantillaCodigo" required></select>
       <label for="plantillaTitulo">Título</label><input id="plantillaTitulo" maxlength="150" required>
-      <label for="plantillaCuerpo">Contenido</label><textarea id="plantillaCuerpo" rows="13" maxlength="12000" required></textarea>
+      <label for="plantillaCuerpo">Contenido</label><textarea id="plantillaCuerpo" rows="13" maxlength="50000" required></textarea>
       <p class="field-help">Campos disponibles (pulsa para insertar en el contenido):</p><div id="plantillaCampos" class="template-fields"></div>
       <p id="errorPlantilla" class="form-error" role="alert" hidden></p>
       <div class="dialog-actions"><button type="button" class="button button-outline" data-cerrar="modalPlantillas">Cancelar</button><button id="btnGuardarPlantilla" type="submit" class="button button-primary">Guardar plantilla</button></div>

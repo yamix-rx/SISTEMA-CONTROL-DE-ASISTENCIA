@@ -22,6 +22,7 @@ function lineas(texto, maximo = 82) {
   return resultado;
 }
 function generarPdf(documento) {
+  if (documento.estilo === 'formal') return require('./documentoFormalPdfService').generarPdfFormal(documento);
   const paginas = [[]];
   let y = 790;
   const poner = (texto, tamano = 11, negrita = false, salto = 17) => {

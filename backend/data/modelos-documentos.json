@@ -1,0 +1,255 @@
+{
+  "version": 1,
+  "origen": "Modelos PDF proporcionados por el usuario. Se transcriben las cláusulas y los contenidos formativos; no se incorporan las identidades, las firmas ni los sellos de los estudiantes de ejemplo.",
+  "empresas": [
+    { "clave": "sbss", "nombre": "SBSS Outsourcing", "ruc": "20604583871", "aliases": ["SBSS OUTSOURCING S.A.C.", "SBSS OUTSOURCING", "SBSS"], "fuente": "_CARTA DE ACEPTACION-SBSS.pdf", "datos": { "actividad_economica": "Principal - 8299 - OTRAS ACTIVIDADES DE SERVICIOS DE APOYO A LAS EMPRESAS N.C.P.\nSecundaria 1 - 4799 - OTRAS ACTIVIDADES DE VENTA AL POR MENOR NO REALIZADAS EN COMERCIOS, PUESTOS DE VENTA O MERCADOS\nSecundaria 2 - 5229 - OTRAS ACTIVIDADES DE APOYO AL TRANSPORTE" } },
+    { "clave": "nanas", "nombre": "Nanas y Amas", "ruc": "20611314419", "aliases": ["NANAS & AMAS PERU S.A.C.", "NANAS Y AMAS PERU", "NANAS Y AMAS", "NANAS & NANAS PERU S.A.C.", "NANAS Y NANAS PERU", "NANAS"], "fuente": "CARTA DE ACEPTACIÓN - NANAS Y AMAS (1).pdf", "datos": { "actividad_economica": "OTRAS ACTIVIDADES DE DOTACIÓN DE RECURSOS HUMANOS", "empresa_email": "seleccion@gruposbss.com" } },
+    { "clave": "silsan", "nombre": "Droguería Silsan", "ruc": "20606302291", "aliases": ["DROGUERIA SILSAN S.A.C.", "DROGUERIA SILSAN", "IMPORTADORA Y DISTRIBUIDORA SILSAN S.A.C.", "SILSAN LOGISTICA INTEGRAL", "SILSAN"], "fuente": "CARTA DE ACEPTACIÓN - SILSAN.pdf", "datos": {} },
+    { "clave": "ong", "nombre": "Mujer la Educación es Poder", "ruc": "20611807113", "aliases": ["MUJER LA EDUCACION ES PODER", "ONG MUJER LA EDUCACION ES PODER", "ONG MESPO", "ONG"], "fuente": "CARTA DE ACEPTACION ONG.pdf", "datos": { "actividad_economica": "Principal - 9499 - ACTIVIDADES DE OTRAS ASOCIACIONES N.C.P." } },
+    { "clave": "camara", "nombre": "Cámara de Conciliación y Arbitraje", "ruc": "20615541568", "aliases": ["SBSS CAMARA DE CONCILIACION Y ARBITRAJE DEL PERU", "CAMARA DE CONCILIACION Y ARBITRAJE DEL PERU", "CAMARA DE CONCILIACION Y ARBITRAJE", "CAMARA DE CONCILIACION", "CENTRO DE CONCILIACION SBSS", "CAMARA"], "fuente": "CARTA DE ACEPTACION-CÁMARA DE CONCILIACIÓN (1).pdf", "datos": { "actividad_economica": "Principal - 6910 - ACTIVIDADES JURÍDICAS" } }
+  ],
+  "carreras": [
+    {
+      "clave": "sistemas",
+      "nombre": "Ingeniería de Sistemas Computacionales",
+      "aliases": ["Ingeniería de Sistemas Computacionales", "Ingeniería de Sistemas", "Ingeniería Sistemas", "Ing. de Sistemas", "Ing. Sistemas", "Ing. de Sistemas Computacionales", "Ing. Sistemas Computacionales", "Sistemas Computacionales", "Sistemas"],
+      "fuente": "MODELO CONVENIO - ING SISTEMAS-UPN.pdf",
+      "area": "Área de Sistemas",
+      "institucion_representante": "Ruben Dario Gomez Rios",
+      "institucion_representante_documento": "07777607",
+      "funcion": "Brindar apoyo en la gestión y soporte de los recursos tecnológicos de la empresa, participando en la organización de información, mantenimiento básico de sistemas y equipos, soporte a usuarios y mejora de procesos mediante herramientas tecnológicas.",
+      "actividades": [
+        "Brindar soporte básico a los usuarios en el uso de equipos, programas y herramientas tecnológicas.",
+        "Apoyar en la organización, actualización y gestión de información y recursos digitales de la empresa.",
+        "Participar en el mantenimiento y revisión básica de equipos y sistemas utilizados en las actividades de la organización.",
+        "Apoyar en la identificación y solución de incidencias tecnológicas.",
+        "Colaborar en la implementación y mejora de herramientas o procesos tecnológicos que contribuyan a optimizar las actividades de la empresa."
+      ],
+      "competencias": [
+        "Aplicar conocimientos técnicos y tecnológicos en el desarrollo de actividades propias del área de sistemas.",
+        "Desarrollar habilidades para el análisis y solución de problemas relacionados con herramientas y recursos tecnológicos.",
+        "Gestionar y organizar información digital de manera eficiente y responsable.",
+        "Fortalecer la capacidad de adaptación, aprendizaje y actualización frente a nuevas tecnologías.",
+        "Desarrollar responsabilidad, trabajo en equipo, organización y adecuada gestión del tiempo."
+      ],
+      "competencias_especificas": [
+        ["Capacidad para brindar soporte en el uso de herramientas y recursos tecnológicos.", "Atención y solución oportuna de incidencias tecnológicas básicas."],
+        ["Habilidad para organizar y gestionar información y recursos digitales de la empresa.", "Información digital organizada y actualizada."],
+        ["Capacidad para identificar y proponer mejoras en los procesos tecnológicos.", "Implementación o propuesta de mejoras en herramientas y procesos tecnológicos."],
+        ["Capacidad para analizar y resolver problemas relacionados con sistemas y herramientas tecnológicas.", "Resolución eficiente de problemas e incidencias asignadas."],
+        ["Capacidad para cumplir las actividades asignadas de manera organizada y responsable.", "Cumplimiento oportuno de las actividades y tareas asignadas."]
+      ]
+    },
+    {
+      "clave": "industrial",
+      "nombre": "Ingeniería Industrial",
+      "aliases": ["Ingeniería Industrial", "Ing. Industrial", "Industrial"],
+      "fuente": "MODELO DE CONVENIO - ING INDUSTRIAL - UPN.pdf",
+      "area": "Área de Logística",
+      "funcion": "Apoyo en la gestión de procesos operativos, logísticos y administrativos relacionados con la atención de requerimientos, cotizaciones, preparación de pedidos y control de documentación comercial.",
+      "actividades": [
+        "Elaborar y registrar cotizaciones solicitadas por los clientes.",
+        "Preparar, organizar y realizar seguimiento de los pedidos.",
+        "Atender y responder consultas y mensajes de clientes.",
+        "Revisar y organizar documentos comerciales, tales como guías, órdenes de compra y registros relacionados.",
+        "Registrar, actualizar y organizar información en los sistemas y herramientas utilizadas por la empresa.",
+        "Apoyar en la identificación y mejora de los procesos relacionados con la gestión de pedidos e información."
+      ],
+      "competencias": [
+        "Aplicar herramientas y conocimientos de Ingeniería Industrial en la gestión de información y procesos de la empresa.",
+        "Desarrollar capacidad para analizar, organizar y optimizar procesos operativos y administrativos.",
+        "Gestionar información y documentación mediante el uso adecuado de herramientas tecnológicas.",
+        "Fortalecer habilidades de análisis, resolución de problemas y mejora continua.",
+        "Desarrollar responsabilidad, organización, comunicación y trabajo en equipo."
+      ],
+      "competencias_especificas": [
+        ["Capacidad para gestionar y organizar información mediante herramientas tecnológicas.", "Información y registros actualizados correctamente."],
+        ["Habilidad para analizar y apoyar en la mejora de procesos operativos.", "Identificación de oportunidades de mejora en los procesos."],
+        ["Habilidad para atender y dar seguimiento a los requerimientos de los clientes.", "Cotizaciones, pedidos y documentos procesados de manera ordenada y oportuna."],
+        ["Capacidad para cumplir las actividades asignadas de manera organizada y eficiente.", "Cumplimiento oportuno de las tareas asignadas."]
+      ]
+    },
+    {
+      "clave": "administracion",
+      "nombre": "Administración de Empresas",
+      "aliases": ["Administración de Empresas", "Administración", "Administración Empresas", "Adm. de Empresas", "Adm. Empresas", "Administración Empresarial"],
+      "fuente": "MODELO DE CONVENIO - ADMINISTRACION DE EMPRESAS - UPN.pdf",
+      "area": "Área de Administración",
+      "indicador_comunicacion": "Nivel de convencimiento para cerrar convenios con clientes.",
+      "funcion": "Apoyo en la gestión administrativa y operativa, atención de consultas, organización de información y seguimiento de clientes y postulantes.",
+      "actividades": [
+        "Recepcionar, atender y realizar seguimiento a las consultas de clientes y postulantes.",
+        "Registrar, organizar y actualizar bases de datos, documentos e información relacionada con los servicios y procesos de la empresa.",
+        "Apoyar en la coordinación de entrevistas, procesos de incorporación y difusión de oportunidades laborales.",
+        "Colaborar en la organización y ejecución de actividades administrativas y operativas.",
+        "Participar en la identificación de oportunidades de mejora en los procesos de atención, organización y gestión."
+      ],
+      "competencias": [
+        "Aplicar conocimientos administrativos en la planificación, organización y desarrollo de las actividades de la empresa.",
+        "Desarrollar habilidades de comunicación y atención en la interacción con clientes, postulantes y equipo de trabajo.",
+        "Gestionar y organizar información de manera eficiente para apoyar los procesos administrativos y operativos.",
+        "Fortalecer la capacidad de análisis, resolución de problemas y mejora de procesos.",
+        "Desarrollar responsabilidad, iniciativa, trabajo en equipo y adecuada gestión del tiempo."
+      ],
+      "competencias_especificas": [
+        ["Habilidad para administrar las actividades de la empresa.", "Crecimiento de la empresa."],
+        ["Capacidad para dirigir un equipo de trabajo.", "Liderazgo en equipo."],
+        ["Habilidad para mantener un clima laboral adecuado con sus compañeros y superiores.", "Satisfacción laboral."],
+        ["Capacidad para entregar los trabajos al tiempo establecido por el gerente general.", "Tiempo de entrega."]
+      ]
+    },
+    {
+      "clave": "marketing",
+      "nombre": "Administración y Marketing",
+      "aliases": ["Administración y Marketing", "Adm. y Marketing", "Administración Marketing", "Marketing"],
+      "fuente": "MODELO DE CONVENIO - ADMINISTRACION Y MARKETING UPN.pdf",
+      "area": "Área de Marketing",
+      "institucion_representante": "José Alberto Alvarez Barrantes",
+      "institucion_representante_documento": "26728001",
+      "indicador_comunicacion": "Nivel de convencimiento para cerrar convenios con clientes.",
+      "funcion": "Apoyo en la gestión administrativa y de marketing de la empresa, participando en la atención y seguimiento de clientes y postulantes, difusión de servicios, organización de información y apoyo en actividades comerciales y de comunicación.",
+      "actividades": [
+        "Recepcionar, atender y realizar seguimiento a las consultas de clientes y postulantes.",
+        "Apoyar en la difusión y promoción de los servicios y oportunidades laborales ofrecidos por la empresa.",
+        "Participar en la elaboración y organización de contenidos para redes sociales y medios de comunicación.",
+        "Registrar, organizar y actualizar la información de clientes, postulantes y actividades realizadas.",
+        "Apoyar en acciones de seguimiento, atención al cliente y mejora de los procesos comerciales.",
+        "Colaborar en actividades administrativas, comerciales y de organización interna."
+      ],
+      "competencias": [
+        "Aplicar conocimientos de administración y marketing en las actividades comerciales y de comunicación de la empresa.",
+        "Desarrollar habilidades para la atención, comunicación y seguimiento de clientes y potenciales usuarios.",
+        "Participar en acciones de difusión y promoción orientadas al posicionamiento de los servicios.",
+        "Gestionar y organizar información para apoyar las actividades administrativas y comerciales.",
+        "Fortalecer la creatividad, capacidad de análisis, trabajo en equipo, iniciativa y orientación a resultados."
+      ],
+      "competencias_especificas": [
+        ["Habilidad para administrar las actividades de la empresa.", "Crecimiento de la empresa."],
+        ["Capacidad para dirigir un equipo de trabajo.", "Liderazgo en equipo."],
+        ["Habilidad para mantener un clima laboral adecuado con sus compañeros y superiores.", "Satisfacción laboral."],
+        ["Capacidad para entregar los trabajos al tiempo establecido por el gerente general.", "Tiempo de entrega."]
+      ]
+    },
+    {
+      "clave": "audiovisual",
+      "nombre": "Comunicación Audiovisual y Medios Digitales",
+      "aliases": ["Comunicación Audiovisual y Medios Digitales", "Comunicación Audiovisual en Medios Digitales", "Comunicación Audiovisual y Medio Digitales", "Comunicación Audiovisual", "Comunicaciones Audiovisuales", "Audiovisual y Medios Digitales"],
+      "fuente": "MODELO DE CONVENIO - COMUNICACION AUDIOVISUAL Y MEDIO DIGITALES.pdf",
+      "area": "Área de Producción Audiovisual y Medios Digitales",
+      "funcion": "Brindar apoyo en la gestión, planificación y desarrollo de actividades de comunicación audiovisual de la empresa, participando en la creación, producción, edición y difusión de contenidos audiovisuales para diferentes medios y plataformas digitales, aplicando los conocimientos y habilidades adquiridos durante la formación profesional.",
+      "actividades": [
+        "Apoyar en la planificación y organización de proyectos y contenidos audiovisuales de acuerdo con los objetivos de comunicación de la empresa.",
+        "Colaborar en la elaboración de guiones, propuestas creativas y conceptos audiovisuales para videos, fotografías, piezas gráficas y otros contenidos digitales.",
+        "Participar en la producción y registro de fotografías y videos, apoyando en la preparación de equipos, encuadres, iluminación, sonido y demás elementos necesarios para la producción audiovisual.",
+        "Apoyar en la edición y postproducción de videos y otros contenidos audiovisuales, utilizando herramientas y programas de edición digital.",
+        "Colaborar en la creación, adaptación y publicación de contenidos audiovisuales para redes sociales, páginas web y otras plataformas digitales, considerando las características de cada medio y público objetivo.",
+        "Realizar la organización, selección y almacenamiento de archivos audiovisuales, manteniendo un adecuado orden y respaldo del material producido."
+      ],
+      "competencias": [
+        "Aplicar conocimientos teóricos y prácticos de la comunicación audiovisual en el desarrollo de actividades relacionadas con la producción y difusión de contenidos digitales.",
+        "Desarrollar habilidades para la planificación, producción, edición y postproducción de contenidos audiovisuales destinados a diferentes medios y plataformas digitales.",
+        "Utilizar de manera adecuada equipos audiovisuales y herramientas digitales para la creación, edición y gestión de fotografías, videos, audio y otros recursos multimedia.",
+        "Fortalecer la creatividad, capacidad de innovación y criterio audiovisual para desarrollar contenidos atractivos, coherentes y adecuados a las características de las diferentes audiencias.",
+        "Desarrollar capacidades para adaptar contenidos audiovisuales a diferentes formatos, plataformas digitales y redes sociales, considerando las tendencias y características de cada medio.",
+        "Desarrollar responsabilidad, organización, trabajo en equipo, comunicación efectiva, creatividad, criterio profesional y adecuada gestión del tiempo durante la realización de proyectos y contenidos audiovisuales."
+      ],
+      "competencias_especificas": [
+        ["Capacidad para apoyar en la planificación, producción y elaboración de contenidos audiovisuales para medios digitales.", "Contenidos audiovisuales planificados y elaborados de manera creativa, ordenada y acorde con los objetivos comunicacionales establecidos."],
+        ["Habilidad para organizar y gestionar recursos, materiales y archivos audiovisuales y digitales.", "Recursos, archivos, fotografías, videos, audios y demás materiales audiovisuales organizados, clasificados y correctamente almacenados."],
+        ["Capacidad para investigar, desarrollar y adaptar contenidos de comunicación para diferentes plataformas digitales.", "Información y contenidos investigados, seleccionados y adaptados adecuadamente de acuerdo con el público objetivo y las características de cada medio digital."],
+        ["Capacidad para participar en la producción, edición y difusión de contenidos audiovisuales.", "Participación oportuna en las etapas de producción, grabación, edición y publicación de contenidos audiovisuales destinados a plataformas digitales."],
+        ["Capacidad para cumplir las actividades asignadas de manera organizada, creativa, responsable y ética.", "Cumplimiento oportuno de las actividades y tareas asignadas, demostrando creatividad, responsabilidad, trabajo en equipo y adecuado manejo de los contenidos y recursos audiovisuales."]
+      ]
+    },
+    {
+      "clave": "periodismo",
+      "nombre": "Comunicación y Periodismo",
+      "aliases": ["Comunicación y Periodismo", "Comunicaciones y Periodismo", "Comunicación - Periodismo", "Comunicación Periodismo", "Periodismo"],
+      "fuente": "MODELO DE CONVENIO - COUMNICACION Y PERIODISMO - UPN.pdf",
+      "area": "Área de Comunicaciones",
+      "funcion": "Brindar apoyo en la gestión y desarrollo de las actividades de comunicación y periodismo de la empresa, participando en la búsqueda, recopilación, redacción y difusión de información, así como en la elaboración de contenidos para diferentes medios y plataformas de comunicación, aplicando los conocimientos adquiridos durante la formación profesional.",
+      "actividades": [
+        "Apoyar en la búsqueda, recopilación, selección y verificación de información de interés periodístico para la elaboración de contenidos.",
+        "Colaborar en la redacción y edición de notas informativas, noticias, entrevistas, reportajes, comunicados y otros contenidos de carácter periodístico.",
+        "Apoyar en la planificación, elaboración y publicación de contenidos para medios digitales y redes sociales, de acuerdo con los objetivos de comunicación de la empresa.",
+        "Realizar el seguimiento de noticias, acontecimientos y temas de interés relacionados con la empresa, recopilando información de fuentes confiables y pertinentes.",
+        "Apoyar en la realización y preparación de entrevistas, recopilando información y organizando el material necesario para la elaboración de contenidos periodísticos.",
+        "Colaborar en la revisión y corrección de contenidos escritos y audiovisuales, verificando la claridad, coherencia, ortografía y adecuada presentación de la información."
+      ],
+      "competencias": [
+        "Aplicar conocimientos teóricos y prácticos de la comunicación y el periodismo en el desarrollo de actividades propias del área periodística.",
+        "Desarrollar habilidades para la búsqueda, análisis, interpretación y difusión de información de interés público, utilizando fuentes confiables y criterios periodísticos.",
+        "Gestionar y organizar información, documentos y contenidos periodísticos de manera eficiente, ordenada, responsable y ética.",
+        "Fortalecer la capacidad de investigación y actualización respecto a hechos de actualidad, fuentes informativas, herramientas de comunicación y nuevas tendencias del periodismo.",
+        "Desarrollar responsabilidad, trabajo en equipo, organización, pensamiento crítico, criterio periodístico y adecuada gestión del tiempo en la elaboración y difusión de contenidos informativos."
+      ],
+      "competencias_especificas": [
+        ["Capacidad para apoyar en la investigación, redacción y elaboración de contenidos periodísticos.", "Información periodística recopilada, analizada y redactada de manera clara, coherente y objetiva."],
+        ["Habilidad para organizar y gestionar información, fuentes y documentación periodística.", "Fuentes, documentos y materiales periodísticos organizados, actualizados y correctamente archivados."],
+        ["Capacidad para investigar y analizar hechos de interés público y actualidad.", "Identificación, verificación y análisis adecuado de información y fuentes relacionadas con los hechos investigados."],
+        ["Capacidad para realizar seguimiento de acontecimientos, entrevistas y procesos informativos.", "Seguimiento oportuno de acontecimientos, fuentes, entrevistas y requerimientos de información relacionados con las actividades asignadas."],
+        ["Capacidad para cumplir las actividades periodísticas asignadas de manera organizada, responsable y ética.", "Cumplimiento oportuno de las actividades y tareas asignadas, aplicando principios de responsabilidad, ética periodística y adecuado manejo de la información."]
+      ]
+    },
+    {
+      "clave": "derecho",
+      "nombre": "Derecho",
+      "aliases": ["Derecho", "Derecho y Ciencias Políticas", "Abogacía"],
+      "fuente": "MODELO DE CONVENIO - DERECHO - UPN.pdf",
+      "area": "Área Legal",
+      "funcion": "Brindar apoyo en la gestión y desarrollo de las actividades del área legal de la empresa, participando en la organización, revisión y elaboración de documentación jurídica, así como en el seguimiento de procesos y procedimientos legales, aplicando los conocimientos adquiridos en la formación profesional.",
+      "actividades": [
+        "Apoyar en la revisión, organización y clasificación de documentos legales y administrativos de la empresa.",
+        "Colaborar en la elaboración y revisión de documentos, informes, contratos, solicitudes y otros escritos de carácter legal.",
+        "Apoyar en el seguimiento y actualización de expedientes y procedimientos legales, manteniendo organizada la información correspondiente.",
+        "Realizar la búsqueda y recopilación de normas legales, jurisprudencia y demás información jurídica necesaria para el desarrollo de las actividades del área.",
+        "Apoyar en la identificación de posibles contingencias legales y en la recopilación de información para su análisis y atención.",
+        "Colaborar en el seguimiento de plazos, trámites y requerimientos relacionados con los procedimientos legales de la empresa.",
+        "Mantener actualizada y organizada la documentación física y digital correspondiente al área legal, respetando la confidencialidad de la información."
+      ],
+      "competencias": [
+        "Aplicar conocimientos jurídicos en el desarrollo de actividades propias del área legal.",
+        "Desarrollar habilidades para el análisis e interpretación de normas, documentos y situaciones de carácter jurídico.",
+        "Gestionar y organizar documentación legal de manera eficiente, ordenada y responsable.",
+        "Fortalecer la capacidad de investigación y actualización respecto de normas, jurisprudencia y disposiciones legales aplicables.",
+        "Desarrollar responsabilidad, trabajo en equipo, organización, criterio jurídico y adecuada gestión del tiempo."
+      ],
+      "competencias_especificas": [
+        ["Capacidad para apoyar en la revisión y elaboración de documentos legales.", "Documentación jurídica revisada y elaborada de manera ordenada y adecuada."],
+        ["Habilidad para organizar y gestionar expedientes y documentación legal.", "Expedientes y documentos legales organizados, actualizados y correctamente archivados."],
+        ["Capacidad para investigar y analizar normas y disposiciones jurídicas.", "Identificación y aplicación adecuada de normas legales relacionadas con los casos o actividades asignadas."],
+        ["Capacidad para realizar seguimiento de procesos, trámites y procedimientos legales.", "Seguimiento oportuno de expedientes, plazos, trámites y requerimientos legales asignados."],
+        ["Capacidad para cumplir las actividades asignadas de manera organizada, responsable y confidencial.", "Cumplimiento oportuno de las actividades y tareas asignadas, manteniendo la confidencialidad de la información legal."]
+      ]
+    },
+    {
+      "clave": "negocios",
+      "nombre": "Administración y Negocios Internacionales",
+      "aliases": ["Administración y Negocios Internacionales", "Administración Negocios Internacionales", "Adm. y Negocios Internacionales", "Negocios Internacionales"],
+      "fuente": "MODELO DE CONVENIOS - ADMINISTRACION Y NEGOCIOS INTERNACIONALES- UPN.pdf",
+      "area": "Área de Administración",
+      "indicador_comunicacion": "Nivel de convencimiento para cerrar convenios con clientes.",
+      "funcion": "Apoyo en la gestión administrativa y operativa, atención de consultas, organización de información y seguimiento de clientes y postulantes.",
+      "actividades": [
+        "Recepcionar, atender y realizar seguimiento a las consultas de clientes y postulantes.",
+        "Registrar, organizar y actualizar bases de datos, documentos e información relacionada con los servicios y procesos de la empresa.",
+        "Apoyar en la coordinación de entrevistas, procesos de incorporación y difusión de oportunidades laborales.",
+        "Colaborar en la organización y ejecución de actividades administrativas y operativas.",
+        "Participar en la identificación de oportunidades de mejora en los procesos de atención, organización y gestión."
+      ],
+      "competencias": [
+        "Aplicar conocimientos administrativos en la planificación, organización y desarrollo de las actividades de la empresa.",
+        "Desarrollar habilidades de comunicación y atención en la interacción con clientes, postulantes y equipo de trabajo.",
+        "Gestionar y organizar información de manera eficiente para apoyar los procesos administrativos y operativos.",
+        "Fortalecer la capacidad de análisis, resolución de problemas y mejora de procesos.",
+        "Desarrollar responsabilidad, iniciativa, trabajo en equipo y adecuada gestión del tiempo."
+      ],
+      "competencias_especificas": [
+        ["Habilidad para administrar las actividades de la empresa.", "Crecimiento de la empresa."],
+        ["Capacidad para dirigir un equipo de trabajo.", "Liderazgo en equipo."],
+        ["Habilidad para mantener un clima laboral adecuado con sus compañeros y superiores.", "Satisfacción laboral."],
+        ["Capacidad para entregar los trabajos al tiempo establecido por el gerente general.", "Tiempo de entrega."]
+      ]
+    }
+  ]
+}
