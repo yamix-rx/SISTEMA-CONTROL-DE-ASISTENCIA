@@ -2,12 +2,13 @@ const path = require('node:path');
 const fs = require('node:fs');
 const PDFDocument = require('pdfkit');
 
+const A4_ALTURA = 842;
 const MARCAS = Object.freeze({
-  sbss: { x: 58, y: 25, width: 145, height: 64 },
-  nanas: { x: 0, y: 0, width: 595.28, height: 52 },
-  silsan: { x: 22, y: 24, width: 185, height: 66 },
-  ong: { x: 20, y: 25, width: 80, height: 83 },
-  camara: { x: 22, y: 25, width: 190, height: 62 }
+  sbss: { x: 284, y: 152, width: 162, height: 68 },
+  nanas: { x: 213, y: 196, width: 193, height: 98 },
+  silsan: { x: 339, y: 90, width: 151, height: 75 },
+  ong: { x: 311, y: 134, width: 168, height: 80 },
+  camara: { x: 225, y: 163, width: 158, height: 66 }
 });
 
 function rutaFirma(clave) {
@@ -39,7 +40,7 @@ function generarPdfCarta(documento) {
       if (marca) {
         doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), marca.x, marca.y,
           { width: marca.width, height: marca.height });
-        doc.y = documento.logo === 'nanas' ? 87 : 101;
+        doc.y = marca.y + marca.height + 8;
       } else {
         doc.font(negrita).fontSize(14).text(documento.empresa, margen, 35, { width: ancho, align: 'left' });
         doc.y = Math.max(101, doc.y + 20);

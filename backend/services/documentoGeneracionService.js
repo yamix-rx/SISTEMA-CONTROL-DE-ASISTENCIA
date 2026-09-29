@@ -10,12 +10,12 @@ const NOMBRES_DOCUMENTOS = Object.freeze({ aceptacion: 'Carta de aceptación', c
   convenio_pasantia: 'Convenio de pasantía', plan_capacitacion: 'Plan de capacitación' });
 const PREDETERMINADAS = Object.freeze({
   aceptacion: {
-    titulo: 'CARTA DE ACEPTACIÓN DE PRÁCTICAS',
-    cuerpo: '{{lugar_fecha}}\n\nPor medio de la presente, {{empresa}} acepta a {{trabajador}}, identificado(a) con {{documento}}, para realizar prácticas en el área de {{area}}, en el cargo de {{cargo}}.\n\n{{formacion_academica}}\n\nLas prácticas contemplan {{horas}} horas, de acuerdo con las condiciones del convenio correspondiente.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
+    titulo: 'CARTA DE ACEPTACIÓN PARA PROYECTO DE PASANTÍA',
+    cuerpo: '{{lugar_fecha}}\n\nEstimado(a):\n{{destinatario}}\n{{destinatario_cargo}}\n\nASUNTO: Aceptación para Proyecto de Pasantía\n\nDe mi consideración:\n\nPor medio de la presente me dirijo a usted para expresarle mi saludo cordial, y a la vez hacer de su conocimiento que nuestra empresa ha aceptado al siguiente estudiante:\n\n{{trabajador}} — {{documento}}\n\nPara desarrollo del proyecto en la modalidad de pasantía antes mencionado por un periodo de {{duracion}} o {{horas}} horas y así complementar su formación académica, del curso de prácticas, el cual es obligatorio para el estudiante y en lo dispuesto en la Ley Sobre Modalidades Formativas Laborales (Nº 28518).\n\nLos datos para registro son los siguientes:\n- RUC empresa: {{ruc}}\n- Razón social: {{empresa}}\n- Supervisor del practicante: {{supervisor}}\n- Cel. supervisor: {{supervisor_telefono}}\n- Área de desempeño: {{area}}\n{{formacion_academica}}\n\nAtentamente,\n\n\n_______________________________\n{{supervisor}}'
   },
   constancia_practicas: {
     titulo: 'CONSTANCIA DE PRÁCTICAS',
-    cuerpo: '{{lugar_fecha}}\n\n{{empresa}}, con RUC {{ruc}}, deja constancia de que {{trabajador}}, identificado(a) con {{documento}}, realiza o ha realizado prácticas en el área de {{area}}, desempeñando el cargo de {{cargo}}.\n\n{{formacion_academica}}\n\nFecha de inicio: {{fecha_ingreso}}.\nHoras de prácticas realizadas: {{horas}} horas.\n\nSe expide la presente constancia a solicitud del interesado(a), para los fines que estime convenientes.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
+    cuerpo: '{{lugar_fecha}}\n\n{{empresa}}, con RUC {{ruc}}, deja constancia de que {{trabajador}}, identificado(a) con {{documento}}, realiza prácticas en el área de {{area}}, desempeñando el cargo de {{cargo}}.\n\n{{formacion_academica}}\n\nFecha de inicio: {{fecha_ingreso}}.\nHoras de prácticas realizadas: {{horas}} horas.\n\nSe expide la presente constancia a solicitud del interesado(a), para los fines que estime conveniente.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
   },
   culminacion: {
     titulo: 'CARTA DE CULMINACIÓN DE PRÁCTICAS',
