@@ -7,7 +7,6 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
   <title>Sistema Web SBSS - Registro de Horarios</title>
-  <link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
   <link rel="stylesheet" href="css/estilos.css">
   <script src="vendor/lucide/lucide.min.js"></script>
   <style>
@@ -75,32 +74,32 @@
 <link rel="stylesheet" href="css/navigation.css">
 <link rel="stylesheet" href="css/asistencia-core.css">
 </head>
-<body class="text-slate-800 font-sans antialiased min-h-screen">
-<div class="app-shell min-h-screen">
+<body class="text-dark min-vh-100">
+<div class="app-shell min-vh-100">
   <!-- TOPBAR -->
-  <header class="sbss-header top-gradient text-white sticky top-0 z-40 shadow-md h-[54px]">
-    <div class="h-full flex items-center">
-      <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px] tracking-wide">
-        <span class="text-sky-300 text-3xl leading-none" aria-hidden="true">✦</span>
+  <header class="sbss-header top-gradient text-white sticky-top top-0 sbss-z-40 shadow sbss-h-54">
+    <div class="h-100 d-flex align-items-center">
+      <div class="sbss-brand sbss-px-5 d-flex align-items-center gap-2 fw-bold sbss-fs-22">
+        <span class="text-info-emphasis sbss-fs-30 sbss-leading-none" aria-hidden="true">✦</span>
         <span>SBSS</span>
       </div>
 
-      <div class="ml-auto h-full flex items-center gap-4 pr-5">
-        <label class="h-9 min-w-[205px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[11px]">
-          <i data-lucide="building-2" class="w-4 h-4"></i>
-          <span class="font-bold">Empresa:</span>
-          <select id="empresaGlobal" class="bg-transparent outline-none cursor-pointer flex-1 text-white font-semibold">
-            <option value="todas" class="text-slate-800">Todas las Empresas</option>
+      <div class="ms-auto h-100 d-flex align-items-center gap-3 sbss-pe-5">
+        <label class="sbss-h-9 sbss-min-w-205 sbss-px-3 d-flex align-items-center gap-2 rounded-3 border border-info border-opacity-50 bg-info bg-opacity-50 sbss-fs-11">
+          <i data-lucide="building-2" class="sbss-w-4 sbss-h-4"></i>
+          <span class="fw-bold">Empresa:</span>
+          <select id="empresaGlobal" class="bg-transparent sbss-cursor-pointer flex-grow-1 text-white fw-semibold">
+            <option value="todas" class="text-dark">Todas las Empresas</option>
           </select>
         </label>
-        <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
-          <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white">U</div>
-          <div class="flex flex-col text-left">
-            <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
-            <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+        <div class="d-flex align-items-center sbss-gap-2-5 sbss-ps-3 border-start border-info border-opacity-25">
+          <div id="avatarLetra" class="sbss-w-8 sbss-h-8 rounded-circle bg-info border border-info d-flex align-items-center justify-content-center sbss-fs-12 fw-bold text-white">U</div>
+          <div class="d-flex flex-column text-start">
+            <span id="nombreUsuarioSesion" class="sbss-fs-12 fw-bold text-white sbss-leading-tight">Usuario</span>
+            <span id="rolUsuarioSesion" class="sbss-fs-10 text-info-emphasis fw-medium sbss-leading-tight">Rol</span>
           </div>
-          <button id="btnCerrarSesion" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
-            <i data-lucide="log-out" class="w-4 h-4"></i>
+          <button id="btnCerrarSesion" type="button" title="Cerrar sesión" aria-label="Cerrar sesión" class="text-info-emphasis sbss-hover-rose sbss-p-1-5 sbss-transition ms-1">
+            <i data-lucide="log-out" class="sbss-w-4 sbss-h-4"></i>
           </button>
         </div>
       </div>
@@ -108,122 +107,122 @@
   </header>
 
   <div class="sbss-navigation-layout">
-<button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+<button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
     <!-- SIDEBAR -->
     <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
 
     <!-- CONTENT -->
-    <main class="flex-1 p-4 bg-[#f7fafc]">
-      <section class="bg-white rounded-lg panel-border soft-shadow p-4 space-y-3">
-        <div class="core-heading flex items-center justify-between">
-          <div class="flex items-center gap-3 text-[#174e75]">
-            <div class="w-9 h-9 rounded-lg bg-sky-50 border border-sky-100 grid place-items-center"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-            <h1 class="font-extrabold text-[17px] tracking-tight">REGISTRO DE HORARIOS POR EMPRESA Y ÁREA</h1>
+    <main class="flex-grow-1 p-3 bg-info-subtle">
+      <section class="bg-white rounded-3 panel-border soft-shadow p-3 sbss-space-y-3">
+        <div class="core-heading d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center sbss-gap-3 text-primary-emphasis">
+            <div class="sbss-w-9 sbss-h-9 rounded-3 bg-info-subtle border border-info-subtle d-grid sbss-place-center"><i data-lucide="calendar-days" class="sbss-w-5 sbss-h-5"></i></div>
+            <h1 class="fw-bolder sbss-fs-17">REGISTRO DE HORARIOS POR EMPRESA Y ÁREA</h1>
           </div>
-          <button id="btnAbrirModal" class="h-9 px-5 rounded-lg bg-[#1479b9] hover:bg-[#0e689f] text-white text-[12px] font-bold shadow-sm flex items-center gap-2">
-            <i data-lucide="plus" class="w-4 h-4"></i> Registrar horario
+          <button id="btnAbrirModal" class="sbss-h-9 sbss-px-5 rounded-3 bg-info sbss-hover-blue-dark text-white sbss-fs-12 fw-bold shadow-sm d-flex align-items-center gap-2">
+            <i data-lucide="plus" class="sbss-w-4 sbss-h-4"></i> Registrar horario
           </button>
         </div>
 
         <!-- FILTROS -->
-        <div class="rounded-lg panel-border overflow-hidden">
-          <div class="h-9 px-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center gap-2 text-[#234f6d] text-[12px] font-extrabold">
-            <i data-lucide="filter" class="w-4 h-4"></i> FILTROS DE VISUALIZACIÓN
+        <div class="rounded-3 panel-border overflow-hidden">
+          <div class="sbss-h-9 px-3 bg-gradient border-bottom border-secondary-subtle d-flex align-items-center gap-2 text-primary-emphasis sbss-fs-12 fw-bolder">
+            <i data-lucide="filter" class="sbss-w-4 sbss-h-4"></i> FILTROS DE VISUALIZACIÓN
           </div>
-          <div class="p-3">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Empresa
-                <select id="filtroEmpresa" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+          <div class="sbss-p-3">
+            <div class="d-grid sbss-grid-cols-1 sbss-grid-md-cols-3 gap-3 align-items-end">
+              <label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Empresa
+                <select id="filtroEmpresa" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border bg-white sbss-fs-11 fw-medium">
                   <option value="todas">Todas las empresas</option>
                 </select>
               </label>
 
-              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Área
-                <select id="filtroArea" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+              <label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Área
+                <select id="filtroArea" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border bg-white sbss-fs-11 fw-medium">
                   <option value="General">Horario General</option>
                 </select>
               </label>
 
-              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Cargo<select id="filtroCargo" class="w-full h-9 px-3 rounded-md panel-border"></select></label><label class="space-y-1 text-[11px] font-bold text-[#315b76]">Trabajador<select id="filtroTrabajador" class="w-full h-9 px-3 rounded-md panel-border"></select></label><label class="space-y-1 text-[11px] font-bold text-[#315b76]">Semana
-                <select id="filtroSemana" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+              <label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Cargo<select id="filtroCargo" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border"></select></label><label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Trabajador<select id="filtroTrabajador" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border"></select></label><label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Semana
+                <select id="filtroSemana" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border bg-white sbss-fs-11 fw-medium">
                   <option value="-1">Semana anterior</option>
                   <option value="0" selected>Semana actual</option>
                   <option value="1">Semana siguiente</option>
                 </select>
               </label>
 
-              <label class="space-y-1 text-[11px] font-bold text-[#315b76]">Vista
-                <select id="filtroVista" class="w-full h-9 px-3 rounded-md panel-border bg-white text-[11px] font-medium outline-none focus:ring-2 focus:ring-sky-100">
+              <label class="sbss-space-y-1 sbss-fs-11 fw-bold text-primary-emphasis">Vista
+                <select id="filtroVista" class="w-100 sbss-h-9 sbss-px-3 rounded-2 panel-border bg-white sbss-fs-11 fw-medium">
                   <option value="semanal">Horario semanal</option>
                   <option value="manana">Solo turno mañana</option>
                   <option value="tarde">Solo turno tarde</option>
                 </select>
               </label>
             </div>
-            <p class="mt-2 text-[10px] text-slate-500 flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-sky-700"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente.</p>
+            <p class="mt-2 sbss-fs-10 text-body-secondary d-flex align-items-center sbss-gap-1-5"><i data-lucide="info" class="sbss-w-3-5 sbss-h-3-5 text-info"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente.</p>
           </div>
         </div>
 
         <!-- AREAS TABS DINÁMICAS -->
-        <div id="areaTabs" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+        <div id="areaTabs" class="d-grid sbss-grid-cols-2 sbss-grid-md-cols-4 gap-2"></div>
 
-        <div class="h-8 px-3 rounded-md bg-[#eef6fb] border border-[#d5e8f4] flex items-center text-[10px] text-[#41637a]">
-          <i data-lucide="info" class="w-3.5 h-3.5 text-sky-700 mr-2"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente desde la base de datos.
+        <div class="sbss-h-8 sbss-px-3 rounded-2 bg-info-subtle border border border-secondary-subtle d-flex align-items-center sbss-fs-10 text-primary-emphasis">
+          <i data-lucide="info" class="sbss-w-3-5 sbss-h-3-5 text-info me-2"></i> Al seleccionar Empresa + Área, el horario correspondiente se carga automáticamente desde la base de datos.
         </div>
 
         <!-- HORARIO TABLE -->
-        <div class="rounded-lg panel-border overflow-hidden">
-          <div class="h-12 px-4 core-heading flex items-center justify-between bg-white border-b border-slate-200">
-            <div class="flex items-center gap-2 text-[#174e75]">
-              <i data-lucide="calendar-days" class="w-4 h-4"></i>
-              <h2 id="tituloHorario" class="font-extrabold text-[14px]">HORARIO SEMANAL — GENERAL</h2>
-              <span id="rangoSemana" class="ml-2 text-[10px] font-semibold text-slate-400"></span>
+        <div class="rounded-3 panel-border overflow-hidden">
+          <div class="sbss-h-12 px-3 core-heading d-flex align-items-center justify-content-between bg-white border-bottom border-secondary-subtle">
+            <div class="d-flex align-items-center gap-2 text-primary-emphasis">
+              <i data-lucide="calendar-days" class="sbss-w-4 sbss-h-4"></i>
+              <h2 id="tituloHorario" class="fw-bolder sbss-fs-14">HORARIO SEMANAL — GENERAL</h2>
+              <span id="rangoSemana" class="ms-2 sbss-fs-10 fw-semibold text-body-secondary"></span>
             </div>
-            <div class="flex items-center gap-5 text-[10px] font-semibold text-[#365b73]">
-              <span class="flex items-center gap-1.5"><i class="legend-dot bg-emerald-400"></i>Asignado</span>
-              <span class="flex items-center gap-1.5"><i class="legend-dot bg-slate-400"></i>Descanso</span>
-              <span class="flex items-center gap-1.5"><i class="legend-dot bg-white border border-slate-300"></i>Sin horario</span>
+            <div class="d-flex align-items-center sbss-gap-5 sbss-fs-10 fw-semibold text-primary-emphasis">
+              <span class="d-flex align-items-center sbss-gap-1-5"><i class="legend-dot bg-success"></i>Asignado</span>
+              <span class="d-flex align-items-center sbss-gap-1-5"><i class="legend-dot bg-secondary"></i>Descanso</span>
+              <span class="d-flex align-items-center sbss-gap-1-5"><i class="legend-dot bg-white border border-secondary"></i>Sin horario</span>
             </div>
           </div>
 
           <div class="overflow-x-auto">
-            <table class="schedule-table w-full text-[10px]">
+            <table class="schedule-table w-100 sbss-fs-10">
               <thead>
                 <tr>
-                  <th class="h-8 w-[82px] text-center font-extrabold">HORA</th>
-                  <th class="h-8 text-center font-extrabold">LUNES</th>
-                  <th class="h-8 text-center font-extrabold">MARTES</th>
-                  <th class="h-8 text-center font-extrabold">MIÉRCOLES</th>
-                  <th class="h-8 text-center font-extrabold">JUEVES</th>
-                  <th class="h-8 text-center font-extrabold">VIERNES</th>
-                  <th class="h-8 text-center font-extrabold">SÁBADO</th>
-                  <th class="h-8 text-center font-extrabold">DOMINGO</th>
+                  <th class="sbss-h-8 sbss-w-82 text-center fw-bolder">HORA</th>
+                  <th class="sbss-h-8 text-center fw-bolder">LUNES</th>
+                  <th class="sbss-h-8 text-center fw-bolder">MARTES</th>
+                  <th class="sbss-h-8 text-center fw-bolder">MIÉRCOLES</th>
+                  <th class="sbss-h-8 text-center fw-bolder">JUEVES</th>
+                  <th class="sbss-h-8 text-center fw-bolder">VIERNES</th>
+                  <th class="sbss-h-8 text-center fw-bolder">SÁBADO</th>
+                  <th class="sbss-h-8 text-center fw-bolder">DOMINGO</th>
                 </tr>
               </thead>
               <tbody id="scheduleBody">
-                <tr><td colspan="8" class="h-24 text-center text-slate-400">Cargando malla de turnos...</td></tr>
+                <tr><td colspan="8" class="sbss-h-24 text-center text-body-secondary">Cargando malla de turnos...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <!-- KPIS INFERIORES -->
-        <div class="grid grid-cols-[1.25fr_1.15fr_1.15fr_1fr] gap-3 pt-1">
-          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="refresh-cw" class="w-5 h-5"></i></div>
-            <div><p class="text-[10px] font-extrabold text-[#315b76]">CONEXIÓN EN TIEMPO REAL</p><p class="text-[9px] leading-4 text-slate-500">Malla de horarios vinculada a la base de datos MySQL.</p></div>
+        <div class="d-grid sbss-grid-dashboard sbss-gap-3 sbss-pt-1">
+          <div class="rounded-3 panel-border bg-white sbss-h-72 px-3 d-flex align-items-center sbss-gap-3">
+            <div class="sbss-w-10 sbss-h-10 rounded-circle bg-info-subtle d-grid sbss-place-center text-info"><i data-lucide="refresh-cw" class="sbss-w-5 sbss-h-5"></i></div>
+            <div><p class="sbss-fs-10 fw-bolder text-primary-emphasis">CONEXIÓN EN TIEMPO REAL</p><p class="sbss-fs-9 sbss-leading-4 text-body-secondary">Malla de horarios vinculada a la base de datos MySQL.</p></div>
           </div>
-          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="building-2" class="w-5 h-5"></i></div>
-            <div><p class="text-[10px] font-extrabold text-[#315b76]">FILTRO POR EMPRESA</p><p class="text-[9px] leading-4 text-slate-500">Visualice únicamente el personal de la empresa seleccionada.</p></div>
+          <div class="rounded-3 panel-border bg-white sbss-h-72 px-3 d-flex align-items-center sbss-gap-3">
+            <div class="sbss-w-10 sbss-h-10 rounded-circle bg-info-subtle d-grid sbss-place-center text-info"><i data-lucide="building-2" class="sbss-w-5 sbss-h-5"></i></div>
+            <div><p class="sbss-fs-10 fw-bolder text-primary-emphasis">FILTRO POR EMPRESA</p><p class="sbss-fs-9 sbss-leading-4 text-body-secondary">Visualice únicamente el personal de la empresa seleccionada.</p></div>
           </div>
-          <div class="rounded-lg panel-border bg-white h-[72px] px-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="users" class="w-5 h-5"></i></div>
-            <div><p class="text-[10px] font-extrabold text-[#315b76]">FILTRO POR ÁREA</p><p class="text-[9px] leading-4 text-slate-500">Filtrado rápido con pestañas interactivas.</p></div>
+          <div class="rounded-3 panel-border bg-white sbss-h-72 px-3 d-flex align-items-center sbss-gap-3">
+            <div class="sbss-w-10 sbss-h-10 rounded-circle bg-info-subtle d-grid sbss-place-center text-info"><i data-lucide="users" class="sbss-w-5 sbss-h-5"></i></div>
+            <div><p class="sbss-fs-10 fw-bolder text-primary-emphasis">FILTRO POR ÁREA</p><p class="sbss-fs-9 sbss-leading-4 text-body-secondary">Filtrado rápido con pestañas interactivas.</p></div>
           </div>
-          <div class="rounded-lg panel-border bg-white h-[72px] px-4 grid grid-cols-2 divide-x divide-slate-200">
-            <div class="flex items-center gap-2 pr-3"><div class="w-9 h-9 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="users" class="w-5 h-5"></i></div><div><p class="text-[9px] text-slate-500">Personal programado</p><strong id="kpiPersonal" class="text-[18px] leading-5 text-[#174e75]">0</strong></div></div>
-            <div class="flex items-center gap-2 pl-3"><div class="w-9 h-9 rounded-full bg-sky-50 grid place-items-center text-sky-700"><i data-lucide="building-2" class="w-5 h-5"></i></div><div><p class="text-[9px] text-slate-500">Áreas activas</p><strong id="kpiAreas" class="text-[18px] leading-5 text-[#174e75]">0</strong></div></div>
+          <div class="rounded-3 panel-border bg-white sbss-h-72 px-3 d-grid sbss-grid-cols-2 sbss-divide-x sbss-divide-muted">
+            <div class="d-flex align-items-center gap-2 sbss-pe-3"><div class="sbss-w-9 sbss-h-9 rounded-circle bg-info-subtle d-grid sbss-place-center text-info"><i data-lucide="users" class="sbss-w-5 sbss-h-5"></i></div><div><p class="sbss-fs-9 text-body-secondary">Personal programado</p><strong id="kpiPersonal" class="sbss-fs-18 sbss-leading-5 text-primary-emphasis">0</strong></div></div>
+            <div class="d-flex align-items-center gap-2 sbss-ps-3"><div class="sbss-w-9 sbss-h-9 rounded-circle bg-info-subtle d-grid sbss-place-center text-info"><i data-lucide="building-2" class="sbss-w-5 sbss-h-5"></i></div><div><p class="sbss-fs-9 text-body-secondary">Áreas activas</p><strong id="kpiAreas" class="sbss-fs-18 sbss-leading-5 text-primary-emphasis">0</strong></div></div>
           </div>
         </div>
       </section>
@@ -232,57 +231,57 @@
 </div>
 
 <!-- MODAL REGISTRAR HORARIO -->
-<div id="modalHorario" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
-  <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
-    <div class="h-14 px-5 top-gradient text-white core-heading flex items-center justify-between">
-      <div class="flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5"></i><h3 class="font-extrabold text-sm">REGISTRAR HORARIO</h3></div>
-      <button id="btnCerrarModal" class="p-1.5 rounded-lg hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+<div id="modalHorario" class="d-none position-fixed top-0 end-0 bottom-0 start-0 sbss-z-50 modal-backdrop align-items-center justify-content-center p-3">
+  <div class="bg-white w-100 sbss-max-w-2xl rounded-3 shadow-lg overflow-hidden">
+    <div class="sbss-h-14 sbss-px-5 top-gradient text-white core-heading d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2"><i data-lucide="calendar-plus" class="sbss-w-5 sbss-h-5"></i><h3 class="fw-bolder sbss-fs-14">REGISTRAR HORARIO</h3></div>
+      <button id="btnCerrarModal" class="sbss-p-1-5 rounded-3 sbss-hover-white"><i data-lucide="x" class="sbss-w-5 sbss-h-5"></i></button>
     </div>
-    <form id="formHorario" class="p-5 space-y-4">
+    <form id="formHorario" class="sbss-p-5 sbss-space-y-4">
       <input type="hidden" id="editHorarioId">
-      <div class="grid grid-cols-2 gap-4">
-        <label class="text-xs font-bold text-slate-600 space-y-1">Trabajador
-          <select id="empleadoSelect" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500"></select>
+      <div class="d-grid sbss-grid-cols-2 gap-3">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Trabajador
+          <select id="empleadoSelect" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary bg-white fw-medium"></select>
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Empresa
-          <input id="modalEmpresa" readonly class="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium outline-none">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Empresa
+          <input id="modalEmpresa" readonly class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary-subtle bg-light text-body-secondary fw-medium">
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Área
-          <input id="modalArea" readonly class="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium outline-none">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Área
+          <input id="modalArea" readonly class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary-subtle bg-light text-body-secondary fw-medium">
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Día
-          <select id="modalDia" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Día
+          <select id="modalDia" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary bg-white fw-medium">
             <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="7">Domingo</option>
           </select>
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Hora de entrada
-          <input id="modalEntrada" type="time" value="08:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Hora de entrada
+          <input id="modalEntrada" type="time" value="08:00" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary">
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Hora de salida
-          <input id="modalSalida" type="time" value="17:00" required class="w-full h-10 px-3 rounded-lg border border-slate-300 outline-none focus:border-sky-500">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Hora de salida
+          <input id="modalSalida" type="time" value="17:00" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary">
         </label>
-        <label class="text-xs font-bold text-slate-600 space-y-1">Tolerancia entrada (minutos)
-          <input id="modalTolerancia" type="number" value="0" min="0" max="120" required title="Por defecto no se aplica tolerancia." class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-800">
+        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Tolerancia entrada (minutos)
+          <input id="modalTolerancia" type="number" value="0" min="0" max="120" required title="Por defecto no se aplica tolerancia." class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary bg-white text-dark">
         </label>
-        <label class="text-xs font-bold text-slate-600"><input id="modalNocturno" type="checkbox"> La salida corresponde al día siguiente</label><label class="text-xs font-bold text-slate-600 space-y-1">Estado
-          <select id="modalEstado" required class="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white font-medium outline-none focus:border-sky-500">
+        <label class="sbss-fs-12 fw-bold text-body-secondary"><input id="modalNocturno" type="checkbox"> La salida corresponde al día siguiente</label><label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Estado
+          <select id="modalEstado" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary bg-white fw-medium">
             <option value="asignado">Asignado</option>
             <option value="descanso">Descanso</option>
           </select>
         </label>
       </div>
-      <div class="rounded-lg bg-sky-50 border border-sky-100 p-3 text-[11px] text-sky-800 flex gap-2">
-        <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+      <div class="rounded-3 bg-info-subtle border border-info-subtle sbss-p-3 sbss-fs-11 text-info d-flex gap-2">
+        <i data-lucide="info" class="sbss-w-4 sbss-h-4 flex-shrink-0"></i>
         <p>La tolerancia define cuándo se considera tardanza. Un día marcado como descanso no cuenta como turno programado. Los cambios conservan las asistencias anteriores.</p>
       </div>
-      <div class="core-heading flex items-center justify-between pt-2 border-t border-slate-100">
-        <button id="btnEliminar" type="button" class="hidden h-9 px-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100">
-          <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>Eliminar turno
+      <div class="core-heading d-flex align-items-center justify-content-between sbss-pt-2 border-top border-light">
+        <button id="btnEliminar" type="button" class="d-none sbss-h-9 px-3 rounded-3 border border-danger-subtle bg-danger-subtle text-danger sbss-fs-12 fw-bold sbss-hover-rose-soft">
+          <i data-lucide="trash-2" class="sbss-w-4 sbss-h-4 d-inline me-1"></i>Eliminar turno
         </button>
-        <div class="ml-auto flex gap-2">
-          <button id="btnCancelar" type="button" class="h-9 px-4 rounded-lg border border-slate-300 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50">Cancelar</button>
-          <button type="submit" id="btnSubmitForm" class="h-9 px-5 rounded-lg bg-[#1479b9] hover:bg-[#0e689f] text-white text-xs font-extrabold">
-            <i data-lucide="save" class="w-4 h-4 inline mr-1"></i>Guardar horario
+        <div class="ms-auto d-flex gap-2">
+          <button id="btnCancelar" type="button" class="sbss-h-9 px-3 rounded-3 border border-secondary bg-white text-body-secondary sbss-fs-12 fw-bold sbss-hover-light">Cancelar</button>
+          <button type="submit" id="btnSubmitForm" class="sbss-h-9 sbss-px-5 rounded-3 bg-info sbss-hover-blue-dark text-white sbss-fs-12 fw-bolder">
+            <i data-lucide="save" class="sbss-w-4 sbss-h-4 d-inline me-1"></i>Guardar horario
           </button>
         </div>
       </div>
@@ -290,7 +289,7 @@
   </div>
 </div>
 
-<div id="toast" class="hidden fixed right-5 bottom-5 z-[60] toast bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold"></div>
+<div id="toast" class="d-none position-fixed sbss-right-5 sbss-bottom-5 sbss-z-60 toast bg-dark text-white px-3 sbss-py-3 rounded-3 shadow-lg sbss-fs-12 fw-semibold"></div>
 
 <script src="js/asistencia-ui.js"></script>
 <script src="js/horarios.js"></script>

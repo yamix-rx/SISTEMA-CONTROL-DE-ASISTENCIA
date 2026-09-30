@@ -7,7 +7,6 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
 <title>SBSS - Reportes Consolidados</title>
-<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
 <script src="vendor/lucide/lucide.min.js"></script>
 <script src="vendor/xlsx-js-style/xlsx.bundle.js"></script>
@@ -35,21 +34,21 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 <link rel="stylesheet" href="css/asistencia-core.css">
 </head>
 <body>
-<div class="app min-h-screen">
-<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
-  <div class="h-full flex items-center">
-    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]">
-      <span class="text-sky-300 text-3xl leading-none">✦</span><span>SBSS</span>
+<div class="app min-vh-100">
+<header class="sbss-header top text-white sbss-h-54 sticky-top top-0 sbss-z-40 shadow">
+  <div class="h-100 d-flex align-items-center">
+    <div class="sbss-brand sbss-px-5 d-flex align-items-center gap-2 fw-bold sbss-fs-22">
+      <span class="text-info-emphasis sbss-fs-30 sbss-leading-none">✦</span><span>SBSS</span>
     </div>
-    <div class="ml-auto pr-5 flex gap-4 items-center">
-      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
-        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
-        <div class="flex flex-col text-left">
-          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
-          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+    <div class="ms-auto sbss-pe-5 d-flex gap-3 align-items-center">
+      <div class="d-flex align-items-center sbss-gap-2-5 sbss-ps-3 border-start border-info border-opacity-25">
+        <div id="avatarLetra" class="sbss-w-8 sbss-h-8 rounded-circle bg-info border border-info d-flex align-items-center justify-content-center sbss-fs-12 fw-bold text-white shadow-sm">U</div>
+        <div class="d-flex flex-column text-start">
+          <span id="nombreUsuarioSesion" class="sbss-fs-12 fw-bold text-white sbss-leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="sbss-fs-10 text-info-emphasis fw-medium sbss-leading-tight">Rol</span>
         </div>
-        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
-          <i data-lucide="log-out" class="w-4 h-4"></i>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-info-emphasis sbss-hover-rose sbss-p-1-5 sbss-transition ms-1">
+          <i data-lucide="log-out" class="sbss-w-4 sbss-h-4"></i>
         </button>
       </div>
     </div>
@@ -58,51 +57,51 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 
 <div class="sbss-navigation-layout">
   <!-- Botón pestaña flotante para abrir el sidebar -->
-  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
 
   <!-- Sidebar Lateral Colapsable -->
   <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
 
   <!-- Contenido Principal -->
-  <main class="flex-1 p-4 bg-[#f8fbfd] space-y-4 max-w-7xl mx-auto transition-all duration-300">
-    <div class="core-heading flex items-center justify-between">
+  <main class="flex-grow-1 p-3 bg-info-subtle sbss-space-y-4 sbss-max-w-7xl mx-auto sbss-transition sbss-transition">
+    <div class="core-heading d-flex align-items-center justify-content-between">
       <div>
-        <h1 class="text-lg font-bold text-[#174d72]">REPORTES CONSOLIDADOS Y AUDITORÍA DE ASISTENCIA</h1>
-        <p class="text-xs text-[#3c718f]">Genere resúmenes de horas efectivas laboradas, incidencias de tardanzas y avance de horas de prácticas.</p>
+        <h1 class="sbss-fs-18 fw-bold text-primary-emphasis">REPORTES CONSOLIDADOS Y AUDITORÍA DE ASISTENCIA</h1>
+        <p class="sbss-fs-12 text-primary-emphasis">Genere resúmenes de horas efectivas laboradas, incidencias de tardanzas y avance de horas de prácticas.</p>
       </div>
-      <div class="flex gap-2 w-full sm:w-auto">
+      <div class="d-flex gap-2 w-100 sbss-w-sm-auto">
   <button id="btnExportarExcel"
-    class="h-9 px-3.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition flex-1 sm:flex-none">
-    <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+    class="sbss-h-9 sbss-px-3-5 rounded-2 bg-success sbss-hover-success text-white sbss-fs-12 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm sbss-transition flex-grow-1 sbss-sm-flex-none">
+    <i data-lucide="file-spreadsheet" class="sbss-w-4 sbss-h-4 flex-shrink-0"></i>
     <span>Exportar Excel</span>
   </button>
 
   <button id="btnExportarPDF"
-    class="h-9 px-3.5 rounded-md bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition flex-1 sm:flex-none">
-    <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+    class="sbss-h-9 sbss-px-3-5 rounded-2 bg-danger sbss-hover-danger text-white sbss-fs-12 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm sbss-transition flex-grow-1 sbss-sm-flex-none">
+    <i data-lucide="file-text" class="sbss-w-4 sbss-h-4 flex-shrink-0"></i>
     <span>Exportar PDF</span>
   </button>
 </div>
     </div>
 
     <!-- Filtros combinados -->
-    <section class="panel p-3">
-      <div class="core-filters grid grid-cols-12 gap-3 items-end">
-        <label class="col-span-3 text-[10px] font-bold">
+    <section class="panel sbss-p-3">
+      <div class="core-filters d-grid sbss-grid-cols-12 sbss-gap-3 align-items-end">
+        <label class="sbss-col-span-3 sbss-fs-10 fw-bold">
           Desde:
           <input id="fInicio" type="date" class="control mt-1">
         </label>
-        <label class="col-span-3 text-[10px] font-bold">
+        <label class="sbss-col-span-3 sbss-fs-10 fw-bold">
           Hasta:
           <input id="fFin" type="date" class="control mt-1">
         </label>
-        <label class="col-span-3 text-[10px] font-bold">
+        <label class="sbss-col-span-3 sbss-fs-10 fw-bold">
           Empresa:
           <select id="fEmpresa" class="control mt-1">
             <option value="">Todas las Empresas</option>
           </select>
         </label>
-        <label class="col-span-2 text-[10px] font-bold">
+        <label class="sbss-col-span-2 sbss-fs-10 fw-bold">
           Vínculo:
           <select id="fVinculo" class="control mt-1">
             <option value="">Todos</option>
@@ -110,70 +109,70 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
             <option value="practicante">Todos los practicantes</option><option value="practicante preprofesional">Practicante preprofesional</option><option value="practicante profesional">Practicante profesional</option><option value="voluntario">Voluntario</option><option value="otro">Otro</option>
           </select>
         </label>
-        <label class="col-span-3 text-[10px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Cargo<select id="fCargo" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Trabajador<select id="fTrabajador" class="control mt-1"><option value="">Todos</option></select></label><label class="col-span-3 text-[10px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option>presente</option><option>falta</option><option>tardanza</option><option>permiso</option><option>descanso</option><option>feriado</option><option>vacaciones</option><option>justificado</option></select></label><label class="col-span-3 text-[10px] font-bold">Periodo<select id="fPeriodo" class="control mt-1"><option value="personalizado">Personalizado</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option></select></label><div class="col-span-1">
-          <button id="btnFiltrar" aria-label="Aplicar filtros" class="w-full h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center justify-center">
-            <i data-lucide="filter" class="w-4 h-4"></i>
+        <label class="sbss-col-span-3 sbss-fs-10 fw-bold">Área<select id="fArea" class="control mt-1"><option value="">Todos</option></select></label><label class="sbss-col-span-3 sbss-fs-10 fw-bold">Cargo<select id="fCargo" class="control mt-1"><option value="">Todos</option></select></label><label class="sbss-col-span-3 sbss-fs-10 fw-bold">Trabajador<select id="fTrabajador" class="control mt-1"><option value="">Todos</option></select></label><label class="sbss-col-span-3 sbss-fs-10 fw-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option>presente</option><option>falta</option><option>tardanza</option><option>permiso</option><option>descanso</option><option>feriado</option><option>vacaciones</option><option>justificado</option></select></label><label class="sbss-col-span-3 sbss-fs-10 fw-bold">Periodo<select id="fPeriodo" class="control mt-1"><option value="personalizado">Personalizado</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option><option value="trimestral">Trimestral</option></select></label><div class="sbss-col-span-1">
+          <button id="btnFiltrar" aria-label="Aplicar filtros" class="w-100 sbss-h-9 rounded-2 bg-info sbss-hover-blue text-white sbss-fs-12 fw-bold d-flex align-items-center justify-content-center">
+            <i data-lucide="filter" class="sbss-w-4 sbss-h-4"></i>
           </button>
         </div>
       </div>
     </section>
 
     <!-- Tarjetas de métricas -->
-    <section class="core-kpis grid grid-cols-4 gap-4">
-      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-emerald-600">
-        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">
-          <i data-lucide="check-check" class="w-5 h-5"></i>
+    <section class="core-kpis d-grid sbss-grid-cols-4 gap-3">
+      <div class="panel sbss-p-3 d-flex align-items-center sbss-gap-3 border-start border-4 border-start sbss-border-start-4 border-success">
+        <div class="sbss-w-10 sbss-h-10 rounded-circle bg-success-subtle text-success d-grid sbss-place-center flex-shrink-0">
+          <i data-lucide="check-check" class="sbss-w-5 sbss-h-5"></i>
         </div>
         <div>
-          <span class="text-[10px] text-slate-500 font-bold block">Asistencias</span>
-          <strong id="kpiPuntuales" class="text-lg text-emerald-800">0</strong>
+          <span class="sbss-fs-10 text-body-secondary fw-bold d-block">Asistencias</span>
+          <strong id="kpiPuntuales" class="sbss-fs-18 text-success-emphasis">0</strong>
         </div>
       </div>
 
-      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-amber-500">
-        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 grid place-items-center shrink-0">
-          <i data-lucide="clock-alert" class="w-5 h-5"></i>
+      <div class="panel sbss-p-3 d-flex align-items-center sbss-gap-3 border-start border-4 border-start sbss-border-start-4 border-warning">
+        <div class="sbss-w-10 sbss-h-10 rounded-circle bg-warning-subtle text-warning-emphasis d-grid sbss-place-center flex-shrink-0">
+          <i data-lucide="clock-alert" class="sbss-w-5 sbss-h-5"></i>
         </div>
         <div>
-          <span class="text-[10px] text-slate-500 font-bold block">Tardanzas Registradas</span>
-          <strong id="kpiTardanzas" class="text-lg text-amber-800">0</strong>
+          <span class="sbss-fs-10 text-body-secondary fw-bold d-block">Tardanzas Registradas</span>
+          <strong id="kpiTardanzas" class="sbss-fs-18 text-warning-emphasis">0</strong>
         </div>
       </div>
 
-      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-rose-500">
-        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-700 grid place-items-center shrink-0">
-          <i data-lucide="timer-reset" class="w-5 h-5"></i>
+      <div class="panel sbss-p-3 d-flex align-items-center sbss-gap-3 border-start border-4 border-start sbss-border-start-4 border-danger">
+        <div class="sbss-w-10 sbss-h-10 rounded-circle bg-danger-subtle text-danger d-grid sbss-place-center flex-shrink-0">
+          <i data-lucide="timer-reset" class="sbss-w-5 sbss-h-5"></i>
         </div>
         <div>
-          <span class="text-[10px] text-slate-500 font-bold block">Minutos Perdidos</span>
-          <strong id="kpiMinutos" class="text-lg text-rose-800">0 min</strong>
+          <span class="sbss-fs-10 text-body-secondary fw-bold d-block">Minutos Perdidos</span>
+          <strong id="kpiMinutos" class="sbss-fs-18 text-danger-emphasis">0 min</strong>
         </div>
       </div>
 
-      <div class="panel p-3 flex items-center gap-3 border-l-4 border-l-sky-600">
-        <div class="w-10 h-10 rounded-full bg-sky-100 text-sky-800 grid place-items-center shrink-0">
-          <i data-lucide="briefcase" class="w-5 h-5"></i>
+      <div class="panel sbss-p-3 d-flex align-items-center sbss-gap-3 border-start border-4 border-start sbss-border-start-4 border-info">
+        <div class="sbss-w-10 sbss-h-10 rounded-circle bg-info-subtle text-info d-grid sbss-place-center flex-shrink-0">
+          <i data-lucide="briefcase" class="sbss-w-5 sbss-h-5"></i>
         </div>
         <div>
-          <span class="text-[10px] text-slate-500 font-bold block">Total Horas Laboradas</span>
-          <strong id="kpiHoras" class="text-lg text-sky-900">0 hrs</strong>
+          <span class="sbss-fs-10 text-body-secondary fw-bold d-block">Total Horas Laboradas</span>
+          <strong id="kpiHoras" class="sbss-fs-18 text-info">0 hrs</strong>
         </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Faltas</span><strong id="kpiFaltas" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Permisos</span><strong id="kpiPermisos" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">Horas pendientes</span><strong id="kpiPendientes" class="text-lg text-sky-900">0</strong></div><div class="panel p-3 border-l-4 border-l-sky-600"><span class="text-[10px] text-slate-500 font-bold block">% Asistencia</span><strong id="kpiAsistencia" class="text-lg text-sky-900">0</strong></div></section><p id="criterioReporte" class="text-xs text-slate-600 p-3"></p><!-- Tabla de resultados -->
+    <section class="d-grid sbss-grid-cols-2 sbss-grid-md-cols-4 gap-3"><div class="panel sbss-p-3 border-start border-4 border-start sbss-border-start-4 border-info"><span class="sbss-fs-10 text-body-secondary fw-bold d-block">Faltas</span><strong id="kpiFaltas" class="sbss-fs-18 text-info">0</strong></div><div class="panel sbss-p-3 border-start border-4 border-start sbss-border-start-4 border-info"><span class="sbss-fs-10 text-body-secondary fw-bold d-block">Permisos</span><strong id="kpiPermisos" class="sbss-fs-18 text-info">0</strong></div><div class="panel sbss-p-3 border-start border-4 border-start sbss-border-start-4 border-info"><span class="sbss-fs-10 text-body-secondary fw-bold d-block">Horas pendientes</span><strong id="kpiPendientes" class="sbss-fs-18 text-info">0</strong></div><div class="panel sbss-p-3 border-start border-4 border-start sbss-border-start-4 border-info"><span class="sbss-fs-10 text-body-secondary fw-bold d-block">% Asistencia</span><strong id="kpiAsistencia" class="sbss-fs-18 text-info">0</strong></div></section><p id="criterioReporte" class="sbss-fs-12 text-body-secondary sbss-p-3"></p><!-- Tabla de resultados -->
     <section class="panel overflow-hidden">
-      <div class="p-3 border-b border-[#dce8f0] flex justify-between items-center bg-slate-50">
-        <h2 class="font-bold text-xs text-sky-900 flex items-center gap-2">
-          <i data-lucide="table" class="w-4 h-4"></i>CONSOLIDADO POR COLABORADOR
+      <div class="sbss-p-3 border-bottom border border-secondary-subtle d-flex justify-content-between align-items-center bg-light">
+        <h2 class="fw-bold sbss-fs-12 text-info d-flex align-items-center gap-2">
+          <i data-lucide="table" class="sbss-w-4 sbss-h-4"></i>CONSOLIDADO POR COLABORADOR
         </h2>
-        <span id="lblConteoResultados" class="text-[10px] text-slate-500">Mostrando 0 colaboradores</span>
+        <span id="lblConteoResultados" class="sbss-fs-10 text-body-secondary">Mostrando 0 colaboradores</span>
       </div>
       <div class="overflow-x-auto">
         <table class="tbl" id="tablaReporte">
           <thead><tr><th>Colaborador</th><th>DNI</th><th>Empresa</th><th>Área</th><th>Cargo</th><th>Vínculo</th><th>Puntual</th><th>Tardanza</th><th>Falta</th><th>Min. tardanza</th><th>Horas periodo</th><th>Horas acumuladas</th><th>Horas pendientes</th><th>Permisos</th><th>% asistencia</th><th>Avance horas %</th></tr></thead>
           <tbody id="tbodyReportes">
-            <tr><td colspan="16" class="text-center py-6 text-slate-400">Cargando reporte...</td></tr>
+            <tr><td colspan="16" class="text-center py-4 text-body-secondary">Cargando reporte...</td></tr>
           </tbody>
         </table>
       </div>

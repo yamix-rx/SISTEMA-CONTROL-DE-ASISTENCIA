@@ -7,7 +7,6 @@
 <script src="js/navigation.js"></script>
 <script src="js/session.js"></script>
 <title>SBSS - Empresas</title>
-<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
 <script src="vendor/lucide/lucide.min.js"></script>
 <style>
@@ -35,19 +34,19 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 <link rel="stylesheet" href="css/navigation.css">
 </head>
 <body>
-<div class="app min-h-screen">
-<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
-  <div class="h-full flex items-center">
-    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]"><span class="text-sky-300 text-3xl">✦</span>SBSS</div>
-    <div class="ml-auto pr-5 flex gap-4 items-center">
-      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
-        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
-        <div class="flex flex-col text-left">
-          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
-          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+<div class="app min-vh-100">
+<header class="sbss-header top text-white sbss-h-54 sticky-top top-0 sbss-z-40 shadow">
+  <div class="h-100 d-flex align-items-center">
+    <div class="sbss-brand sbss-px-5 d-flex align-items-center gap-2 fw-bold sbss-fs-22"><span class="text-info-emphasis sbss-fs-30">✦</span>SBSS</div>
+    <div class="ms-auto sbss-pe-5 d-flex gap-3 align-items-center">
+      <div class="d-flex align-items-center sbss-gap-2-5 sbss-ps-3 border-start border-info border-opacity-25">
+        <div id="avatarLetra" class="sbss-w-8 sbss-h-8 rounded-circle bg-info border border-info d-flex align-items-center justify-content-center sbss-fs-12 fw-bold text-white shadow-sm">U</div>
+        <div class="d-flex flex-column text-start">
+          <span id="nombreUsuarioSesion" class="sbss-fs-12 fw-bold text-white sbss-leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="sbss-fs-10 text-info-emphasis fw-medium sbss-leading-tight">Rol</span>
         </div>
-        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
-          <i data-lucide="log-out" class="w-4 h-4"></i>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-info-emphasis sbss-hover-rose sbss-p-1-5 sbss-transition ms-1">
+          <i data-lucide="log-out" class="sbss-w-4 sbss-h-4"></i>
         </button>
       </div>
     </div>
@@ -55,24 +54,24 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 </header>
 
 <div class="sbss-navigation-layout">
-  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
 
   <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
 
-  <main class="flex-1 p-4 bg-[#f8fbfd] space-y-4 max-w-7xl mx-auto transition-all duration-300">
-    <div class="flex items-center justify-between">
+  <main class="flex-grow-1 p-3 bg-info-subtle sbss-space-y-4 sbss-max-w-7xl mx-auto sbss-transition sbss-transition">
+    <div class="d-flex align-items-center justify-content-between">
       <div>
-        <h1 class="text-lg font-bold text-[#174d72]">GESTIÓN DE EMPRESAS DEL HOLDING</h1>
-        <p class="text-xs text-[#3c718f]">Administre las entidades empresariales, información fiscal y estado operativo.</p>
+        <h1 class="sbss-fs-18 fw-bold text-primary-emphasis">GESTIÓN DE EMPRESAS DEL HOLDING</h1>
+        <p class="sbss-fs-12 text-primary-emphasis">Administre las entidades empresariales, información fiscal y estado operativo.</p>
       </div>
-      <button id="btnNuevaEmpresa" class="h-9 px-4 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition">
-        <i data-lucide="plus" class="w-4 h-4"></i>Nueva Empresa
+      <button id="btnNuevaEmpresa" class="sbss-h-9 px-3 rounded-2 bg-info sbss-hover-blue text-white sbss-fs-12 fw-bold d-flex align-items-center gap-2 shadow-sm sbss-transition">
+        <i data-lucide="plus" class="sbss-w-4 sbss-h-4"></i>Nueva Empresa
       </button>
     </div>
 
     <section class="panel overflow-hidden">
-      <div class="p-3 border-b border-[#dce8f0] flex gap-3">
-        <input id="txtBuscarEmpresa" class="control max-w-sm" placeholder="Buscar por razón social o RUC...">
+      <div class="sbss-p-3 border-bottom border border-secondary-subtle d-flex sbss-gap-3">
+        <input id="txtBuscarEmpresa" class="control sbss-max-w-sm" placeholder="Buscar por razón social o RUC...">
       </div>
       <div class="overflow-x-auto">
         <table class="tbl">
@@ -90,7 +89,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
             </tr>
           </thead>
           <tbody id="tbodyEmpresas">
-            <tr><td colspan="9" class="text-center py-6 text-slate-400">Cargando empresas...</td></tr>
+            <tr><td colspan="9" class="text-center py-4 text-body-secondary">Cargando empresas...</td></tr>
           </tbody>
         </table>
       </div>
@@ -100,39 +99,39 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
 </div>
 
 <!-- Modal Empresa -->
-<div id="modalEmpresa" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
-  <form id="formEmpresa" class="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
-    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between items-center">
+<div id="modalEmpresa" class="d-none position-fixed top-0 end-0 bottom-0 start-0 sbss-z-50 modalbg align-items-center justify-content-center p-3">
+  <form id="formEmpresa" class="bg-white w-100 sbss-max-w-md rounded-3 shadow-lg overflow-hidden">
+    <div class="bg-info text-white sbss-px-5 py-3 d-flex justify-content-between align-items-center">
       <b id="modalTitulo">Registrar Empresa</b>
-      <button type="button" data-close="modalEmpresa" class="text-white hover:text-rose-200">✕</button>
+      <button type="button" data-close="modalEmpresa" class="text-white sbss-hover-rose-soft-text">✕</button>
     </div>
-    <div class="p-5 space-y-3 text-xs">
+    <div class="sbss-p-5 sbss-space-y-3 sbss-fs-12">
       <input type="hidden" id="empresaId">
       <div>
-        <label class="font-bold block mb-1">Razón Social *</label>
+        <label class="fw-bold d-block mb-1">Razón Social *</label>
         <input id="mRazonSocial" class="control" required placeholder="Ej. Droguería Silsan">
       </div>
       <div>
-        <label class="font-bold block mb-1">Logo de la empresa</label>
+        <label class="fw-bold d-block mb-1">Logo de la empresa</label>
         <input id="mLogo" type="file" class="control" accept="image/png,image/jpeg,image/webp">
-        <p class="text-[10px] text-slate-500 mt-1">PNG, JPG o WebP. Máximo 2 MB.</p>
-        <img id="mLogoPreview" class="hidden mt-2 h-14 max-w-40 object-contain rounded border border-slate-200 bg-slate-50 p-1" alt="Vista previa del logo">
+        <p class="sbss-fs-10 text-body-secondary mt-1">PNG, JPG o WebP. Máximo 2 MB.</p>
+        <img id="mLogoPreview" class="d-none mt-2 sbss-h-14 sbss-max-w-40 object-fit-contain rounded-1 border border-secondary-subtle bg-light p-1" alt="Vista previa del logo">
       </div>
       <div>
-        <label class="font-bold block mb-1">RUC (si corresponde)</label>
+        <label class="fw-bold d-block mb-1">RUC (si corresponde)</label>
         <input id="mRuc" class="control" maxlength="11" pattern="[0-9]{11}" placeholder="20XXXXXXXXX">
       </div>
       <div>
-        <label class="font-bold block mb-1">Dirección</label>
+        <label class="fw-bold d-block mb-1">Dirección</label>
         <input id="mDireccion" class="control" placeholder="Dirección fiscal">
       </div>
-      <div class="grid grid-cols-2 gap-2">
+      <div class="d-grid sbss-grid-cols-2 gap-2">
         <div>
-          <label class="font-bold block mb-1">Teléfono</label>
+          <label class="fw-bold d-block mb-1">Teléfono</label>
           <input id="mTelefono" class="control" disabled placeholder="No disponible">
         </div>
         <div>
-          <label class="font-bold block mb-1">Estado</label>
+          <label class="fw-bold d-block mb-1">Estado</label>
           <select id="mEstado" class="control">
             <option value="activo">Activo</option>
             <option value="inactivo">Inactivo</option>
@@ -140,13 +139,13 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         </div>
       </div>
       <div>
-        <label class="font-bold block mb-1">Correo de Contacto</label>
+        <label class="fw-bold d-block mb-1">Correo de Contacto</label>
         <input id="mEmail" type="email" class="control" disabled placeholder="No disponible">
       </div>
     </div>
-    <div class="px-5 pb-5 flex justify-end gap-2">
-      <button type="button" data-close="modalEmpresa" class="border rounded px-4 py-2 text-xs">Cancelar</button>
-      <button type="submit" id="btnGuardarEmpresa" class="bg-[#0a78b9] hover:bg-[#086aa7] text-white rounded px-4 py-2 text-xs font-bold transition">Guardar</button>
+    <div class="sbss-px-5 sbss-pb-5 d-flex justify-content-end gap-2">
+      <button type="button" data-close="modalEmpresa" class="border rounded-1 px-3 py-2 sbss-fs-12">Cancelar</button>
+      <button type="submit" id="btnGuardarEmpresa" class="bg-info sbss-hover-blue text-white rounded-1 px-3 py-2 sbss-fs-12 fw-bold sbss-transition">Guardar</button>
     </div>
   </form>
 </div>
@@ -177,29 +176,29 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       renderEmpresas(listaEmpresas);
     } catch (e) {
       console.error(e);
-      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-rose-500">Error al conectar con la base de datos</td></tr>`;
+      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Error al conectar con la base de datos</td></tr>`;
     }
   }
 
   function renderEmpresas(lista) {
     if (lista.length === 0) {
-      tbodyEmpresas.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">No se encontraron empresas registradas</td></tr>`;
+      tbodyEmpresas.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-body-secondary">No se encontraron empresas registradas</td></tr>`;
       return;
     }
     tbodyEmpresas.innerHTML = lista.map((e, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td>${e.logo_url ? `<img data-logo-url="${escapeHtml(e.logo_url)}" alt="Logo de ${escapeHtml(e.razon_social)}" class="h-9 w-14 object-contain rounded border border-slate-200 bg-slate-50 p-1">` : '<span class="text-slate-400">Sin logo</span>'}</td>
-        <td><strong class="text-sky-900">${escapeHtml(e.razon_social)}</strong></td>
+        <td>${e.logo_url ? `<img data-logo-url="${escapeHtml(e.logo_url)}" alt="Logo de ${escapeHtml(e.razon_social)}" class="sbss-h-9 sbss-w-14 object-fit-contain rounded-1 border border-secondary-subtle bg-light p-1">` : '<span class="text-body-secondary">Sin logo</span>'}</td>
+        <td><strong class="text-info">${escapeHtml(e.razon_social)}</strong></td>
         <td>${escapeHtml(e.ruc || '-')}</td>
         <td>${escapeHtml(e.direccion || '-')}</td>
         <td>${escapeHtml(e.email_contacto || e.telefono || '-')}</td>
-        <td class="text-center font-bold">${Number(e.total_empleados) || 0} colaboradores</td>
+        <td class="text-center fw-bold">${Number(e.total_empleados) || 0} colaboradores</td>
         <td class="text-center">
           <span class="pill ${e.estado === 'activo' ? 'ok' : 'no'}">● ${e.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>
         </td>
         <td class="text-center">
-          <button class="text-[#0870ad] font-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar">✎</button>
+          <button class="text-info fw-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar">✎</button>
         </td>
       </tr>
     `).join('');
@@ -228,30 +227,30 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         document.getElementById('mLogo').value = '';
         const preview = document.getElementById('mLogoPreview');
         preview.src = item.logo_url || '';
-        preview.classList.toggle('hidden', !item.logo_url);
+        preview.classList.toggle('d-none', !item.logo_url);
         openM('modalEmpresa');
       };
     });
   }
 
-  function openM(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
-  function closeM(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+  function openM(id) { document.getElementById(id).classList.remove('d-none'); document.getElementById(id).classList.add('d-flex'); }
+  function closeM(id) { document.getElementById(id).classList.add('d-none'); document.getElementById(id).classList.remove('d-flex'); }
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeM(b.dataset.close));
 
   document.getElementById('btnNuevaEmpresa').onclick = () => {
     document.getElementById('modalTitulo').textContent = 'Registrar Empresa';
     document.getElementById('formEmpresa').reset();
     document.getElementById('empresaId').value = '';
-    document.getElementById('mLogoPreview').classList.add('hidden');
+    document.getElementById('mLogoPreview').classList.add('d-none');
     openM('modalEmpresa');
   };
 
   document.getElementById('mLogo').onchange = () => {
     const file = document.getElementById('mLogo').files[0];
     const preview = document.getElementById('mLogoPreview');
-    if (!file) { preview.classList.add('hidden'); return; }
+    if (!file) { preview.classList.add('d-none'); return; }
     preview.src = URL.createObjectURL(file);
-    preview.classList.remove('hidden');
+    preview.classList.remove('d-none');
   };
 
   document.getElementById('formEmpresa').onsubmit = async (e) => {

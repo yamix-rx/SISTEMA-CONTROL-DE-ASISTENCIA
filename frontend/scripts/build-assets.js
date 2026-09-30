@@ -3,10 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const postcss = require('postcss');
-const tailwindcss = require('tailwindcss');
-const cssnano = require('cssnano');
-const { frontendRoot, contentFiles, contentDigest } = require('./asset-utils');
+const { frontendRoot, contentDigest } = require('./asset-utils');
 
 const vendorRoot = path.join(frontendRoot, 'vendor');
 const packageJson = require('../package.json');
@@ -54,15 +51,10 @@ function font(name, family, cssFile) {
 }
 
 async function main() {
-  register('tailwindcss', 'https://v3.tailwindcss.com/docs/installation');
-  const config = require('../tailwind.config');
-  // Rutas absolutas: mismo resultado desde frontend, backend o la raíz del proyecto.
-  config.content = contentFiles().map(relative => path.join(frontendRoot, relative));
-  const input = fs.readFileSync(path.join(frontendRoot, 'styles/tailwind.css'), 'utf8');
-  const css = await postcss([tailwindcss(config), cssnano({ preset: 'default' })]).process(input, {
-    from: path.join(frontendRoot, 'styles/tailwind.css'), map: false
-  });
-  write('tailwind/tailwind.min.css', `/*! SBSS: Tailwind CSS ${packageJson.devDependencies.tailwindcss}, MIT; generado con npm run build. */\n${css.css}\n`);
+  const bootstrapDirectory = register('bootstrap', 'https://getbootstrap.com/');
+  write('bootstrap/bootstrap.min.css', fs.readFileSync(path.join(bootstrapDirectory, 'dist/css/bootstrap.min.css')));
+  fs.rmSync(path.join(vendorRoot, 'tailwind'), { recursive: true, force: true });
+  fs.rmSync(path.join(vendorRoot, 'licenses/tailwindcss-LICENSE.txt'), { force: true });
   browserBundle('lucide', 'dist/umd/lucide.min.js', 'lucide/lucide.min.js', 'https://lucide.dev/guide/lucide');
   browserBundle('jspdf', 'dist/jspdf.umd.min.js', 'jspdf/jspdf.umd.min.js', 'https://github.com/parallax/jsPDF');
   browserBundle('jspdf-autotable', 'dist/jspdf.plugin.autotable.min.js', 'jspdf-autotable/jspdf.plugin.autotable.min.js', 'https://github.com/simonbengtsson/jsPDF-AutoTable', 'LICENSE.txt');
@@ -73,8 +65,8 @@ async function main() {
   const manifest = {
     format: 1,
     contentSha256: contentDigest(),
-    tools: { node: '>=24', tailwindcss: packageJson.devDependencies.tailwindcss, postcss: packageJson.devDependencies.postcss, cssnano: packageJson.devDependencies.cssnano },
-    transformation: 'UMD originales sin comentarios sourceMappingURL; CSS Tailwind compilado; Fontsource latin y latin-ext con nombres de familia Inter/Fraunces.',
+    tools: { node: '>=24' },
+    transformation: 'Bootstrap CSS local; UMD originales sin comentarios sourceMappingURL; Fontsource latin y latin-ext con nombres de familia Inter/Fraunces.',
     packages,
     assets: assets.sort((a, b) => a.file.localeCompare(b.file, 'en'))
   };

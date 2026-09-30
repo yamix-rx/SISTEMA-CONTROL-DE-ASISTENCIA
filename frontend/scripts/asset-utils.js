@@ -18,7 +18,7 @@ function contentFiles() {
 }
 function contentDigest() {
   const digest = crypto.createHash('sha256');
-  for (const file of [...contentFiles(), 'tailwind.config.js', 'styles/tailwind.css', 'package.json', 'package-lock.json', 'scripts/build-assets.js', 'scripts/asset-utils.js']) {
+  for (const file of [...contentFiles(), ...filesIn('css', '.css'), 'package.json', 'package-lock.json', 'scripts/build-assets.js', 'scripts/asset-utils.js']) {
     digest.update(file); digest.update('\0');
     // Git puede convertir finales de línea al cambiar de Windows a Linux.
     digest.update(fs.readFileSync(path.join(frontendRoot, file), 'utf8').replaceAll('\r\n', '\n'));

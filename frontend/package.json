@@ -10,14 +10,12 @@
     "test": "node --test --test-isolation=none tests/*.test.js"
   },
   "devDependencies": {
+    "bootstrap": "5.3.8",
     "@fontsource-variable/fraunces": "5.3.0",
     "@fontsource-variable/inter": "5.3.0",
-    "cssnano": "9.0.5",
     "jspdf": "4.2.1",
     "jspdf-autotable": "5.0.8",
     "lucide": "1.47.0",
-    "postcss": "8.5.28",
-    "tailwindcss": "3.4.19",
     "xlsx-js-style": "1.2.0"
   }
 }

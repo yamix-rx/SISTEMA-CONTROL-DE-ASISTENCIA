@@ -9,7 +9,6 @@
 
 <title>SBSS - Dashboard</title>
 
-<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <link rel="stylesheet" href="css/estilos.css">
 <script src="vendor/lucide/lucide.min.js"></script>
 
@@ -586,23 +585,23 @@ body{
 
 <body>
 
-<div class="app min-h-screen">
+<div class="app min-vh-100">
 
 
 <!-- =====================================================
      BARRA SUPERIOR
      ===================================================== -->
 
-<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+<header class="sbss-header top text-white sbss-h-54 sticky-top top-0 sbss-z-40 shadow">
 
-    <div class="h-full flex items-center">
+    <div class="h-100 d-flex align-items-center">
 
 
         <!-- LOGO -->
 
-        <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]">
+        <div class="sbss-brand sbss-px-5 d-flex align-items-center gap-2 fw-bold sbss-fs-22">
 
-            <span class="text-sky-300 text-3xl leading-none">
+            <span class="text-info-emphasis sbss-fs-30 sbss-leading-none">
                 ✦
             </span>
 
@@ -615,25 +614,25 @@ body{
 
         <!-- USUARIO -->
 
-        <div class="ml-auto pr-5 flex items-center gap-4">
+        <div class="ms-auto sbss-pe-5 d-flex align-items-center gap-3">
 
 
             <!-- EMPRESA -->
 
-            <label class="h-9 min-w-[215px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[10px] cursor-pointer">
+            <label class="sbss-h-9 sbss-min-w-215 sbss-px-3 d-flex align-items-center gap-2 rounded-3 border border-info border-opacity-50 bg-info bg-opacity-50 sbss-fs-10 sbss-cursor-pointer">
 
                 <i data-lucide="building-2"
-                   class="w-4 h-4"></i>
+                   class="sbss-w-4 sbss-h-4"></i>
 
-                <span class="font-bold">
+                <span class="fw-bold">
                     Empresa:
                 </span>
 
                 <select id="empresaGlobal"
-                        class="bg-transparent outline-none flex-1 text-white font-semibold cursor-pointer">
+                        class="bg-transparent flex-grow-1 text-white fw-semibold sbss-cursor-pointer">
 
                     <option value=""
-                            class="bg-slate-800">
+                            class="bg-dark">
 
                         Todas las Empresas
 
@@ -646,21 +645,21 @@ body{
 
             <!-- DATOS USUARIO -->
 
-            <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+            <div class="d-flex align-items-center sbss-gap-2-5 sbss-ps-3 border-start border-info border-opacity-25">
 
 
                 <div id="avatarLetra"
-                     class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                     class="sbss-w-8 sbss-h-8 rounded-circle bg-info border border-info d-flex align-items-center justify-content-center sbss-fs-12 fw-bold text-white shadow-sm">
 
                     U
 
                 </div>
 
 
-                <div class="flex flex-col text-left">
+                <div class="d-flex flex-column text-start">
 
                     <span id="nombreUsuarioSesion"
-                          class="text-xs font-bold text-white leading-tight">
+                          class="sbss-fs-12 fw-bold text-white sbss-leading-tight">
 
                         Usuario
 
@@ -668,7 +667,7 @@ body{
 
 
                     <span id="rolUsuarioSesion"
-                          class="text-[10px] text-sky-300 font-medium leading-tight">
+                          class="sbss-fs-10 text-info-emphasis fw-medium sbss-leading-tight">
 
                         Rol
 
@@ -679,10 +678,10 @@ body{
 
                 <button id="btnCerrarSesion"
                         title="Cerrar Sesión"
-                        class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+                        class="text-info-emphasis sbss-hover-rose sbss-p-1-5 sbss-transition ms-1">
 
                     <i data-lucide="log-out"
-                       class="w-4 h-4"></i>
+                       class="sbss-w-4 sbss-h-4"></i>
 
                 </button>
 
@@ -705,7 +704,7 @@ body{
 
     <!-- BOTÓN ABRIR SIDEBAR -->
 
-    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
 
 
 
@@ -721,28 +720,28 @@ body{
          MAIN
          ================================================= -->
 
-    <main class="flex-1 min-w-0 p-5 space-y-4 transition-all duration-300">
+    <main class="flex-grow-1 sbss-min-w-0 sbss-p-5 sbss-space-y-4 sbss-transition sbss-transition">
 
 
         <!-- =================================================
              KPI
              ================================================= -->
 
-        <section class="grid grid-cols-4 gap-5">
+        <section class="d-grid sbss-grid-cols-4 sbss-gap-5">
 
 
-            <div class="kpi border-emerald-600">
+            <div class="kpi border-success">
 
-                <div class="bg-emerald-600 text-white px-4 py-2 text-[16px]">
+                <div class="bg-success text-white px-3 py-2 sbss-fs-16">
 
                     En Turno Hoy
 
                 </div>
 
-                <div class="py-3 text-center text-black">
+                <div class="sbss-py-3 text-center text-black">
 
                     <strong id="kpiTurno"
-                            class="text-[22px]">
+                            class="sbss-fs-22">
 
                         0 Colaboradores
 
@@ -754,18 +753,18 @@ body{
 
 
 
-            <div class="kpi border-sky-600">
+            <div class="kpi border-info">
 
-                <div class="bg-sky-600 text-white px-4 py-2 text-[16px]">
+                <div class="bg-info text-white px-3 py-2 sbss-fs-16">
 
                     Asistencia Hoy
 
                 </div>
 
-                <div class="py-3 text-center text-black">
+                <div class="sbss-py-3 text-center text-black">
 
                     <strong id="kpiAsistencia"
-                            class="text-[22px]">
+                            class="sbss-fs-22">
 
                         0% Presentes
 
@@ -777,18 +776,18 @@ body{
 
 
 
-            <div class="kpi border-amber-500">
+            <div class="kpi border-warning">
 
-                <div class="bg-amber-500 text-white px-4 py-2 text-[16px]">
+                <div class="bg-warning text-white px-3 py-2 sbss-fs-16">
 
                     Targetaria Hoy
 
                 </div>
 
-                <div class="py-3 text-center text-black">
+                <div class="sbss-py-3 text-center text-black">
 
                     <strong id="kpiAlertas"
-                            class="text-[22px]">
+                            class="sbss-fs-22">
 
                         0 Alertas
 
@@ -800,18 +799,18 @@ body{
 
 
 
-            <div class="kpi border-rose-600">
+            <div class="kpi border-danger">
 
-                <div class="bg-rose-600 text-white px-4 py-2 text-[16px]">
+                <div class="bg-danger text-white px-3 py-2 sbss-fs-16">
 
                     Doc. Pendientes
 
                 </div>
 
-                <div class="py-3 text-center text-black">
+                <div class="sbss-py-3 text-center text-black">
 
                     <strong id="kpiDocs"
-                            class="text-[22px]">
+                            class="sbss-fs-22">
 
                         0 Documentos
 
@@ -848,26 +847,26 @@ body{
         <section class="panel overflow-hidden">
 
 
-            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
+            <div class="sbss-h-10 px-3 border-bottom border border-secondary-subtle bg-gradient d-flex align-items-center justify-content-between text-black">
 
 
-                <h2 class="font-bold text-[16px] flex items-center gap-2">
+                <h2 class="fw-bold sbss-fs-16 d-flex align-items-center gap-2">
 
                     <i data-lucide="clock-3"
-                       class="w-5 h-5"></i>
+                       class="sbss-w-5 sbss-h-5"></i>
 
                     Personal en Turno Actualmente (Por Empresa)
 
                 </h2>
 
 
-                <div class="flex items-center gap-3 text-slate-500">
+                <div class="d-flex align-items-center sbss-gap-3 text-body-secondary">
 
                     <button id="btnSearchTurno"
                             title="Buscar">
 
                         <i data-lucide="search"
-                           class="w-5 h-5"></i>
+                           class="sbss-w-5 sbss-h-5"></i>
 
                     </button>
 
@@ -876,7 +875,7 @@ body{
                             title="Filtros">
 
                         <i data-lucide="filter"
-                           class="w-5 h-5"></i>
+                           class="sbss-w-5 sbss-h-5"></i>
 
                     </button>
 
@@ -889,15 +888,15 @@ body{
             <!-- FILTROS -->
 
             <div id="turnoFilters"
-                 class="hidden px-3 py-2 bg-sky-50 border-b border-sky-100 flex gap-3">
+                 class="d-none sbss-px-3 py-2 bg-info-subtle border-bottom border-info-subtle d-flex sbss-gap-3">
 
                 <input id="qTurno"
-                       class="h-8 flex-1 border rounded px-3 text-[11px]"
+                       class="sbss-h-8 flex-grow-1 border rounded-1 sbss-px-3 sbss-fs-11"
                        placeholder="Buscar colaborador o empresa...">
 
 
                 <select id="estadoTurno"
-                        class="h-8 border rounded px-3 text-[11px]">
+                        class="sbss-h-8 border rounded-1 sbss-px-3 sbss-fs-11">
 
                     <option value="">
                         Todos los estados
@@ -919,7 +918,7 @@ body{
 
             <!-- TABLA -->
 
-            <div class="p-3">
+            <div class="sbss-p-3">
 
                 <div class="table-responsive">
 
@@ -959,7 +958,7 @@ body{
                             <tr>
 
                                 <td colspan="5"
-                                    class="text-center py-4 text-slate-400">
+                                    class="text-center py-3 text-body-secondary">
 
                                     Cargando información...
 
@@ -984,14 +983,14 @@ body{
              ================================================= -->
 
         <section class="panel overflow-hidden">
-            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
-                <h2 class="font-bold text-[16px] flex items-center gap-2">
-                    <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+            <div class="sbss-h-10 px-3 border-bottom border border-secondary-subtle bg-gradient d-flex align-items-center justify-content-between text-black">
+                <h2 class="fw-bold sbss-fs-16 d-flex align-items-center gap-2">
+                    <i data-lucide="graduation-cap" class="sbss-w-5 sbss-h-5"></i>
                     Practicantes próximos a completar sus horas
                 </h2>
-                <span class="text-[10px] text-slate-500">Seguimiento desde 80% de avance</span>
+                <span class="sbss-fs-10 text-body-secondary">Seguimiento desde 80% de avance</span>
             </div>
-            <div class="p-3">
+            <div class="sbss-p-3">
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>
@@ -1004,7 +1003,7 @@ body{
                             </tr>
                         </thead>
                         <tbody id="tbodyPracticantesProximos">
-                            <tr><td colspan="5" class="text-center py-4 text-slate-400">Cargando información...</td></tr>
+                            <tr><td colspan="5" class="text-center py-3 text-body-secondary">Cargando información...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1013,13 +1012,13 @@ body{
 
 
         <section class="panel overflow-hidden" aria-labelledby="tituloConveniosAdmin">
-            <div class="px-4 py-3 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 text-black">
-                <h2 id="tituloConveniosAdmin" class="font-bold text-[16px]">Convenios de prácticas por vencer</h2>
-                <p class="text-[11px] text-slate-500">Vencimiento registrado en la ficha del practicante durante los próximos 30 días.</p>
+            <div class="px-3 sbss-py-3 border-bottom border border-secondary-subtle bg-gradient text-black">
+                <h2 id="tituloConveniosAdmin" class="fw-bold sbss-fs-16">Convenios de prácticas por vencer</h2>
+                <p class="sbss-fs-11 text-body-secondary">Vencimiento registrado en la ficha del practicante durante los próximos 30 días.</p>
             </div>
-            <div class="p-3"><div class="table-responsive"><table class="data-table">
+            <div class="sbss-p-3"><div class="table-responsive"><table class="data-table">
                 <thead><tr><th>Practicante</th><th>Empresa</th><th>Cargo</th><th>Puesto</th><th>Vencimiento</th><th>Plazo</th></tr></thead>
-                <tbody id="tbodyConveniosPorVencer"><tr><td colspan="6" class="text-center py-4 text-slate-400">Cargando convenios…</td></tr></tbody>
+                <tbody id="tbodyConveniosPorVencer"><tr><td colspan="6" class="text-center py-3 text-body-secondary">Cargando convenios…</td></tr></tbody>
             </table></div></div>
         </section>
 
@@ -1030,26 +1029,26 @@ body{
         <section class="panel overflow-hidden">
 
 
-            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
+            <div class="sbss-h-10 px-3 border-bottom border border-secondary-subtle bg-gradient d-flex align-items-center justify-content-between text-black">
 
 
-                <h2 class="font-bold text-[16px] flex items-center gap-2">
+                <h2 class="fw-bold sbss-fs-16 d-flex align-items-center gap-2">
 
                     <i data-lucide="file-text"
-                       class="w-5 h-5"></i>
+                       class="sbss-w-5 sbss-h-5"></i>
 
                     Alertas de Documentos Pendientes de Entrega
 
                 </h2>
 
 
-                <div class="flex gap-3 text-slate-500">
+                <div class="d-flex sbss-gap-3 text-body-secondary">
 
                     <button id="btnSearchDocs"
                             title="Buscar">
 
                         <i data-lucide="search"
-                           class="w-5 h-5"></i>
+                           class="sbss-w-5 sbss-h-5"></i>
 
                     </button>
 
@@ -1062,10 +1061,10 @@ body{
             <!-- FILTRO -->
 
             <div id="docFilters"
-                 class="hidden px-3 py-2 bg-sky-50 border-b border-sky-100">
+                 class="d-none sbss-px-3 py-2 bg-info-subtle border-bottom border-info-subtle">
 
                 <input id="qDocs"
-                       class="h-8 w-full border rounded px-3 text-[11px]"
+                       class="sbss-h-8 w-100 border rounded-1 sbss-px-3 sbss-fs-11"
                        placeholder="Buscar colaborador, empresa o documento...">
 
             </div>
@@ -1074,7 +1073,7 @@ body{
 
             <!-- TABLA -->
 
-            <div class="p-3">
+            <div class="sbss-p-3">
 
                 <div class="table-responsive">
 
@@ -1110,7 +1109,7 @@ body{
                             <tr>
 
                                 <td colspan="4"
-                                    class="text-center py-4 text-slate-400">
+                                    class="text-center py-3 text-body-secondary">
 
                                     Cargando información...
 
@@ -1252,20 +1251,20 @@ function renderizarGraficos(data) {
 
 function renderizarPracticantesProximos(rows) {
     if (!rows.length) {
-        tbodyPracticantesProximos.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">No hay practicantes próximos a completar sus horas.</td></tr>`;
+        tbodyPracticantesProximos.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-body-secondary">No hay practicantes próximos a completar sus horas.</td></tr>`;
         return;
     }
     tbodyPracticantesProximos.innerHTML = rows.map(item => {
         const pct = Math.max(0, Math.min(100, Number(item.porcentaje_avance) || 0));
         return `
           <tr>
-            <td><strong>${escapeHtml(item.colaborador || '')}</strong><div class="text-[10px] text-slate-500">${escapeHtml(item.cargo || '')}</div></td>
+            <td><strong>${escapeHtml(item.colaborador || '')}</strong><div class="sbss-fs-10 text-body-secondary">${escapeHtml(item.cargo || '')}</div></td>
             <td>${escapeHtml(item.empresa || '')}</td>
             <td>${Number(item.horas_realizadas || 0).toFixed(2)} h / ${Number(item.horas_meta || 0).toFixed(2)} h</td>
             <td>${Number(item.horas_pendientes || 0).toFixed(2)} h</td>
             <td>
-              <div class="flex items-center gap-2 min-w-[180px]">
-                <div class="h-3 bg-slate-100 rounded-full flex-1 overflow-hidden border border-slate-200"><div class="h-full bg-gradient-to-r from-blue-600 to-sky-500 rounded-full" style="width:${pct}%"></div></div>
+              <div class="d-flex align-items-center gap-2 sbss-min-w-180">
+                <div class="sbss-h-3 bg-light rounded-circle flex-grow-1 overflow-hidden border border-secondary-subtle"><div class="h-100 bg-gradient rounded-circle" style="width:${pct}%"></div></div>
                 <strong>${pct.toFixed(1)}%</strong>
               </div>
             </td>
@@ -1281,14 +1280,14 @@ function renderizarConveniosPorVencer(rows) {
     const body = document.getElementById('tbodyConveniosPorVencer'); body.replaceChildren();
     if (!rows.length) {
         const row = document.createElement('tr'), cell = document.createElement('td');
-        cell.colSpan = 6; cell.className = 'text-center py-4 text-slate-400';
+        cell.colSpan = 6; cell.className = 'text-center py-3 text-body-secondary';
         cell.textContent = 'No hay convenios de prácticas por vencer en los próximos 30 días.';
         row.append(cell); body.append(row); return;
     }
     rows.forEach(item => {
         const row = document.createElement('tr'), person = document.createElement('td'), link = document.createElement('a');
         link.href = 'FichaIndividual.html?vista=practicantes&empleado_id=' + encodeURIComponent(item.empleado_id);
-        link.textContent = item.colaborador; link.className = 'text-blue-700 underline'; person.append(link); row.append(person);
+        link.textContent = item.colaborador; link.className = 'text-primary text-decoration-underline'; person.append(link); row.append(person);
         const date = String(item.fecha_vencimiento_convenio).slice(0, 10).split('-').reverse().join('/');
         [item.empresa, item.cargo, item.puesto, date, Number(item.dias_restantes) === 0 ? 'Vence hoy' : 'En ' + Number(item.dias_restantes) + ' días'].forEach(value => {
             const cell = document.createElement('td'); cell.textContent = value || '—'; row.append(cell);
@@ -1378,7 +1377,7 @@ async function cargarDashboard(empresaId = '') {
                     emp.razon_social;
 
                 opt.className =
-                    'bg-slate-800 text-white';
+                    'bg-dark text-white';
 
                 empresaGlobal.appendChild(opt);
 
@@ -1428,7 +1427,7 @@ async function cargarDashboard(empresaId = '') {
             <tr>
 
                 <td colspan="5"
-                    class="text-center py-4 text-rose-500">
+                    class="text-center py-3 text-danger">
 
                     Error al conectar con el servidor
 
@@ -1444,7 +1443,7 @@ async function cargarDashboard(empresaId = '') {
             <tr>
 
                 <td colspan="4"
-                    class="text-center py-4 text-rose-500">
+                    class="text-center py-3 text-danger">
 
                     Error al conectar con el servidor
 
@@ -1473,7 +1472,7 @@ function renderizarTurnos(lista) {
             <tr>
 
                 <td colspan="5"
-                    class="text-center py-4 text-slate-400">
+                    class="text-center py-3 text-body-secondary">
 
                     No hay personal programado para hoy
 
@@ -1498,7 +1497,7 @@ function renderizarTurnos(lista) {
                     ${escapeHtml(c.colaborador)}
                 </strong>
 
-                <span class="text-slate-500 text-[11px]">
+                <span class="text-body-secondary sbss-fs-11">
                     (${escapeHtml(c.tipo_vinculo)})
                 </span>
 
@@ -1522,7 +1521,7 @@ function renderizarTurnos(lista) {
 
             <td>
 
-                <span class="status-dot bg-emerald-500"></span>
+                <span class="status-dot bg-success"></span>
 
                 En Turno
 
@@ -1549,7 +1548,7 @@ function renderizarDocs(lista) {
             <tr>
 
                 <td colspan="4"
-                    class="text-center py-4 text-emerald-600 font-semibold">
+                    class="text-center py-3 text-success fw-semibold">
 
                     Todos los expedientes cuentan con su documentación obligatoria al día
 
@@ -1582,7 +1581,7 @@ function renderizarDocs(lista) {
             </td>
 
 
-            <td class="text-rose-600 font-semibold">
+            <td class="text-danger fw-semibold">
 
                 ${escapeHtml(d.documento_faltante)}
 
@@ -1619,7 +1618,7 @@ document
 
         document
             .getElementById('turnoFilters')
-            .classList.toggle('hidden');
+            .classList.toggle('d-none');
 
     });
 
@@ -1635,7 +1634,7 @@ document
 
         document
             .getElementById('turnoFilters')
-            .classList.toggle('hidden');
+            .classList.toggle('d-none');
 
     });
 

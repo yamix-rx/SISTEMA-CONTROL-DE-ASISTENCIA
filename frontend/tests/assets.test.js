@@ -22,12 +22,27 @@ function browserContext() {
 }
 function load(context, file) { vm.runInContext(vendor(file), context, { filename: file }); }
 
-test('los recursos distribuidos y las fuentes de Tailwind conservan su integridad', () => {
+test('Bootstrap y los recursos distribuidos conservan su integridad', () => {
   assert.deepEqual(verifyAssets({ manifestOnly: true }).errors, []);
+  assert.ok(vendor('bootstrap/bootstrap.min.css').includes('--bs-primary:'));
 });
 
 test('las páginas y hojas de estilo resuelven sus recursos sin CDN', () => {
   assert.deepEqual(verifyAssets().errors, []);
+});
+
+test('todas las páginas activas usan Bootstrap y no dependen de Tailwind', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'package.json'), 'utf8'));
+  assert.equal(packageJson.devDependencies.bootstrap, '5.3.8');
+  assert.equal(packageJson.devDependencies.tailwindcss, undefined);
+  const pages = fs.readdirSync(frontendRoot).filter(file => file.endsWith('.html'));
+  for (const page of pages) {
+    const html = fs.readFileSync(path.join(frontendRoot, page), 'utf8');
+    assert.doesNotMatch(html, /tailwind/i, page);
+    if (page === 'login.html') assert.match(html, /vendor\/bootstrap\/bootstrap\.min\.css/);
+    else assert.match(html, /css\/session\.css/);
+  }
+  assert.match(fs.readFileSync(path.join(frontendRoot, 'css/session.css'), 'utf8'), /vendor\/bootstrap\/bootstrap\.min\.css/);
 });
 
 test('jsPDF y AutoTable locales conservan la API del reporte y paginan sin perder filas', () => {
@@ -108,10 +123,9 @@ test('las fuentes locales contienen WOFF2 y cobertura de caracteres latinos', ()
   }
 });
 
-test('Tailwind compilado incluye estados ocultos, valores arbitrarios y reglas adaptables', () => {
-  const css = vendor('tailwind/tailwind.min.css');
-  assert.match(css, /\.hidden\{display:none\}/);
-  assert.ok(css.includes('.text-\\[10px\\]'));
-  assert.ok(css.includes('.z-\\[100\\]'));
-  assert.match(css, /@media\s*\(min-width:768px\)/);
+test('Bootstrap local incluye utilidades responsive y componentes base', () => {
+  const css = vendor('bootstrap/bootstrap.min.css');
+  assert.ok(css.includes('.d-flex'));
+  assert.ok(css.includes('.table'));
+  assert.match(css, /@media\s*\(min-width:\s*768px\)/);
 });

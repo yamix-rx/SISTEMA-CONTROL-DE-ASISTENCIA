@@ -9,7 +9,6 @@
 <script src="js/session.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/sidebar.js" defer></script>
-<link rel="stylesheet" href="vendor/tailwind/tailwind.min.css">
 <script src="vendor/lucide/lucide.min.js"></script>
 <title>SBSS - Auditoría</title>
 <style>
@@ -37,24 +36,24 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
 </head>
 <body>
 <div class="app">
-<header class="sbss-header top flex items-center px-4">
-  <div class="font-bold text-lg">SBSS</div>
-  <div class="ml-auto text-right">
-    <div id="nombreUsuarioSesion" class="text-xs font-semibold"></div>
-    <div id="rolUsuarioSesion" class="text-[10px] opacity-80"></div>
+<header class="sbss-header top d-flex align-items-center px-3">
+  <div class="fw-bold sbss-fs-18">SBSS</div>
+  <div class="ms-auto text-end">
+    <div id="nombreUsuarioSesion" class="sbss-fs-12 fw-semibold"></div>
+    <div id="rolUsuarioSesion" class="sbss-fs-10 sbss-opacity-80"></div>
   </div>
-  <div id="avatarLetra" class="ml-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold"></div>
+  <div id="avatarLetra" class="sbss-ms-3 sbss-w-8 sbss-h-8 rounded-circle bg-white/20 d-flex align-items-center justify-content-center sbss-fs-14 fw-bold"></div>
 </header>
 <div class="sbss-navigation-layout">
   <aside id="sidebarMenu" class="sbss-sidebar"></aside>
-  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú"></button>
-  <main class="flex-1 min-w-0 p-4">
-    <div class="mb-4">
-      <h1 class="text-xl font-bold text-slate-800 pl-9 md:pl-0">Auditoría del sistema</h1>
-      <p class="text-xs text-slate-500">Registro de accesos y operaciones realizadas por los usuarios.</p>
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" aria-label="Mostrar menú"></button>
+  <main class="flex-grow-1 sbss-min-w-0 p-3">
+    <div class="mb-3">
+      <h1 class="sbss-fs-20 fw-bold text-dark sbss-ps-9 ps-md-0">Auditoría del sistema</h1>
+      <p class="sbss-fs-12 text-body-secondary">Registro de accesos y operaciones realizadas por los usuarios.</p>
     </div>
 
-    <div class="kpis mb-4">
+    <div class="kpis mb-3">
       <div class="kpi"><small>Inicios de sesión</small><strong id="kpiLogin">0</strong></div>
       <div class="kpi"><small>Altas / registros</small><strong id="kpiInsert">0</strong></div>
       <div class="kpi"><small>Modificaciones</small><strong id="kpiUpdate">0</strong></div>
@@ -62,11 +61,11 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
       <div class="kpi"><small>Intentos fallidos</small><strong id="kpiFail">0</strong></div>
     </div>
 
-    <section class="panel p-4 mb-4">
-      <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+    <section class="panel p-3 mb-3">
+      <div class="d-flex align-items-center justify-content-between sbss-gap-3 sbss-mb-3 flex-wrap">
         <div>
-          <h2 class="font-bold text-sm text-slate-800">Filtros del historial</h2>
-          <p class="text-[10px] text-slate-500">Consulta quién realizó la operación, cuándo y sobre qué módulo.</p>
+          <h2 class="fw-bold sbss-fs-14 text-dark">Filtros del historial</h2>
+          <p class="sbss-fs-10 text-body-secondary">Consulta quién realizó la operación, cuándo y sobre qué módulo.</p>
         </div>
         <button class="btn btn-light" id="btnLimpiar">LIMPIAR</button>
       </div>
@@ -105,8 +104,8 @@ body{margin:0;background:#f3f6f8;color:#153f5a;font-family:Arial,Helvetica,sans-
     </section>
 
     <section class="panel">
-      <div class="p-4 flex items-center justify-between">
-        <div><h2 class="font-bold text-sm text-slate-800">Historial de actividades</h2><span id="contador" class="text-[10px] text-slate-500"></span></div>
+      <div class="p-3 d-flex align-items-center justify-content-between">
+        <div><h2 class="fw-bold sbss-fs-14 text-dark">Historial de actividades</h2><span id="contador" class="sbss-fs-10 text-body-secondary"></span></div>
         <span class="badge">Solo Administrador General</span>
       </div>
       <div class="table-wrap">
@@ -155,7 +154,7 @@ async function cargarAuditoria(){
       const detail = x.accion==='UPDATE' && x.datos_anteriores
         ? 'ANTES:\\n'+pretty(x.datos_anteriores)+'\\n\\nOPERACIÓN:\\n'+pretty(x.datos_nuevos)
         : pretty(x.datos_nuevos);
-      return `<tr><td>${esc(fecha)}</td><td><b>${esc(user)}</b><br><span class="text-slate-500">${esc(x.email||'')}</span></td><td>${esc(x.rol||'-')}</td><td><span class="badge">${esc(labelAccion(x.accion))}</span></td><td>${esc(x.tabla_afectada)}</td><td>${esc(x.registro_id || '-')}</td><td class="details">${esc(detail)}</td><td>${esc(x.ip_origen||'-')}</td></tr>`;
+      return `<tr><td>${esc(fecha)}</td><td><b>${esc(user)}</b><br><span class="text-body-secondary">${esc(x.email||'')}</span></td><td>${esc(x.rol||'-')}</td><td><span class="badge">${esc(labelAccion(x.accion))}</span></td><td>${esc(x.tabla_afectada)}</td><td>${esc(x.registro_id || '-')}</td><td class="details">${esc(detail)}</td><td>${esc(x.ip_origen||'-')}</td></tr>`;
     }).join('');
   }catch(e){
     console.error('Error al cargar auditoría:', e);

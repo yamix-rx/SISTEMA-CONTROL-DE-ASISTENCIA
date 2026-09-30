@@ -1,21 +1,18 @@
 {
   "format": 1,
-  "contentSha256": "3a44497b63afd71fd6a065a135370651cbd66d1101f9b53f7543b21c5d599a76",
+  "contentSha256": "fee39b5b6aa2114a82125d8125ab4992c74cdd2cd83a75153e46a29342e637a0",
   "tools": {
-    "node": ">=24",
-    "tailwindcss": "3.4.19",
-    "postcss": "8.5.28",
-    "cssnano": "9.0.5"
+    "node": ">=24"
   },
-  "transformation": "UMD originales sin comentarios sourceMappingURL; CSS Tailwind compilado; Fontsource latin y latin-ext con nombres de familia Inter/Fraunces.",
+  "transformation": "Bootstrap CSS local; UMD originales sin comentarios sourceMappingURL; Fontsource latin y latin-ext con nombres de familia Inter/Fraunces.",
   "packages": [
     {
-      "name": "tailwindcss",
-      "version": "3.4.19",
+      "name": "bootstrap",
+      "version": "5.3.8",
       "license": "MIT",
-      "homepage": "https://v3.tailwindcss.com/docs/installation",
-      "licenseFile": "licenses/tailwindcss-LICENSE.txt",
-      "integrity": "sha512-3ofp+LL8E+pK/JuPLPggVAIaEuhvIz4qNcf3nA1Xn2o/7fb7s/TYpHhwGDv1ZU3PkBluUVaF8PyCHcm48cKLWQ=="
+      "homepage": "https://getbootstrap.com/",
+      "licenseFile": "licenses/bootstrap-LICENSE.txt",
+      "integrity": "sha512-HP1SZDqaLDPwsNiqRqi5NcP0SSXciX2s9E+RyqJIIqGo+vJeN5AJVM98CXmW/Wux0nQ5L7jeWUdplCEf0Ee+tg=="
     },
     {
       "name": "lucide",
@@ -68,6 +65,11 @@
   ],
   "assets": [
     {
+      "file": "bootstrap/bootstrap.min.css",
+      "bytes": 232111,
+      "sha256": "d85327d99c7a3ee1f9b5d0500d1370acea3ad2db39c163c2f51f232baedbdede"
+    },
+    {
       "file": "fonts/files/fraunces-latin-ext-standard-normal.woff2",
       "bytes": 59388,
       "sha256": "a2930b27d13a228bd9ab6a49269b5f800237892ad560cb9dd7fab01b1620f88e"
@@ -103,6 +105,11 @@
       "sha256": "97cff153c9765f25b5bafb6938f33239fb98f3211759e1aa56ff9a5186c81649"
     },
     {
+      "file": "licenses/bootstrap-LICENSE.txt",
+      "bytes": 1093,
+      "sha256": "4620c84ad5ce8602ff65640ed6b7c8b78ebb9e036584f0ebc1ccc88206a4bb51"
+    },
+    {
       "file": "licenses/fontsource-variable-fraunces-LICENSE.txt",
       "bytes": 4504,
       "sha256": "cd3384cafac6f2bddc3955273958a2e029f97027c8037ac539ef5744a77b579e"
@@ -128,11 +135,6 @@
       "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
     },
     {
-      "file": "licenses/tailwindcss-LICENSE.txt",
-      "bytes": 1071,
-      "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985"
-    },
-    {
       "file": "licenses/xlsx-js-style-bundle-LICENSE.txt",
       "bytes": 11355,
       "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
@@ -146,11 +148,6 @@
       "file": "lucide/lucide.min.js",
       "bytes": 442394,
       "sha256": "5d12dedce05db8fe82ea590206b182c5f4bd0bc5098e9474721a676a879b2754"
-    },
-    {
-      "file": "tailwind/tailwind.min.css",
-      "bytes": 23938,
-      "sha256": "827015a7bf46e5284b462481b4eeab2ea05cab3f6fba08a613173f7e3976d20b"
     },
     {
       "file": "xlsx-js-style/xlsx.bundle.js",
