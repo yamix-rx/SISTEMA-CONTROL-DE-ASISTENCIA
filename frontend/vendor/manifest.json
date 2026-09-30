@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "contentSha256": "e1983d7f7e50f1e107d1381888d811646bbb6333da221c5c8a2b4e68c81e87bf",
+  "contentSha256": "3a44497b63afd71fd6a065a135370651cbd66d1101f9b53f7543b21c5d599a76",
   "tools": {
     "node": ">=24",
     "tailwindcss": "3.4.19",
@@ -149,8 +149,8 @@
     },
     {
       "file": "tailwind/tailwind.min.css",
-      "bytes": 23858,
-      "sha256": "df351b2abcfd7c6ef13cae35a99fb77d1a6269924f11a051c96037e113ba1cf3"
+      "bytes": 23938,
+      "sha256": "827015a7bf46e5284b462481b4eeab2ea05cab3f6fba08a613173f7e3976d20b"
     },
     {
       "file": "xlsx-js-style/xlsx.bundle.js",

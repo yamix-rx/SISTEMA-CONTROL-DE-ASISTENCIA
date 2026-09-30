@@ -2,13 +2,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 const PDFDocument = require('pdfkit');
 
-const A4_ALTURA = 842;
+// Las dimensiones de los sellos no son las del membrete. La altura del logo
+// se obtiene de su imagen para conservar la proporción de cada empresa.
 const MARCAS = Object.freeze({
-  sbss: { x: 284, y: 152, width: 162, height: 68 },
-  nanas: { x: 213, y: 196, width: 193, height: 98 },
-  silsan: { x: 339, y: 90, width: 151, height: 75 },
-  ong: { x: 311, y: 134, width: 168, height: 80 },
-  camara: { x: 225, y: 163, width: 158, height: 66 }
+  sbss: { x: 48, y: 24, width: 160 },
+  nanas: { x: 0, y: 0, banda: true },
+  silsan: { x: 48, y: 24, width: 185 },
+  ong: { x: 54, y: 24, width: 68 },
+  camara: { x: 48, y: 24, width: 190 }
 });
 
 function rutaFirma(clave) {
@@ -21,7 +22,7 @@ function generarPdfCarta(documento) {
   return new Promise((resolve, reject) => {
     const margen = 72;
     const doc = new PDFDocument({
-      size: 'A4', pdfVersion: '1.4', margins: { top: margen, bottom: 45, left: margen, right: 54 },
+      size: 'LETTER', pdfVersion: '1.4', margins: { top: margen, bottom: 45, left: margen, right: 54 },
       bufferPages: true,
       info: { Title: documento.titulo, Author: documento.empresa, Subject: documento.modelo_nombre || documento.titulo }
     });
@@ -38,17 +39,25 @@ function generarPdfCarta(documento) {
       const espacio = height => { if (doc.y + height > doc.page.height - 45) doc.addPage(); };
       const marca = Object.hasOwn(MARCAS, documento.logo || '') ? MARCAS[documento.logo] : null;
       if (marca) {
-        doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), marca.x, marca.y,
-          { width: marca.width, height: marca.height });
-        doc.y = marca.y + marca.height + 8;
+        const archivoLogo = path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
+        const imagenLogo = doc.openImage(archivoLogo);
+        const anchoLogo = marca.banda ? doc.page.width : marca.width;
+        const altoLogo = anchoLogo * imagenLogo.height / imagenLogo.width;
+        doc.image(archivoLogo, marca.x, marca.y, { width: anchoLogo });
+        doc.y = Math.max(marca.banda ? 82 : 96, marca.y + altoLogo + 10);
       } else {
         doc.font(negrita).fontSize(14).text(documento.empresa, margen, 35, { width: ancho, align: 'left' });
         doc.y = Math.max(101, doc.y + 20);
       }
-      doc.font(negrita).fontSize(12).text(documento.titulo, documento.logo === 'ong' ? 112 : margen,
-        doc.y, { width: documento.logo === 'ong' ? doc.page.width - 166 : ancho, align: 'center', lineGap: 1.5 });
-      doc.y += 22;
+      doc.font(negrita).fontSize(12).text(documento.titulo, 54,
+        doc.y, { width: doc.page.width - 108, align: 'center', lineGap: 1.5 });
+      doc.y += 20;
       const opciones = { width: ancho, lineGap: 1.2 };
+      const archivoSello = rutaFirma(documento.firma);
+      const imagenSello = archivoSello ? doc.openImage(archivoSello) : null;
+      const anchoFirma = imagenSello ? Math.min(193, imagenSello.width / 3) : 0;
+      const altoFirma = imagenSello ? anchoFirma * imagenSello.height / imagenSello.width : 0;
+      const esFirma = bloque => /^(?:[_…]{5,}|Firma del responsable)/i.test(bloque);
       let firmaImpresa = false;
       const bloques = String(documento.cuerpo).replace(/\r\n?/g, '\n').trim().split(/\n[ \t]*\n+/);
       for (const [indice, bloqueOriginal] of bloques.entries()) {
@@ -57,15 +66,11 @@ function generarPdfCarta(documento) {
           if (seccion) doc.addPage();
           const bloque = original.trim();
           if (!bloque) continue;
-          const fecha = indice === 0 && /\b\d{1,2}\s+de\s+\S+\s+(?:de|del)\s+\d{4}\b/i.test(bloque);
-          const firma = /^(?:[_…]{5,}|Firma del responsable)/i.test(bloque);
-          const archivoFirma = firma ? rutaFirma(documento.firma) : null;
-          if (archivoFirma && !firmaImpresa) {
-            const image = doc.openImage(archivoFirma);
-            const anchoFirma = Math.min(193, image.width / 3);
-            const altoFirma = anchoFirma * image.height / image.width;
+          const fecha = indice === 0 && !bloque.includes('\n') && /\b\d{1,2}\s+de\s+\S+\s+(?:de|del)\s+\d{4}\b/i.test(bloque);
+          const firma = esFirma(bloque);
+          if (firma && archivoSello && !firmaImpresa) {
             espacio(altoFirma + 18);
-            doc.image(archivoFirma, margen + (ancho - anchoFirma) / 2, doc.y + 2,
+            doc.image(archivoSello, margen + ancho * 0.62 - anchoFirma / 2, doc.y + 2,
               { fit: [anchoFirma, altoFirma], align: 'center', valign: 'center' });
             doc.y += altoFirma + 16;
             firmaImpresa = true;
@@ -73,12 +78,19 @@ function generarPdfCarta(documento) {
           }
           const asunto = /^ASUNTO\s*:/i.test(bloque);
           const lineas = bloque.split('\n');
-          const registro = /^(?:Los datos|Datos para registro|Datos del|[-•]|(?:RUC|Razón social|Carrera|Área|Supervisor|Fecha de))\b/i.test(bloque);
-          const estudiante = /(?:DNI|C\.E\.|CE|PASAPORTE)[: ]/i.test(bloque) && bloque.length < 260;
+          const registro = /^(?:Los datos\b|Datos para registro\b|Datos del\b|[-•]|(?:RUC|Razón social|Carrera|Área|Supervisor|Fecha de)\b)/i.test(bloque);
+          const estudiante = /(?:[—–]| -)\s*(?:DNI|C\.E\.|CE|PASAPORTE)[: ]/i.test(bloque) && bloque.length < 260;
           const align = fecha ? 'right' : firma ? 'center' : (lineas.length === 1 && bloque.length > 150 && !registro && !estudiante) ? 'justify' : 'left';
           doc.font(fecha ? cursiva : regular).fontSize(tamano).fillColor('#000000');
           const height = doc.heightOfString(bloque, { ...opciones, align });
-          if (height < doc.page.height - 117) espacio(height + (firma ? 18 : 0));
+          const despedida = /^Atentamente[,.]?$/i.test(bloque);
+          const siguiente = (bloques[indice + 1] || '').trim();
+          // La despedida acompaña a la firma cuando un texto editado necesita
+          // otra página; no se reduce la letra ni se recorta el contenido.
+          const reservarFirma = despedida && !siguiente.includes('\f') && esFirma(siguiente);
+          const espacioFirma = reservarFirma ? 4 + (archivoSello && !firmaImpresa ? altoFirma + 18
+            : doc.heightOfString(siguiente, { ...opciones, align: 'center' }) + 18) : 0;
+          if (height < doc.page.height - 117) espacio(height + espacioFirma + (firma ? 18 : 0));
           if (firma) doc.y += 14;
           if (asunto) {
             const corte = bloque.indexOf(':') + 1;
@@ -89,8 +101,8 @@ function generarPdfCarta(documento) {
           }
           const saludo = /^De mi consideración/i.test(bloque);
           const introduccion = /^Por medio de la presente/i.test(bloque);
-          const despedida = /^Atentamente[,.]?$/i.test(bloque);
-          doc.y += fecha ? 17 : asunto ? 24 : introduccion ? 26 : estudiante ? 19 : saludo ? 17 : despedida ? 4 : 17;
+          const antesDelAsunto = /^ASUNTO\s*:/i.test(siguiente);
+          doc.y += fecha ? 17 : antesDelAsunto ? 0 : asunto ? 24 : introduccion ? 22 : estudiante ? 17 : saludo ? 17 : despedida ? 4 : 17;
         }
       }
       // Las cartas originales son de una página y no tienen pie. Numerar solo

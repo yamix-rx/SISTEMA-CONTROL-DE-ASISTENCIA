@@ -294,6 +294,8 @@
     state.previewController?.abort();
     state.previewController = null;
     $('archivoVista').replaceChildren();
+    $('btnAbrirVistaCompleta').hidden = true;
+    state.previewBlob = null;
     if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
     state.previewUrl = null;
     state.selected = null;
@@ -343,7 +345,8 @@
     try {
       const blob = await request(`/documentos/${row.documento_id}/archivo`, { signal: state.previewController.signal }, true);
       if (revision !== state.previewRevision) return;
-      if (!ALLOWED_MIME.has(blob.type.split(';')[0])) throw new Error('No se puede mostrar este formato. Puedes descargar el archivo para revisarlo.');
+      const mime = blob.type.split(';')[0];
+      if (!ALLOWED_MIME.has(mime)) throw new Error('No se puede mostrar este formato. Puedes descargar el archivo para revisarlo.');
       state.previewUrl = URL.createObjectURL(blob);
       let preview;
       if (blob.type.startsWith('image/')) {
@@ -353,10 +356,12 @@
         preview.addEventListener('error', () => {
           if (revision === state.previewRevision) previewFailure(row, 'El navegador no pudo mostrar la imagen. Puedes descargarla para revisarla.');
         }, { once: true });
-      } else if (blob.type === 'application/pdf') {
+      } else if (mime === 'application/pdf') {
+        state.previewBlob = blob;
+        $('btnAbrirVistaCompleta').hidden = false;
         preview = node('object');
         preview.type = 'application/pdf';
-        preview.data = `${state.previewUrl}#toolbar=0&navpanes=0&view=FitH`;
+        preview.data = `${state.previewUrl}#toolbar=0&navpanes=0&view=Fit`;
         preview.setAttribute('aria-label', `Vista previa de ${row.nombre_archivo}`);
         preview.appendChild(node('p', '', 'Tu navegador no muestra PDF aquí. Usa el botón Descargar documento.'));
       } else {
@@ -716,35 +721,18 @@
       const blob = await request('/documentos/generar/pdf', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(generatedPayload)
       }, true);
-      if (blob.type !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
-      if (state.generatedUrl) URL.revokeObjectURL(state.generatedUrl);
-      state.generatedUrl = URL.createObjectURL(blob);
+      if (blob.type.split(';')[0] !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
       state.generatedDocument = documento;
       state.generatedPayload = generatedPayload;
-      state.generatedZoom = 'Fit';
-      $('generadoPdf').src = state.generatedUrl + '#toolbar=0&navpanes=0&view=Fit';
-      $('generadoPdf').hidden = false;
-      $('documentoGenerado').hidden = true;
-      $('btnAmpliarPdf').textContent = 'Ampliar';
-      $('btnAmpliarPdf').setAttribute('aria-pressed', 'false');
-      $('btnAmpliarPdf').setAttribute('aria-label', 'Ampliar documento al ancho');
-      $('btnAmpliarPdf').disabled = false;
-      $('tituloDocumentoGenerado').textContent = documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo;
-      $('generadoColaborador').textContent = documento.trabajador;
-      $('generadoEmpresaContexto').textContent = documento.empresa;
       const career = documento.carrera ?? payload.datos_documento?.carrera ?? state.generationFicha?.empleado?.carrera ?? '';
-      $('generadoCarrera').textContent = career;
-      $('generadoCarreraDato').hidden = !career;
-      $('btnTextoGenerado').textContent = 'Ver texto';
-      $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
-      $('generadoModelo').textContent = documento.modelo_nombre || '';
-      $('generadoModelo').hidden = !documento.modelo_nombre;
-      $('generadoEmpresa').textContent = documento.empresa;
-      $('generadoTitulo').textContent = documento.titulo;
-      $('generadoCuerpo').textContent = documento.cuerpo.replace(/\f/g, '\n\n');
-      formError('errorPdf');
       $('modalGenerar').close();
-      $('modalDocumentoGenerado').showModal();
+      openPdfViewer(blob, {
+        ...documento, carrera: career, editable: true,
+        tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
+        papel: documento.estilo === 'formal'
+          ? (['convenio_pasantia', 'plan_capacitacion'].includes(documento.codigo) ? 'A4 · 210 × 297 mm' : 'Carta · 216 × 279 mm')
+          : 'A4 · 210 × 297 mm'
+      });
     } catch (error) { formError('errorGenerar', friendlyError(error)); }
     finally {
       state.generating = false;
@@ -753,15 +741,87 @@
     }
   }
 
+  function releasePdfViewer() {
+    clearTimeout(state.viewerLoadTimer);
+    $('generadoPdf').removeAttribute('src');
+    $('abrirPdfExterno').removeAttribute('href');
+    if (state.viewerUrl) URL.revokeObjectURL(state.viewerUrl);
+    state.viewerUrl = null;
+    state.viewerReady = false;
+    $('btnImprimirPdf').disabled = true;
+  }
+
+  function loadPdfViewer() {
+    state.viewerReady = false;
+    $('btnImprimirPdf').disabled = true;
+    $('estadoVistaPdf').textContent = 'Cargando documento…';
+    $('generadoPdf').src = state.viewerUrl + '#toolbar=0&navpanes=0&view=' + state.viewerZoom;
+    clearTimeout(state.viewerLoadTimer);
+    state.viewerLoadTimer = setTimeout(() => {
+      if (state.viewerUrl && !state.viewerReady) $('estadoVistaPdf').textContent = 'Si el documento no aparece, ábrelo en otra pestaña o descárgalo.';
+    }, 8000);
+  }
+
+  function openPdfViewer(blob, documento) {
+    releasePdfViewer();
+    state.viewerUrl = URL.createObjectURL(blob);
+    state.viewerDocument = documento;
+    state.viewerZoom = 'Fit';
+    $('generadoPdf').hidden = false;
+    $('documentoGenerado').hidden = true;
+    $('btnAmpliarPdf').textContent = 'Ajustar al ancho';
+    $('btnAmpliarPdf').setAttribute('aria-pressed', 'false');
+    $('btnAmpliarPdf').setAttribute('aria-label', 'Ampliar documento al ancho');
+    $('btnAmpliarPdf').disabled = false;
+    $('tituloDocumentoGenerado').textContent = documento.tipo_documento_nombre || documento.titulo;
+    $('generadoColaborador').textContent = documento.trabajador;
+    $('generadoEmpresaContexto').textContent = documento.empresa;
+    $('generadoCarrera').textContent = documento.carrera || '';
+    $('generadoCarreraDato').hidden = !documento.carrera;
+    $('btnTextoGenerado').textContent = 'Ver texto';
+    $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
+    $('btnTextoGenerado').hidden = !documento.cuerpo;
+    $('btnVolverGenerar').hidden = !documento.editable;
+    $('generadoModelo').textContent = documento.modelo_nombre || '';
+    $('generadoModelo').hidden = !documento.modelo_nombre;
+    $('generadoPapel').textContent = documento.papel ? 'Tamaño del documento: ' + documento.papel : '';
+    $('generadoPapel').hidden = !documento.papel;
+    $('generadoEmpresa').textContent = documento.empresa;
+    $('generadoTitulo').textContent = documento.titulo || documento.tipo_documento_nombre;
+    $('generadoCuerpo').textContent = (documento.cuerpo || '').replace(/\f/g, '\n\n');
+    $('abrirPdfExterno').href = state.viewerUrl;
+    formError('errorPdf');
+    loadPdfViewer();
+    $('modalDocumentoGenerado').showModal();
+  }
+
+  function printPdf() {
+    if (!state.viewerUrl || !state.viewerReady) return;
+    formError('errorPdf');
+    // Se imprime el mismo PDF que se previsualiza y descarga, incluso en modo texto.
+    const frame = $('generadoPdf');
+    frame.hidden = false;
+    $('documentoGenerado').hidden = true;
+    $('btnAmpliarPdf').disabled = false;
+    $('btnTextoGenerado').textContent = 'Ver texto';
+    $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (_) {
+      formError('errorPdf', 'Abre el PDF en otra pestaña para imprimirlo con el visor de tu navegador.');
+    }
+  }
+
   async function downloadGenerated() {
-    if (!state.generatedPayload || !state.generatedUrl || state.downloadingGenerated) return;
+    if (!state.viewerUrl || state.downloadingGenerated) return;
     state.downloadingGenerated = true;
     $('btnPdfGenerado').disabled = true;
     formError('errorPdf');
     try {
       const anchor = node('a');
-      anchor.href = state.generatedUrl;
-      anchor.download = state.generatedDocument.nombre_archivo;
+      anchor.href = state.viewerUrl;
+      anchor.download = state.viewerDocument.nombre_archivo || 'documento.pdf';
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -852,6 +912,14 @@
     $('btnReintentar').addEventListener('click', () => loadDocuments());
     $('btnActualizarLista').addEventListener('click', () => loadDocuments());
     $('btnCerrarVista').addEventListener('click', () => clearPreview());
+    $('btnAbrirVistaCompleta').addEventListener('click', () => {
+      if (!state.previewBlob || !state.selected) return;
+      const row = state.selected;
+      openPdfViewer(state.previewBlob, {
+        tipo_documento_nombre: row.tipo_documento, trabajador: row.colaborador,
+        empresa: row.empresa, nombre_archivo: row.nombre_archivo
+      });
+    });
     $('btnDescargar').addEventListener('click', event => downloadFile(state.selected, event.currentTarget));
     $('btnSubir').addEventListener('click', () => openUpload());
     $('btnNuevaVersion').addEventListener('click', () => openUpload(state.selected));
@@ -870,12 +938,21 @@
     });
     $('generarArea').addEventListener('change', fillGenerationPositions);
     $('btnPdfGenerado').addEventListener('click', downloadGenerated);
+    $('btnImprimirPdf').addEventListener('click', printPdf);
+    $('generadoPdf').addEventListener('load', () => {
+      if (!state.viewerUrl || !$('generadoPdf').getAttribute('src')?.startsWith(state.viewerUrl)) return;
+      clearTimeout(state.viewerLoadTimer);
+      state.viewerReady = true;
+      $('btnImprimirPdf').disabled = false;
+      $('estadoVistaPdf').textContent = 'Si no ves el documento, abre el PDF en otra pestaña.';
+    });
+    $('modalDocumentoGenerado').addEventListener('close', releasePdfViewer);
     $('btnAmpliarPdf').addEventListener('click', () => {
-      if (!state.generatedUrl) return;
-      const expand = state.generatedZoom !== 'FitH';
-      state.generatedZoom = expand ? 'FitH' : 'Fit';
-      $('generadoPdf').src = state.generatedUrl + '#toolbar=0&navpanes=0&view=' + state.generatedZoom;
-      $('btnAmpliarPdf').textContent = expand ? 'Página completa' : 'Ampliar';
+      if (!state.viewerUrl) return;
+      const expand = state.viewerZoom !== 'FitH';
+      state.viewerZoom = expand ? 'FitH' : 'Fit';
+      $('generadoPdf').src = state.viewerUrl + '#toolbar=0&navpanes=0&view=' + state.viewerZoom;
+      $('btnAmpliarPdf').textContent = expand ? 'Página completa' : 'Ajustar al ancho';
       $('btnAmpliarPdf').setAttribute('aria-pressed', String(expand));
       $('btnAmpliarPdf').setAttribute('aria-label', expand ? 'Mostrar página completa' : 'Ampliar documento al ancho');
     });
@@ -899,7 +976,7 @@
       state.listController?.abort();
       state.previewController?.abort();
       if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
-      if (state.generatedUrl) URL.revokeObjectURL(state.generatedUrl);
+      releasePdfViewer();
     });
   }
 

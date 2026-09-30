@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { ROLES } = require('../config/accessPolicy');
+const { textoPdf } = require('./helpers/pdf');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
 let guardadas;
@@ -58,9 +59,6 @@ async function request(path, { usuario = 1, method = 'GET', body } = {}) {
 }
 function payload(extra = {}) {
   return { codigo: 'aceptacion', empleado_id: 101, empresa_id: 10, area_id: 20, cargo_id: 30, fecha: '2026-09-19', horas: 245.5, ...extra };
-}
-function textoPdf(buffer) {
-  return [...buffer.toString('ascii').matchAll(/<([0-9a-f]+)> Tj/g)].map(match => Buffer.from(match[1], 'hex').toString('latin1')).join('\n');
 }
 function comprobarPdf(buffer) {
   const text = buffer.toString('ascii');

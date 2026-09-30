@@ -14,4 +14,70 @@
 @media(max-width:768px){.docs-header.sbss-header .sbss-brand{width:auto;flex:0 0 auto}.docs-header .user-details{min-width:0}}
 
 .person-cell,.document-cell,.detail-heading>div,.detail-company,.template-card h3{overflow-wrap:anywhere}.detail-heading>div{min-width:0}.preview-panel{scroll-margin-top:68px}
-.generation-dialog{max-width:690px}.generation-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.generation-fields label>input,.generation-fields label>select{margin-top:5px}.generated-dialog{max-width:830px}.generated-sheet{margin-top:20px;padding:35px;background:#fff;border:1px solid var(--line);color:#182a3b}.generated-brand{font-size:17px;font-weight:700;border-bottom:2px solid #174f77;padding-bottom:14px}.generated-sheet h3{margin:28px 0;text-align:center;font-size:18px}.generated-sheet #generadoCuerpo{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.8 Georgia,serif}.template-fields{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.template-fields button{border:1px solid #bcd5e8;border-radius:4px;color:#15547f;background:#f2f8fc;padding:5px 7px;font-size:11px}#plantillaCuerpo{resize:vertical;font:13px/1.6 monospace}#modalDocumentoGenerado .dialog-actions{position:sticky;bottom:-24px;background:#fff;padding-bottom:12px}@media(max-width:580px){.generation-fields{grid-template-columns:1fr}.generated-sheet{padding:20px 14px}.generated-sheet h3{font-size:15px}.generated-dialog .dialog-actions{flex-wrap:wrap}}
+
+/* La hoja ocupa el espacio del visor; las opciones permanecen fuera del PDF. */
+#modalDocumentoGenerado {
+  width: calc(100% - 40px);
+  max-width: 1320px;
+  height: min(900px, 94dvh);
+  max-height: 94dvh;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #45494e;
+  border-radius: 12px;
+  color: #f1f3f4;
+  background: #202124;
+}
+#modalDocumentoGenerado[open] { display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+.pdf-workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #525659; }
+.pdf-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: #303134; border-bottom: 1px solid #5f6368; font-size: 12px; }
+.pdf-toolbar>div { display: flex; flex-wrap: wrap; gap: 8px; }
+.pdf-canvas { flex: 1; min-height: 0; overflow: auto; }
+#generadoPdf { display: block; width: 100%; height: 100%; min-height: 320px; border: 0; background: #525659; }
+.pdf-settings { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 22px; padding: 24px; overflow-y: auto; border-left: 1px solid #45494e; }
+.pdf-settings .dialog-heading { align-items: flex-start; }
+.pdf-settings .dialog-heading h2 { font-size: 19px; line-height: 1.35; color: #f1f3f4; overflow-wrap: anywhere; }
+.pdf-settings .eyebrow { color: #bdc1c6; }
+.pdf-toolbar .icon-button { color: #e8eaed; background: transparent; flex-shrink: 0; }
+.pdf-toolbar .icon-button:hover { background: #3c4043; }
+.generated-context { display: grid; gap: 18px; margin: 0; }
+.generated-context dt { font-size: 11px; color: #bdc1c6; margin-bottom: 5px; }
+.generated-context dd { font-size: 13px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.generated-model { font-size: 12px; line-height: 1.5; color: #bdc1c6; }
+.pdf-paper-info { padding-top: 18px; border-top: 1px solid #45494e; font-size: 12px; }
+.pdf-print-help,.pdf-status { font-size: 12px; line-height: 1.6; color: #bdc1c6; }
+.pdf-status { margin-top: auto; }
+.pdf-external-link { font-size: 12px; color: #a8c7fa; text-underline-offset: 3px; }
+#modalDocumentoGenerado .button-outline { background: transparent; color: #e8eaed; border-color: #697078; }
+#modalDocumentoGenerado .button-outline:hover { background: #3c4043; }
+#modalDocumentoGenerado .button-primary { background: #a8c7fa; color: #172d4f; border-color: #a8c7fa; }
+#modalDocumentoGenerado .button-primary:hover { background: #c2d7fc; }
+#modalDocumentoGenerado :focus-visible { outline: 2px solid #a8c7fa; outline-offset: 3px; }
+#modalDocumentoGenerado .dialog-actions { position: static; display: flex; flex-direction: column; align-items: stretch; flex-shrink: 0; gap: 10px; margin: 0; padding: 0; border: 0; background: transparent; }
+#modalDocumentoGenerado .dialog-actions .button { width: 100%; min-height: 40px; justify-content: center; }
+#modalDocumentoGenerado .generated-sheet { max-width: 720px; min-height: 100%; margin: 20px auto; padding: 40px; color: #111; }
+#modalDocumentoGenerado .generated-brand { font: bold 15px 'Times New Roman', serif; border: 0; }
+#modalDocumentoGenerado .generated-sheet h3 { font: bold 16px 'Times New Roman', serif; }
+#modalDocumentoGenerado #generadoCuerpo { font: 15px/1.5 'Times New Roman', serif; }
+.text-preview-note { margin-bottom: 24px; font: 12px/1.5 Arial, sans-serif; color: #5f6368; }
+#btnAbrirVistaCompleta { margin-top: 10px; }
+@media (max-width: 1080px) { .file-preview-block { min-width: 0; grid-column: 1; grid-row: 3 / 7; } }
+@media (max-width: 900px) {
+  #modalDocumentoGenerado { width: calc(100% - 20px); }
+  #modalDocumentoGenerado[open] { grid-template-columns: minmax(0, 1fr) 260px; }
+  .pdf-settings { padding: 18px; gap: 16px; }
+  .pdf-toolbar { padding: 10px; }
+}
+@media (max-width: 640px) {
+  #modalDocumentoGenerado { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; overflow-y: auto; }
+  #modalDocumentoGenerado[open] { display: flex; flex-direction: column; }
+  .pdf-workspace { flex: 0 0 auto; height: 68dvh; min-height: 380px; }
+  .pdf-settings { flex: 0 0 auto; overflow: visible; border-left: 0; border-top: 1px solid #45494e; gap: 14px; }
+  .pdf-settings .dialog-heading h2 { font-size: 17px; }
+  .generated-context { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pdf-status { margin-top: 0; }
+  #modalDocumentoGenerado .dialog-actions { flex-direction: row; flex-wrap: wrap; }
+  #modalDocumentoGenerado .dialog-actions .button { flex: 1 1 130px; width: auto; }
+  #modalDocumentoGenerado .generated-sheet { margin: 12px; padding: 24px; }
+}
+.generation-dialog{max-width:690px}.generation-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.generation-fields label>input,.generation-fields label>select{margin-top:5px}.generated-sheet{background:#fff;border:1px solid var(--line)}.generated-brand{padding-bottom:14px}.generated-sheet h3{margin:28px 0;text-align:center}.generated-sheet #generadoCuerpo{white-space:pre-wrap;overflow-wrap:anywhere}.template-fields{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.template-fields button{border:1px solid #bcd5e8;border-radius:4px;color:#15547f;background:#f2f8fc;padding:5px 7px;font-size:11px}#plantillaCuerpo{resize:vertical;font:13px/1.6 monospace}@media(max-width:580px){.generation-fields{grid-template-columns:1fr}}

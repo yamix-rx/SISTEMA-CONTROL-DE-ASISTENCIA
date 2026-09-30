@@ -23,6 +23,7 @@
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 15v6h16v-6"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6zM17 12h1"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
   </defs></svg>
   <a class="skip-link" href="#contenido">Ir al contenido</a>
@@ -70,7 +71,9 @@
           <div id="vistaDetalle" class="preview-detail" hidden>
             <div class="detail-heading"><div><h3 id="detalleTipo"></h3><p id="detallePersona" class="muted"></p></div><span id="detalleEstado" class="badge"></span></div>
             <p id="detalleEmpresa" class="detail-company"></p>
-            <div id="archivoVista" class="file-preview" aria-live="polite"></div>
+            <div class="file-preview-block"><div id="archivoVista" class="file-preview" aria-live="polite"></div>
+              <button id="btnAbrirVistaCompleta" class="button button-outline full-width" type="button" hidden><svg class="icon"><use href="#i-eye"/></svg>Ver documento completo</button>
+            </div>
             <div class="file-information"><svg class="icon"><use href="#i-document"/></svg><div><strong id="detalleArchivo"></strong><span id="detalleFecha" class="muted"></span></div><button id="btnDescargar" type="button" class="icon-button" aria-label="Descargar documento"><svg class="icon"><use href="#i-download"/></svg></button></div>
             <p id="observacionAnterior" class="previous-note" hidden></p>
             <div id="revisionCampos"><label for="observacion">Observación de revisión</label><textarea id="observacion" rows="2" maxlength="1000" placeholder="Indica una corrección o comentario…"></textarea><p class="field-help">Para observar el documento, escribe el motivo.</p><div class="review-actions"><button type="button" id="btnObservar" class="button button-outline">Observar</button><button type="button" id="btnValidar" class="button button-success"><svg class="icon"><use href="#i-check"/></svg>Validar</button></div></div>
@@ -112,13 +115,24 @@
     </form>
   </dialog>
   <dialog id="modalDocumentoGenerado" class="generated-dialog" aria-labelledby="tituloDocumentoGenerado">
-    <div class="dialog-heading"><div><p class="eyebrow">VISTA PREVIA DEL DOCUMENTO</p><h2 id="tituloDocumentoGenerado">Vista previa</h2></div><button type="button" class="icon-button" data-cerrar="modalDocumentoGenerado" aria-label="Cerrar vista previa"><svg class="icon"><use href="#i-close"/></svg></button></div>
-    <dl class="generated-context"><div><dt>Colaborador</dt><dd id="generadoColaborador"></dd></div><div><dt>Empresa</dt><dd id="generadoEmpresaContexto"></dd></div><div id="generadoCarreraDato"><dt>Carrera</dt><dd id="generadoCarrera"></dd></div></dl>
-    <p id="generadoModelo" class="generated-model" hidden></p>
-    <iframe id="generadoPdf" class="generated-pdf" title="Vista previa del documento PDF" hidden></iframe>
-    <article id="documentoGenerado" class="generated-sheet"><p id="generadoEmpresa" class="generated-brand"></p><h3 id="generadoTitulo"></h3><div id="generadoCuerpo"></div></article>
-    <p id="errorPdf" class="form-error" role="alert" hidden></p>
-    <div class="dialog-actions"><button id="btnAmpliarPdf" type="button" class="button button-outline" aria-pressed="false" aria-label="Ampliar documento al ancho">Ampliar</button><button id="btnTextoGenerado" type="button" class="button button-outline" aria-pressed="false">Ver texto</button><button id="btnVolverGenerar" type="button" class="button button-outline">Editar datos</button><button id="btnPdfGenerado" type="button" class="button button-primary">Descargar PDF</button></div>
+    <section class="pdf-workspace" aria-label="Documento">
+      <div class="pdf-toolbar"><span>Vista previa</span><div><button id="btnAmpliarPdf" type="button" class="button button-outline" aria-pressed="false" aria-label="Ampliar documento al ancho">Ajustar al ancho</button><button id="btnTextoGenerado" type="button" class="button button-outline" aria-pressed="false">Ver texto</button><button type="button" class="icon-button" data-cerrar="modalDocumentoGenerado" aria-label="Cerrar vista previa" autofocus><svg class="icon"><use href="#i-close"/></svg></button></div></div>
+      <div class="pdf-canvas">
+        <iframe id="generadoPdf" class="generated-pdf" title="Vista previa del documento PDF" hidden></iframe>
+        <article id="documentoGenerado" class="generated-sheet" aria-label="Contenido del documento en texto" hidden><p class="text-preview-note">Lectura del contenido. Consulta el PDF para ver el formato de impresión.</p><p id="generadoEmpresa" class="generated-brand"></p><h3 id="generadoTitulo"></h3><div id="generadoCuerpo"></div></article>
+      </div>
+    </section>
+    <aside class="pdf-settings" aria-label="Opciones del documento">
+      <div class="dialog-heading"><div><p class="eyebrow">DOCUMENTO PDF</p><h2 id="tituloDocumentoGenerado">Vista previa</h2></div></div>
+      <dl class="generated-context"><div><dt>Colaborador</dt><dd id="generadoColaborador"></dd></div><div><dt>Empresa</dt><dd id="generadoEmpresaContexto"></dd></div><div id="generadoCarreraDato"><dt>Carrera</dt><dd id="generadoCarrera"></dd></div></dl>
+      <p id="generadoModelo" class="generated-model" hidden></p>
+      <p id="generadoPapel" class="pdf-paper-info" hidden></p>
+      <p class="pdf-print-help">Al imprimir podrás elegir la impresora, las páginas, el tamaño de papel y la escala.</p>
+      <p id="estadoVistaPdf" class="pdf-status" role="status"></p>
+      <a id="abrirPdfExterno" class="pdf-external-link" target="_blank" rel="noopener">Abrir PDF en otra pestaña</a>
+      <p id="errorPdf" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="btnVolverGenerar" type="button" class="button button-outline">Editar datos</button><button id="btnPdfGenerado" type="button" class="button button-outline"><svg class="icon"><use href="#i-download"/></svg>Descargar PDF</button><button id="btnImprimirPdf" type="button" class="button button-primary" disabled><svg class="icon"><use href="#i-print"/></svg>Imprimir</button></div>
+    </aside>
   </dialog>
   <dialog id="modalPlantillas" class="generation-dialog" aria-labelledby="tituloEditorPlantillas">
     <form id="formPlantilla"><div class="dialog-heading"><h2 id="tituloEditorPlantillas">Editar plantillas</h2><button type="button" class="icon-button" data-cerrar="modalPlantillas" aria-label="Cerrar editor"><svg class="icon"><use href="#i-close"/></svg></button></div>
