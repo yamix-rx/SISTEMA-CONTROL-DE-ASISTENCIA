@@ -149,6 +149,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         enTurnoHoy: totalEnTurno,
         porcentajeAsistencia: `${porcentajeAsistencia}%`,
         tardanzasHoy: totalTardanzas,
+        presentesHoy: totalPresentes,
         trabajadoresActivos: Number(personalActivo[0]?.trabajadores || 0),
         practicantesActivos: Number(personalActivo[0]?.practicantes || 0),
         faltasHoy: Number(asistenciasHoy.find(item => item.estado === 'falta')?.total || 0),
