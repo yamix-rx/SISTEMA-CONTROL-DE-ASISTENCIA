@@ -1,0 +1,17 @@
+{
+  "fecha": "2026-09-19T14:23:39.348Z",
+  "carpeta": "C:\\Users\\dr891\\OneDrive\\Desktop\\Promo de Asistencia\\SISTEMA-CONTROL-DE-ASISTENCIA\\backend\\backups\\2026-09-19T14-23-38-267Z",
+  "respaldoCompleto": true,
+  "restauracionVerificada": "sbss_validacion_entrega_20260919",
+  "tablas": 18,
+  "conteos": {
+    "usuarios": 3,
+    "empleados": 8,
+    "asistencias": 11,
+    "permisos": 3,
+    "documentos_empleado": 7,
+    "empresas": 8
+  },
+  "archivosVerificados": 2,
+  "referenciasDemoSinArchivo": 5
+}

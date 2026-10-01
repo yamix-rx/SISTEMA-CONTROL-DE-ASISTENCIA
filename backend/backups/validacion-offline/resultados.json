@@ -1,0 +1,1115 @@
+{
+  "checkedAt": "2026-09-19T16:08:45.744Z",
+  "baseUrl": "http://127.0.0.1:3101",
+  "internetBlocked": true,
+  "externalRequests": [],
+  "results": [
+    {
+      "file": "login.html",
+      "role": "sin sesión",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/login.html",
+        "title": "SBSS · Inicio de Sesión",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "login-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Dashboard.html",
+      "role": "admin",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Dashboard.html",
+        "title": "SBSS - Dashboard",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Dashboard-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "empresas.html",
+      "role": "admin",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/empresas.html",
+        "title": "SBSS - Empresas",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "empresas-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Auditoria.html",
+      "role": "admin",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Auditoria.html",
+        "title": "SBSS - Auditoría",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Auditoria-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Administracion.html",
+      "role": "admin",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Administracion.html",
+        "title": "SBSS · Usuarios y configuración",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Administracion-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "RecursosHumanos.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/RecursosHumanos.html",
+        "title": "SBSS · Recursos Humanos",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "RecursosHumanos-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Personal y expediente",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Documentos.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Documentos",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Documentos-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html?vista=practicantes",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Practicantes y expediente",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-practicantes-1440.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Practicantes",
+        "vista": "practicantes"
+      },
+      "ok": true
+    },
+    {
+      "file": "Registros.html?vista=permisos",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS · Permisos",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "Registros-permisos-1440.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Permisos",
+        "vista": "permisos"
+      },
+      "ok": true
+    },
+    {
+      "file": "Documentos.html?vista=generar",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Generar documentos",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "Documentos-generar-1440.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Generar documentos",
+        "vista": "generar"
+      },
+      "ok": true
+    },
+    {
+      "file": "Contratos.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Contratos.html",
+        "title": "SBSS · Contratos",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "Contratos-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Capacitaciones.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Capacitaciones.html",
+        "title": "SBSS · Capacitaciones",
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "overflow": []
+      },
+      "screenshot": "Capacitaciones-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Horarios.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Horarios.html",
+        "title": "Sistema Web SBSS - Registro de Horarios",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Horarios-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Registros.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS - Registro de Asistencia",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Registros-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Reportes.html",
+      "role": "rrhh",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Reportes.html",
+        "title": "SBSS - Reportes Consolidados",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "Reportes-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "MiPanel.html",
+      "role": "colaborador",
+      "width": 1440,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/MiPanel.html",
+        "title": "SBSS - Mi panel",
+        "viewport": 1440,
+        "documentWidth": 1425,
+        "bodyWidth": 1425,
+        "overflow": []
+      },
+      "screenshot": "MiPanel-1440.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "login.html",
+      "role": "sin sesión",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/login.html",
+        "title": "SBSS · Inicio de Sesión",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "login-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Dashboard.html",
+      "role": "admin",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Dashboard.html",
+        "title": "SBSS - Dashboard",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Dashboard-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "empresas.html",
+      "role": "admin",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/empresas.html",
+        "title": "SBSS - Empresas",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "empresas-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Auditoria.html",
+      "role": "admin",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Auditoria.html",
+        "title": "SBSS - Auditoría",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Auditoria-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Administracion.html",
+      "role": "admin",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Administracion.html",
+        "title": "SBSS · Usuarios y configuración",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Administracion-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "RecursosHumanos.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/RecursosHumanos.html",
+        "title": "SBSS · Recursos Humanos",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "RecursosHumanos-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Personal y expediente",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Documentos.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Documentos",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Documentos-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html?vista=practicantes",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Practicantes y expediente",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-practicantes-768.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Practicantes",
+        "vista": "practicantes"
+      },
+      "ok": true
+    },
+    {
+      "file": "Registros.html?vista=permisos",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS · Permisos",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "Registros-permisos-768.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Permisos",
+        "vista": "permisos"
+      },
+      "ok": true
+    },
+    {
+      "file": "Documentos.html?vista=generar",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Generar documentos",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "Documentos-generar-768.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Generar documentos",
+        "vista": "generar"
+      },
+      "ok": true
+    },
+    {
+      "file": "Contratos.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Contratos.html",
+        "title": "SBSS · Contratos",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "Contratos-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Capacitaciones.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Capacitaciones.html",
+        "title": "SBSS · Capacitaciones",
+        "viewport": 768,
+        "documentWidth": 768,
+        "bodyWidth": 768,
+        "overflow": []
+      },
+      "screenshot": "Capacitaciones-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Horarios.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Horarios.html",
+        "title": "Sistema Web SBSS - Registro de Horarios",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Horarios-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Registros.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS - Registro de Asistencia",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Registros-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Reportes.html",
+      "role": "rrhh",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Reportes.html",
+        "title": "SBSS - Reportes Consolidados",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "Reportes-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "MiPanel.html",
+      "role": "colaborador",
+      "width": 768,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/MiPanel.html",
+        "title": "SBSS - Mi panel",
+        "viewport": 768,
+        "documentWidth": 753,
+        "bodyWidth": 753,
+        "overflow": []
+      },
+      "screenshot": "MiPanel-768.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "login.html",
+      "role": "sin sesión",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/login.html",
+        "title": "SBSS · Inicio de Sesión",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "login-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Dashboard.html",
+      "role": "admin",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Dashboard.html",
+        "title": "SBSS - Dashboard",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Dashboard-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "empresas.html",
+      "role": "admin",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/empresas.html",
+        "title": "SBSS - Empresas",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "empresas-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Auditoria.html",
+      "role": "admin",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Auditoria.html",
+        "title": "SBSS - Auditoría",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Auditoria-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Administracion.html",
+      "role": "admin",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Administracion.html",
+        "title": "SBSS · Usuarios y configuración",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Administracion-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "RecursosHumanos.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/RecursosHumanos.html",
+        "title": "SBSS · Recursos Humanos",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "RecursosHumanos-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Personal y expediente",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Documentos.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Documentos",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Documentos-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "FichaIndividual.html?vista=practicantes",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/FichaIndividual.html",
+        "title": "SBSS · Practicantes y expediente",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "FichaIndividual-practicantes-390.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Practicantes",
+        "vista": "practicantes"
+      },
+      "ok": true
+    },
+    {
+      "file": "Registros.html?vista=permisos",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS · Permisos",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Registros-permisos-390.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Permisos",
+        "vista": "permisos"
+      },
+      "ok": true
+    },
+    {
+      "file": "Documentos.html?vista=generar",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Documentos.html",
+        "title": "SBSS · Generar documentos",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Documentos-generar-390.png",
+      "externalRequests": [],
+      "view": {
+        "active": "Generar documentos",
+        "vista": "generar"
+      },
+      "ok": true
+    },
+    {
+      "file": "Contratos.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Contratos.html",
+        "title": "SBSS · Contratos",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Contratos-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Capacitaciones.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Capacitaciones.html",
+        "title": "SBSS · Capacitaciones",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Capacitaciones-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Horarios.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Horarios.html",
+        "title": "Sistema Web SBSS - Registro de Horarios",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Horarios-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Registros.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Registros.html",
+        "title": "SBSS - Registro de Asistencia",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Registros-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "Reportes.html",
+      "role": "rrhh",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/Reportes.html",
+        "title": "SBSS - Reportes Consolidados",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "Reportes-390.png",
+      "externalRequests": [],
+      "ok": true
+    },
+    {
+      "file": "MiPanel.html",
+      "role": "colaborador",
+      "width": 390,
+      "javascript": [],
+      "console": [],
+      "http": [],
+      "network": [],
+      "ready": true,
+      "layout": {
+        "pathname": "/MiPanel.html",
+        "title": "SBSS - Mi panel",
+        "viewport": 390,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "overflow": []
+      },
+      "screenshot": "MiPanel-390.png",
+      "externalRequests": [],
+      "ok": true
+    }
+  ]
+}

@@ -1,3 +1,6 @@
+@import url('../vendor/bootstrap/bootstrap.min.css');
+@import url('sbss-bootstrap.css');
+
 html.sbss-session-pending body > :not(.sbss-session-status) {
     display: none !important;
 }

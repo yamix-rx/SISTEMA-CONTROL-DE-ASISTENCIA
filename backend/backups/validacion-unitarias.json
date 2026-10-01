@@ -1,0 +1,57 @@
+﻿{
+    "suites":  [
+                   {
+                       "archivo":  "tests\\roles.test.js",
+                       "salida":  0,
+                       "pruebas":  12
+                   },
+                   {
+                       "archivo":  "tests\\migracion-convenios.test.js",
+                       "salida":  0,
+                       "pruebas":  1
+                   },
+                   {
+                       "archivo":  "tests\\login-frontend.test.js",
+                       "salida":  0,
+                       "pruebas":  13
+                   },
+                   {
+                       "archivo":  "tests\\expediente.test.js",
+                       "salida":  0,
+                       "pruebas":  9
+                   },
+                   {
+                       "archivo":  "tests\\documentos.test.js",
+                       "salida":  0,
+                       "pruebas":  14
+                   },
+                   {
+                       "archivo":  "tests\\documentos-generacion.test.js",
+                       "salida":  0,
+                       "pruebas":  6
+                   },
+                   {
+                       "archivo":  "tests\\core.test.js",
+                       "salida":  0,
+                       "pruebas":  16
+                   },
+                   {
+                       "archivo":  "tests\\convenios-puesto.test.js",
+                       "salida":  0,
+                       "pruebas":  11
+                   },
+                   {
+                       "archivo":  "tests\\contratos-capacitaciones.test.js",
+                       "salida":  0,
+                       "pruebas":  8
+                   },
+                   {
+                       "archivo":  "tests\\administracion-auditoria.test.js",
+                       "salida":  0,
+                       "pruebas":  10
+                   }
+               ],
+    "fallidas":  0,
+    "total":  100,
+    "fecha":  "2026-09-19T16:12:08.9908961Z"
+}

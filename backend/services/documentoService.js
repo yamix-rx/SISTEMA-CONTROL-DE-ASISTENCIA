@@ -99,8 +99,11 @@ async function subir(body) {
   }
 }
 
-async function obtenerPorId(id) {
-  const [rows] = await pool.query('SELECT id, nombre_archivo, ruta_archivo, mime_type FROM documentos_empleado WHERE id = ? LIMIT 1', [idPositivo(id)]);
+async function obtenerPorId(id, empleadoId = null) {
+  const params = [idPositivo(id)];
+  const propia = empleadoId == null ? '' : ' AND empleado_id = ?';
+  if (empleadoId != null) params.push(idPositivo(empleadoId, 'colaborador'));
+  const [rows] = await pool.query(`SELECT id, nombre_archivo, ruta_archivo, mime_type FROM documentos_empleado WHERE id = ?${propia} LIMIT 1`, params);
   if (!rows.length) throw errorSolicitud('El documento solicitado no existe.', 404);
   return rows[0];
 }

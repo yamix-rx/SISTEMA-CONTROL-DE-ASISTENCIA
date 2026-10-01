@@ -1,11 +1,21 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { esDoc, esDocx } = require('./documentoWordService');
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const DIRECTORIO = path.resolve(__dirname, '../uploads/documentos');
-const FORMATOS = Object.freeze({ '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' });
-const ARCHIVO_PRIVADO = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|png|jpe?g)$/i;
+const DIRECTORIO = process.env.DOCUMENTOS_DIR
+  ? path.resolve(process.env.DOCUMENTOS_DIR)
+  : path.resolve(__dirname, '../uploads/documentos');
+const FORMATOS = Object.freeze({
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+});
+const ARCHIVO_PRIVADO = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|png|jpe?g|docx|doc)$/i;
 
 function errorArchivo(mensaje, status = 400) {
   return Object.assign(new Error(mensaje), { status });
@@ -16,7 +26,7 @@ function validarArchivo(nombre, base64) {
     throw errorArchivo('El nombre del archivo no es válido (máximo 200 caracteres, sin rutas).');
   }
   const extension = path.extname(nombre).toLowerCase();
-  if (!FORMATOS[extension]) throw errorArchivo('Seleccione un archivo PDF, PNG, JPG o JPEG.');
+  if (!FORMATOS[extension]) throw errorArchivo('Seleccione un archivo PDF, Word (DOC/DOCX), PNG o JPG/JPEG.');
   if (typeof base64 !== 'string' || !base64.length) throw errorArchivo('Debe adjuntar el contenido del archivo.');
   if (base64.length > Math.ceil(MAX_BYTES / 3) * 4) throw errorArchivo('El archivo supera el máximo de 5 MB.', 413);
   if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
@@ -28,7 +38,8 @@ function validarArchivo(nombre, base64) {
   const esPDF = contenido.subarray(0, 5).toString('ascii') === '%PDF-';
   const esPNG = contenido.length >= 8 && contenido.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   const esJPEG = contenido.length >= 3 && contenido[0] === 255 && contenido[1] === 216 && contenido[2] === 255;
-  if (!(extension === '.pdf' && esPDF || extension === '.png' && esPNG || ['.jpg', '.jpeg'].includes(extension) && esJPEG)) {
+  if (!(extension === '.pdf' && esPDF || extension === '.png' && esPNG || ['.jpg', '.jpeg'].includes(extension) && esJPEG
+    || extension === '.doc' && esDoc(contenido) || extension === '.docx' && esDocx(contenido))) {
     throw errorArchivo('El contenido del archivo no coincide con su extensión.');
   }
   return { contenido, nombre_archivo: nombre.trim(), extension, mime_type: FORMATOS[extension] };

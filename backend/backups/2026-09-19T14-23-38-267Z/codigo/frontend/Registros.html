@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+<title>SBSS - Registro de Asistencia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/estilos.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--line:#d8e6ef;--blue:#075985;--blue2:#0b75b5}
+*{box-sizing:border-box}
+body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-serif}
+.app{
+    min-width:0;
+}
+.top{background:linear-gradient(105deg,#174d73,#075d91 58%,#063e65)}
+.active{background:linear-gradient(180deg,#2a97dd,#147bc0)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 1px 5px rgba(14,65,98,.06)}
+.control{height:32px;border:1px solid #cee0ea;border-radius:5px;background:#fff;padding:0 9px;font-size:10px;outline:none;width:100%}
+.control:focus{border-color:#2b8ccd;box-shadow:0 0 0 2px rgba(43,140,205,.1)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:linear-gradient(#0d6fa9,#075b8d);color:white;font-size:9px;padding:8px 7px;text-align:left;border-right:1px solid rgba(255,255,255,.18);white-space:nowrap}
+.tbl td{font-size:9px;padding:7px;color:#275675;border-right:1px solid #e1eaf0;border-bottom:1px solid #e3ecf2;white-space:nowrap}
+.tbl tbody tr:hover td{background:#f7fbfe}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:8px;font-weight:700}
+.ok{background:#d7f6e8;color:#19855c}
+.late{background:#fff0c5;color:#b67706}
+.no{background:#ffe0e3;color:#c73b49}
+.info{background:#dbefff;color:#1673aa}
+.seg{height:31px;border:1px solid #d5e4ed;background:#fff;color:#1d5e84;font-size:9px;font-weight:700}
+.seg.on{background:linear-gradient(#178bd6,#0870b6);color:#fff}
+.toast{position:fixed;right:20px;bottom:20px;z-index:90;background:#123f5b;color:#fff;padding:11px 14px;border-radius:8px;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.modalbg{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
+</style>
+<link rel="stylesheet" href="css/navigation.css">
+<link rel="stylesheet" href="css/asistencia-core.css">
+</head>
+<body>
+<div class="app min-h-screen">
+<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+  <div class="h-full flex items-center">
+    <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]"><span class="text-sky-300 text-3xl">✦</span>SBSS</div>
+    <div class="ml-auto pr-5 flex gap-4 items-center">
+      <label class="h-9 min-w-[215px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[10px] cursor-pointer">
+        <i data-lucide="building-2" class="w-4 h-4"></i><b>Empresa:</b>
+        <select id="empresaGlobal" class="bg-transparent outline-none flex-1 text-white font-semibold cursor-pointer">
+          <option value="" class="bg-slate-800">Todas las Empresas</option>
+        </select>
+      </label>
+      <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+        <div id="avatarLetra" class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">U</div>
+        <div class="flex flex-col text-left">
+          <span id="nombreUsuarioSesion" class="text-xs font-bold text-white leading-tight">Usuario</span>
+          <span id="rolUsuarioSesion" class="text-[10px] text-sky-300 font-medium leading-tight">Rol</span>
+        </div>
+        <button id="btnCerrarSesion" title="Cerrar Sesión" class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="sbss-navigation-layout">
+  <!-- Botón pestaña flotante para abrir el sidebar -->
+  <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+
+  <!-- Sidebar Lateral Colapsable -->
+  <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+  <!-- Contenido Principal -->
+  <main class="flex-1 p-3 bg-[#f8fbfd] space-y-3 transition-all duration-300">
+    <section class="panel overflow-hidden">
+      <div class="px-4 py-3 border-b border-[#dce8f0] flex gap-3 items-start">
+        <div class="w-9 h-9 rounded bg-[#0c78bb] text-white grid place-items-center"><i data-lucide="calendar-days" class="w-6 h-6"></i></div>
+        <div>
+          <h1 class="text-[17px] font-extrabold text-[#174d72]">REGISTRO DE ASISTENCIA</h1>
+          <p class="text-[10px] text-[#3c718f]">Registre diariamente la asistencia de su personal. El sistema calculará automáticamente las horas trabajadas y controlará las tardanzas.</p>
+        </div>
+      </div>
+      <div class="core-filters p-3 grid grid-cols-12 gap-4 items-end">
+        <label class="col-span-2 text-[9px] font-bold">Fecha<input id="fFecha" type="date" class="control mt-1"></label>
+        <label class="col-span-2 text-[9px] font-bold">Empresa<select id="fEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Área<select id="fArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+        <label class="col-span-2 text-[9px] font-bold">Cargo<select id="fCargo" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Trabajador<select id="fTrabajador" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
+        <div class="col-span-2"><input id="fBuscar" class="control" placeholder="Buscar trabajador..."></div>
+        <button id="btnNuevaAsistencia" class="col-span-2 h-9 rounded-md bg-[#0a7bc2] hover:bg-[#086aa7] text-white text-[10px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Registrar Asistencia</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr><th>☐</th><th>N°</th><th>Trabajador</th><th>Empresa</th><th>Área</th><th>Cargo</th><th>Hora Programada</th><th>Hora Ingreso</th><th>Hora Salida</th><th>Horas Trabajadas</th><th>Estado</th><th>Tardanzas</th><th>Observación</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="14" class="!bg-[#edf7fc] !font-bold !text-[10px] !text-[#154f73]"><i data-lucide="calendar-days" class="inline w-4 h-4 mr-2"></i><span id="fechaGrupo">Fecha seleccionada</span></td></tr>
+          </tbody>
+          <tbody id="tbodyAsistencia">
+            <tr><td colspan="14" class="text-center py-5 text-slate-400">Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+      <section class="panel overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#dce8f0]">
+          <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="clock-3" class="w-6 h-6 text-[#0b72ad]"></i>CONTROL DE TARDANZAS</h2>
+          <p class="text-[9px] ml-8 text-[#49758f]">Visualice el acumulado de tardanzas por trabajador en diferentes periodos.</p>
+        </div>
+        <div class="p-3">
+          <div class="core-filters grid grid-cols-4 gap-3 items-end">
+            <label class="text-[9px] font-bold">Empresa<select id="tEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+            <label class="text-[9px] font-bold">Área<select id="tArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+            <label class="text-[9px] font-bold">Trabajador<select id="tTrabajador" class="control mt-1"><option value="">Todos</option></select></label>
+            <label class="col-span-2 text-[9px] font-bold">Cargo<select id="tCargo" class="control mt-1"></select></label><label class="text-[9px] font-bold">Fecha de referencia<input id="tFecha" type="date" class="control mt-1"></label><button id="btnVerReporte" class="h-8 rounded-md bg-[#0b78ba] text-white text-[9px] font-bold flex justify-center gap-2 items-center"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>Actualizar</button>
+          </div>
+          <div class="grid grid-cols-4 mt-3">
+            <button class="seg on rounded-l-md" data-period="diario">▣ Diario</button>
+            <button class="seg" data-period="semanal">▣ Semanal</button>
+            <button class="seg" data-period="mensual">▣ Mensual</button>
+            <button class="seg rounded-r-md" data-period="trimestral">▦ Trimestral</button>
+          </div>
+          <div class="mt-3 overflow-hidden rounded-md border border-[#d9e7f0]">
+            <table class="tbl">
+              <thead>
+                <tr><th>Trabajador</th><th>Área</th><th>Tardanzas (N°)</th><th>Minutos Acumulados</th><th>Última Tardanza</th><th>Estado</th></tr>
+              </thead>
+              <tbody id="tbodyTardanzas">
+                <tr><td colspan="6" class="text-center py-4 text-slate-400">Cargando tardanzas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="calendar-clock" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">Total de tardanzas (todos)</span><strong id="kTard" class="block text-[15px]">0</strong></div>
+            </div>
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="clock-4" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">Total de minutos acumulados</span><strong id="kMin" class="block text-[15px]">0 min</strong></div>
+            </div>
+            <div class="rounded bg-[#eef8fd] p-3 flex gap-3 items-center">
+              <i data-lucide="users" class="w-6 h-6 text-[#0b78ba]"></i>
+              <div><span class="text-[8px]">% Personal con tardanzas</span><strong id="kPct" class="block text-[15px]">0%</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#dce8f0]">
+          <h2 class="text-[14px] font-extrabold text-[#174d72] flex gap-2 items-center"><i data-lucide="file-text" class="w-6 h-6 text-[#0b72ad]"></i>MÓDULO DE PERMISOS</h2>
+          <p class="text-[9px] ml-8 text-[#49758f]">Registre, gestione y consulte los permisos del personal. Mantenga el historial completo por trabajador.</p>
+        </div>
+        <div class="p-3">
+          <div class="core-filters grid grid-cols-6 gap-3 items-end">
+            <label class="text-[8px] font-bold">Fecha desde<input id="pDesde" type="date" class="control mt-1"></label>
+            <label class="text-[8px] font-bold">Fecha hasta<input id="pHasta" type="date" class="control mt-1"></label>
+            <label class="text-[8px] font-bold">Empresa<select id="pEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
+            <label class="text-[8px] font-bold">Área<select id="pArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
+            <label class="col-span-2 text-[9px] font-bold">Cargo<select id="pCargo" class="control mt-1"></select></label><label class="col-span-2 text-[9px] font-bold">Trabajador<select id="pEmpleado" class="control mt-1"></select></label><label class="text-[8px] font-bold">Estado<select id="pEstado" class="control mt-1"><option value="">Todos</option><option>Solicitado</option><option>Aprobado</option><option>Rechazado</option></select></label>
+            <button id="btnNuevoPermiso" class="h-8 rounded-md bg-[#0a7bc2] text-white text-[9px] font-bold flex gap-2 justify-center items-center"><i data-lucide="plus" class="w-4 h-4"></i>Nuevo Permiso</button>
+          </div>
+          <div class="mt-3 overflow-x-auto rounded-md border border-[#d9e7f0]">
+            <table class="tbl">
+              <thead>
+                <tr><th>N°</th><th>Trabajador</th><th>Fecha</th><th>Hora Desde</th><th>Hora Hasta</th><th>Tipo de Permiso</th><th>Motivo</th><th>Observaciones</th><th>Estado</th><th>Documento</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="tbodyPermisos">
+                <tr><td colspan="11" class="text-center py-4 text-slate-400">Cargando permisos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2 flex justify-between items-center text-[8px] text-slate-500">
+            <span id="pCount">Mostrando 0 registros</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- Modal Asistencia -->
+<div id="modalAsistencia" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
+  <form id="formAsistencia" class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden">
+    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Registrar Asistencia</b><button type="button" data-close="modalAsistencia">✕</button></div>
+    <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
+      <label class="col-span-2">Trabajador<select id="aTrabajador" class="control mt-1" required></select></label>
+      <label class="col-span-2">Fecha<input id="aFecha" type="date" required class="control mt-1"></label><label>Hora de ingreso<input id="aIngreso" type="time" class="control mt-1"></label>
+      <label>Hora de salida<input id="aSalida" type="time" class="control mt-1"></label>
+      <label class="col-span-2">Estado<select id="aEstado" class="control mt-1" required>
+        <option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option>
+        <option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option>
+        <option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option>
+      </select></label>
+      <label class="col-span-2">Observación<input id="aObs" maxlength="255" class="control mt-1" placeholder="Opcional"></label>
+      <p id="aAvisoHistorico" class="col-span-2 text-xs text-amber-800 hidden">La programación original de este registro está incompleta. Al mantener el ingreso se conserva la tardanza registrada. Para corregir el ingreso, confirme abajo el horario que correspondía a esa fecha.</p>
+      <section id="aProgramacionHistorica" class="col-span-2 border border-amber-200 bg-amber-50 rounded-lg p-3 hidden">
+        <label class="flex gap-2 items-start font-bold"><input id="aConfirmarHistorico" type="checkbox" class="mt-1"> He verificado la programación original y deseo completar los datos faltantes.</label>
+        <div id="aDetalleHistorico" class="hidden grid grid-cols-2 gap-3 mt-3">
+          <p class="col-span-2 text-xs">Utilice el horario original de esta fecha. No se copiará el horario vigente. Los valores que ya están registrados se conservan.</p>
+          <label>Entrada programada original<input id="aOriginalEntrada" type="time" class="control mt-1" disabled></label>
+          <label>Salida programada original<input id="aOriginalSalida" type="time" class="control mt-1" disabled></label>
+          <label>Tolerancia original (minutos)<input id="aOriginalTolerancia" type="number" min="0" max="120" step="1" class="control mt-1" disabled></label>
+          <label class="flex gap-2 items-center"><input id="aOriginalNocturno" type="checkbox" disabled> La salida corresponde al día siguiente.</label>
+          <label class="col-span-2">Motivo y fuente de la confirmación<textarea id="aOriginalMotivo" maxlength="500" rows="3" class="control mt-1" style="height:auto" placeholder="Ejemplo: horario firmado del 10/08, validado por RR. HH." disabled></textarea></label>
+          <p class="col-span-2 text-xs">Al guardar se recalcularán las horas y tardanzas con estos datos. Quedarán registrados el responsable, el motivo y los valores anteriores.</p>
+        </div>
+      </section>
+    </div>
+    <div class="px-5 pb-5 flex justify-end gap-2">
+      <button type="button" data-close="modalAsistencia" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
+      <button type="submit" id="btnGuardarAsist" class="bg-[#0a78b9] text-white rounded px-4 py-2 text-[11px] font-bold">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Permiso -->
+<div id="modalPermiso" class="hidden fixed inset-0 z-50 modalbg items-center justify-center p-4">
+  <form id="formPermiso" class="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden">
+    <div class="bg-[#0b659b] text-white px-5 py-4 flex justify-between"><b>Nuevo Permiso</b><button type="button" data-close="modalPermiso">✕</button></div>
+    <div class="p-5 grid grid-cols-2 gap-3 text-[11px]">
+      <label class="col-span-2">Trabajador<select id="pTrabajador" class="control mt-1" required></select></label>
+      <label>Tipo de permiso<select id="pTipo" class="control mt-1"><option>Personal</option><option>Salud</option><option>Estudios</option><option>Familiar</option><option>Otro</option></select></label>
+      <label>Motivo<input id="pMotivo" class="control mt-1" required></label>
+      <label>Fecha inicio<input id="pInicio" type="date" class="control mt-1" required></label>
+      <label>Fecha fin<input id="pFin" type="date" class="control mt-1" required></label>
+      <label>Hora desde<input id="pHoraDesde" type="time" class="control mt-1"></label>
+      <label>Hora hasta<input id="pHoraHasta" type="time" class="control mt-1"></label>
+      <label>Observaciones<input id="pObservaciones" class="control mt-1" placeholder="Observaciones adicionales"></label>
+      <label class="col-span-2">Documento sustentatorio (PDF, Word o imagen; máximo 5 MB)<input id="pDocumento" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="control mt-1"></label>
+    </div>
+    <div class="px-5 pb-5 flex justify-end gap-2">
+      <button type="button" data-close="modalPermiso" class="border rounded px-4 py-2 text-[11px]">Cancelar</button>
+      <button type="submit" id="btnGuardarPermiso" class="bg-[#0a78b9] text-white rounded px-4 py-2 text-[11px] font-bold">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script src="js/asistencia-ui.js"></script>
+<script src="js/registros.js"></script>
+</body>
+</html>

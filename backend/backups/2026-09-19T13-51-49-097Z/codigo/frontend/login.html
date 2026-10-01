@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBSS · Inicio de Sesión</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#1E2732;
+      --brass:#A9793E;
+      --brass-light:#D2A968;
+      --text:#232B35;
+      --muted:#8B8F96;
+      --field:#F1EDE7;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:60px 20px;
+      font-family:'Inter',sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(120% 90% at 50% -10%, #F0DCC9 0%, #EADFCD 35%, #E4E1D3 60%, #DCDCD4 100%);
+    }
+
+    .card{
+      position:relative;
+      width:100%;
+      max-width:380px;
+      background:#FFFFFF;
+      border-radius:32px;
+      padding:64px 36px 36px;
+      box-shadow:0 30px 60px -20px rgba(30,39,50,0.25);
+      text-align:center;
+    }
+
+    .avatar{
+      position:absolute;
+      top:-44px;
+      left:50%;
+      transform:translateX(-50%);
+      width:88px;height:88px;
+      border-radius:50%;
+      background:linear-gradient(155deg, var(--brass-light), var(--brass));
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 16px 28px -10px rgba(169,121,62,0.55);
+    }
+    .avatar i{width:38px;height:38px;color:#FFFFFF;}
+
+    .brand{
+      font-family:'Fraunces',serif;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:0.06em;
+      color:var(--ink);
+      margin:0 0 2px;
+    }
+    .brand-sub{
+      font-size:11px;
+      color:var(--muted);
+      margin:0 0 28px;
+    }
+
+    .alert{
+      display:none;
+      align-items:center;
+      gap:8px;
+      justify-content:center;
+      padding:9px 12px;
+      background:#FBEEEC;
+      border:1px solid #EFC9C3;
+      color:#9A3F32;
+      border-radius:100px;
+      font-size:11.5px;
+      margin-bottom:16px;
+    }
+    .alert.show{display:flex;}
+    .alert i{width:14px;height:14px;flex-shrink:0;}
+
+    .field{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:var(--field);
+      border-radius:100px;
+      padding:14px 20px;
+      margin-bottom:14px;
+      border:1.5px solid transparent;
+      transition:border-color .15s ease, background .15s ease;
+    }
+    .field:focus-within{
+      border-color:var(--brass);
+      background:#FFFFFF;
+    }
+    .field i{width:17px;height:17px;color:#9A9A9A;flex-shrink:0;}
+    .field:focus-within i{color:var(--brass);}
+    .field input{
+      border:none;outline:none;background:transparent;
+      width:100%;
+      font-family:'Inter',sans-serif;
+      font-size:13.5px;
+      color:var(--text);
+    }
+    .field input::placeholder{color:#ADADAD;}
+    .field button{
+      background:none;border:none;cursor:pointer;padding:0;display:flex;flex-shrink:0;
+    }
+
+    .row-between{
+      display:flex;align-items:center;justify-content:space-between;
+      margin:10px 4px 24px;
+    }
+    .remember{display:flex;align-items:center;gap:7px;}
+    .remember input{width:14px;height:14px;accent-color:var(--brass);}
+    .remember span{font-size:11.5px;color:var(--muted);}
+    .forgot{font-size:11.5px;color:var(--muted);text-decoration:none;font-style:italic;}
+    .forgot:hover{color:var(--brass);}
+
+    .btn-submit{
+      width:100%;
+      padding:15px 18px;
+      background:linear-gradient(120deg, var(--ink), #0F151C);
+      color:#F2EFE9;
+      border:none;
+      border-radius:100px;
+      font-size:12.5px;
+      font-weight:700;
+      letter-spacing:0.08em;
+      cursor:pointer;
+      box-shadow:0 14px 24px -10px rgba(30,39,50,0.45);
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .btn-submit:hover{transform:translateY(-1px); box-shadow:0 18px 28px -10px rgba(30,39,50,0.5);}
+    .btn-submit:active{transform:translateY(0);}
+
+    .roles-note{
+      margin-top:22px;
+      padding-top:18px;
+      border-top:1px solid #EEEBE5;
+    }
+    .roles-note p{font-size:10.5px;color:var(--muted);margin:0 0 10px;}
+    .role-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .role-chip{
+      font-size:10.5px;font-weight:600;
+      padding:6px 12px;
+      border-radius:100px;
+      background:var(--field);
+      color:var(--text);
+      text-decoration:none;
+      transition:background .15s ease, color .15s ease;
+    }
+    .role-chip:hover{background:var(--brass); color:#FFFFFF;}
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="avatar"><i data-lucide="user-round"></i></div>
+
+    <p class="brand">SBSS</p>
+    <p class="brand-sub">Personal · Asistencia · Expediente digital</p>
+
+    <div class="alert" id="alertaError">
+      <i data-lucide="alert-circle"></i>
+      <span id="mensajeError">Credenciales no válidas</span>
+    </div>
+
+    <form id="formLogin">
+      <div class="field">
+        <i data-lucide="user"></i>
+        <input type="email" id="email" name="email" placeholder="Usuario o correo" required>
+      </div>
+
+      <div class="field">
+        <i data-lucide="lock"></i>
+        <input type="password" id="password" name="password" placeholder="••••••••••" required>
+        <button type="button" id="btnTogglePassword">
+          <i data-lucide="eye" id="iconoOjo" style="width:16px;height:16px;color:#9A9A9A;"></i>
+        </button>
+      </div>
+
+      <div class="row-between">
+        <label class="remember">
+          <input type="checkbox" id="recordarSesion" checked>
+          <span>Recordar sesión</span>
+        </label>
+        <a href="#" class="forgot">¿Olvidó su contraseña?</a>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btnIngresar">INGRESAR</button>
+    </form>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // 1. Alternar visibilidad de la contraseña
+    const btnTogglePassword = document.getElementById('btnTogglePassword');
+    const inputPassword = document.getElementById('password');
+    const iconoOjo = document.getElementById('iconoOjo');
+
+    btnTogglePassword.addEventListener('click', () => {
+      const esPassword = inputPassword.type === 'password';
+      inputPassword.type = esPassword ? 'text' : 'password';
+      iconoOjo.setAttribute('data-lucide', esPassword ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+
+    // 2. Manejo de autenticación asíncrona
+    const formLogin = document.getElementById('formLogin');
+    const alertaError = document.getElementById('alertaError');
+    const mensajeError = document.getElementById('mensajeError');
+    const btnIngresar = document.getElementById('btnIngresar');
+
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Validación local rápida
+      if (!email || !password) {
+        mensajeError.textContent = 'Por favor, complete todos los campos.';
+        alertaError.classList.add('show');
+        return;
+      }
+
+      // Limpiar estados y bloquear botón
+      alertaError.classList.remove('show');
+      btnIngresar.disabled = true;
+      btnIngresar.textContent = 'VALIDANDO...';
+
+      try {
+        const respuesta = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+          throw new Error(data.mensaje || 'Credenciales no válidas.');
+        }
+
+        const paneles = ['Dashboard.html', 'RecursosHumanos.html', 'MiPanel.html'];
+        if (!data.acceso || !paneles.includes(data.acceso.panel) || data.redirectUrl !== data.acceso.panel) {
+          throw new Error('Tu cuenta no tiene un panel habilitado. Contacta al administrador.');
+        }
+
+        // Guardar sesión en el navegador
+        localStorage.setItem('sbss_token', data.token);
+        localStorage.setItem('sbss_usuario', JSON.stringify(data.usuario));
+        localStorage.setItem('sbss_acceso', JSON.stringify(data.acceso));
+
+        // Redirigir según el rol retornado por la API
+        window.location.replace(data.acceso.panel);
+
+      } catch (err) {
+        mensajeError.textContent = err.message;
+        alertaError.classList.add('show');
+      } finally {
+        btnIngresar.disabled = false;
+        btnIngresar.textContent = 'INGRESAR';
+      }
+    });
+  </script>
+</body>
+</html>

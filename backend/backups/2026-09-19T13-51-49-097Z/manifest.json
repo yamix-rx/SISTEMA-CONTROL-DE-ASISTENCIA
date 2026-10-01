@@ -1,0 +1,13 @@
+{
+  "formato": 1,
+  "fecha": "2026-09-19T13:51:49.557Z",
+  "base": "gestion_personal_sbss",
+  "sql": "base-datos.sql",
+  "sha256": "5e2e78bbb73667271f5c7343b80bdc8c9c0f818db93c9f14434b7c5502c808c9",
+  "contiene": {
+    "codigo": true,
+    "uploads": true,
+    "configuracion": "configuracion.env (privada)"
+  },
+  "restaurar": "Consultar docs/INSTALACION.md; restaurar primero en una base nueva."
+}

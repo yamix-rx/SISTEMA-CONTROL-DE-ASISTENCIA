@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-09-19T16:09:31.600Z",
+  "internetBlocked": true,
+  "externalRequests": [],
+  "results": [
+    {
+      "action": "Cuenta: editar, limpiar y abrir/cancelar restablecimiento",
+      "ok": true
+    },
+    {
+      "action": "Editor: cargar plantilla e insertar campo sin guardar",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF aceptacion",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF constancia_practicas",
+      "ok": true
+    },
+    {
+      "action": "Vista previa y PDF culminacion",
+      "ok": true
+    }
+  ],
+  "pdfResponses": [
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    },
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    },
+    {
+      "status": 200,
+      "mime": "application/pdf"
+    }
+  ],
+  "javascript": []
+}

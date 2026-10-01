@@ -1,0 +1,61 @@
+{
+  "fecha": "2026-09-19T16:13:32.550Z",
+  "checks": [
+    {
+      "ruta": "/api/auth/disponibilidad",
+      "status": 200
+    },
+    {
+      "ruta": "/login.html",
+      "status": 200
+    },
+    {
+      "ruta": "/FichaIndividual.html?vista=practicantes",
+      "status": 200
+    },
+    {
+      "ruta": "/Registros.html?vista=permisos",
+      "status": 200
+    },
+    {
+      "ruta": "/Documentos.html?vista=generar",
+      "status": 200
+    },
+    {
+      "ruta": "/vendor/tailwind/tailwind.min.css",
+      "status": 200
+    },
+    {
+      "ruta": "/vendor/jspdf/jspdf.umd.min.js",
+      "status": 200
+    },
+    {
+      "ruta": "/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js",
+      "status": 200
+    },
+    {
+      "ruta": "/vendor/xlsx-js-style/xlsx.bundle.js",
+      "status": 200
+    },
+    {
+      "ruta": "/vendor/fonts/fonts.css",
+      "status": 200
+    },
+    {
+      "ruta": "/package.json",
+      "status": 404
+    },
+    {
+      "ruta": "/node_modules/lucide/package.json",
+      "status": 404
+    },
+    {
+      "ruta": "/scripts/build-assets.js",
+      "status": 404
+    },
+    {
+      "ruta": "/styles/tailwind.css",
+      "status": 404
+    }
+  ]
+}

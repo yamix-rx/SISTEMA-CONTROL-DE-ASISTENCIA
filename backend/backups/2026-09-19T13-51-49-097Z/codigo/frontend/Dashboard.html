@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/session.css">
+<script src="js/navigation.js"></script>
+<script src="js/session.js"></script>
+
+<title>SBSS - Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/estilos.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+
+:root{
+    --blue:#075985;
+    --blue2:#147fc4;
+    --line:#d6e4ed;
+    --soft:#f7fbfd;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    min-width:0;
+}
+
+body{
+    background:#f3f6f8;
+    color:#153f5a;
+    font-family:Arial,Helvetica,sans-serif;
+    overflow-x:hidden;
+}
+
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+   ========================================================= */
+
+.app{
+    min-width:0;
+    width:100%;
+    max-width:100%;
+}
+
+
+/* =========================================================
+   BARRA SUPERIOR
+   ========================================================= */
+
+.top{
+    background:linear-gradient(
+        105deg,
+        #174d73 0%,
+        #075d91 58%,
+        #063e65 100%
+    );
+}
+
+.nav-active{
+    background:rgba(0,38,73,.34);
+    box-shadow:inset 0 -3px 0 #43a4e5;
+}
+
+
+/* =========================================================
+   TARJETAS KPI
+   ========================================================= */
+
+.kpi{
+    background:#fff;
+    border:1px solid #cbdce7;
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 1px 4px rgba(20,70,100,.07);
+}
+
+
+/* =========================================================
+   PANELES
+   ========================================================= */
+
+.panel{
+    background:#fff;
+    border:1px solid #d4e2ea;
+    border-radius:7px;
+    box-shadow:0 1px 5px rgba(20,70,100,.06);
+
+    width:100%;
+    min-width:0;
+}
+
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+
+.data-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.data-table th{
+    background:#fff;
+    color:#111;
+    font-weight:700;
+    font-size:13px;
+    padding:8px;
+    border:1px solid #cfd8df;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.data-table td{
+    font-size:12px;
+    color:#111;
+    padding:7px;
+    border:1px solid #cfd8df;
+}
+
+.data-table tbody tr:nth-child(odd){
+    background:#f4f4f4;
+}
+
+.data-table tbody tr:hover{
+    background:#eef8fe;
+}
+
+
+/* =========================================================
+   BOTONES
+   ========================================================= */
+
+.btn{
+    background:#0d679f;
+    color:#fff;
+    border-radius:5px;
+    padding:5px 9px;
+    font-size:11px;
+}
+
+.btn:hover{
+    background:#075987;
+}
+
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+.status-dot{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    display:inline-block;
+    vertical-align:-3px;
+    margin-right:6px;
+}
+
+
+/* =========================================================
+   TABLAS RESPONSIVE
+   ========================================================= */
+
+.table-responsive{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
+
+.table-responsive .data-table{
+    min-width:650px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width:992px){
+
+    .app{
+        min-width:0 !important;
+        width:100% !important;
+    }
+
+    main{
+        min-width:0 !important;
+        width:100% !important;
+    }
+
+    /* KPI: 4 columnas → 2 columnas */
+
+    main .grid-cols-4{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+
+}
+
+
+/* =========================================================
+   CELULAR
+   ========================================================= */
+
+@media (max-width:768px){
+
+    html,
+    body{
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        overflow-x:hidden !important;
+    }
+
+
+    /* =====================================================
+       HEADER
+       ===================================================== */
+
+    .top{
+        height:54px !important;
+        width:100% !important;
+    }
+
+    .top > div{
+        width:100% !important;
+        min-width:0 !important;
+    }
+
+
+    /* Logo */
+
+    .top > div > div:first-child{
+        width:auto !important;
+        min-width:auto !important;
+
+        padding-left:12px !important;
+        padding-right:10px !important;
+
+        font-size:20px !important;
+    }
+
+
+    /* Ocultar navegación superior */
+
+    .top nav{
+        display:none !important;
+    }
+
+
+    /* Ocultar selector de empresa */
+
+    .top label{
+        display:none !important;
+    }
+
+
+    /* Usuario */
+
+    .top .ml-auto{
+        margin-left:auto !important;
+        padding-right:8px !important;
+    }
+
+    #nombreUsuarioSesion{
+        max-width:90px;
+
+        overflow:hidden;
+        white-space:nowrap;
+        text-overflow:ellipsis;
+
+        font-size:10px !important;
+    }
+
+    #rolUsuarioSesion{
+        font-size:9px !important;
+    }
+
+    #avatarLetra{
+        width:30px !important;
+        height:30px !important;
+    }
+
+
+    /* =====================================================
+       CONTENEDOR SIDEBAR + MAIN
+       ===================================================== */
+
+    .min-h-\[calc\(100vh-54px\)\]{
+        width:100% !important;
+        min-width:0 !important;
+    }
+
+
+    /* =====================================================
+       SIDEBAR
+       ===================================================== */
+
+    #sidebarMenu{
+
+        position:fixed !important;
+
+        top:54px !important;
+        left:0 !important;
+
+        width:230px !important;
+
+        height:calc(100vh - 54px) !important;
+
+        z-index:1000 !important;
+
+        transform:translateX(0);
+
+        transition:transform .3s ease !important;
+
+        box-shadow:4px 0 15px rgba(0,0,0,.20);
+    }
+
+
+    /* Sidebar cerrado */
+
+    #sidebarMenu.sidebar-oculto,
+    #sidebarMenu.-ml-\[150px\]{
+
+        transform:translateX(-100%) !important;
+
+    }
+
+
+    /* =====================================================
+       BOTÓN ABRIR SIDEBAR
+       ===================================================== */
+
+    #btnAbrirSidebar{
+
+        position:fixed !important;
+
+        left:0 !important;
+        top:68px !important;
+
+        width:40px !important;
+        height:40px !important;
+
+        display:flex !important;
+
+        align-items:center !important;
+        justify-content:center !important;
+
+        padding:0 !important;
+
+        z-index:1100 !important;
+
+        border-radius:0 8px 8px 0 !important;
+    }
+
+
+    /* =====================================================
+       CONTENIDO PRINCIPAL
+       ===================================================== */
+
+    main{
+
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+
+        padding:10px !important;
+
+        overflow:hidden;
+    }
+
+
+    /* =====================================================
+       KPI
+       ===================================================== */
+
+    main .grid-cols-4{
+
+        display:grid !important;
+
+        grid-template-columns:1fr !important;
+
+        gap:10px !important;
+
+        width:100% !important;
+    }
+
+    .kpi{
+        width:100% !important;
+        min-width:0 !important;
+    }
+
+    .kpi strong{
+        font-size:20px !important;
+    }
+
+
+    /* =====================================================
+       PANELES
+       ===================================================== */
+
+    .panel{
+
+        width:100% !important;
+        max-width:100% !important;
+        min-width:0 !important;
+
+        overflow:hidden;
+    }
+
+
+    /* =====================================================
+       TÍTULOS
+       ===================================================== */
+
+    .panel h2{
+
+        font-size:14px !important;
+
+        line-height:1.3;
+
+        min-width:0;
+
+        overflow:hidden;
+
+        text-overflow:ellipsis;
+
+        white-space:nowrap;
+    }
+
+
+    /* =====================================================
+       FILTROS
+       ===================================================== */
+
+    #turnoFilters{
+
+        flex-direction:column !important;
+
+        gap:8px !important;
+    }
+
+    #turnoFilters input,
+    #turnoFilters select{
+
+        width:100% !important;
+    }
+
+
+    /* =====================================================
+       TABLAS
+       ===================================================== */
+
+    .table-responsive{
+
+        width:100% !important;
+
+        max-width:100% !important;
+
+        overflow-x:auto !important;
+
+        -webkit-overflow-scrolling:touch;
+    }
+
+    .table-responsive .data-table{
+
+        min-width:650px !important;
+    }
+
+
+    /* =====================================================
+       BOTONES DE LAS TABLAS
+       ===================================================== */
+
+    .data-table .btn{
+
+        white-space:nowrap;
+    }
+
+}
+
+
+/* =========================================================
+   CELULAR PEQUEÑO
+   ========================================================= */
+
+@media (max-width:480px){
+
+    main{
+
+        padding:8px !important;
+
+    }
+
+
+    .top{
+
+        height:54px !important;
+
+    }
+
+
+    .top > div > div:first-child{
+
+        padding-left:10px !important;
+        padding-right:6px !important;
+
+        font-size:19px !important;
+
+    }
+
+
+    #nombreUsuarioSesion{
+
+        max-width:75px;
+
+    }
+
+
+    .panel h2{
+
+        font-size:13px !important;
+
+    }
+
+
+    .kpi div:first-child{
+
+        font-size:14px !important;
+
+    }
+
+
+    .kpi strong{
+
+        font-size:19px !important;
+
+    }
+
+}
+
+</style>
+
+<link rel="stylesheet" href="css/navigation.css">
+</head>
+
+
+<body>
+
+<div class="app min-h-screen">
+
+
+<!-- =====================================================
+     BARRA SUPERIOR
+     ===================================================== -->
+
+<header class="sbss-header top text-white h-[54px] sticky top-0 z-40 shadow-md">
+
+    <div class="h-full flex items-center">
+
+
+        <!-- LOGO -->
+
+        <div class="sbss-brand px-5 flex items-center gap-2 font-black text-[22px]">
+
+            <span class="text-sky-300 text-3xl leading-none">
+                ✦
+            </span>
+
+            <span>
+                SBSS
+            </span>
+
+        </div>
+
+
+        <!-- USUARIO -->
+
+        <div class="ml-auto pr-5 flex items-center gap-4">
+
+
+            <!-- EMPRESA -->
+
+            <label class="h-9 min-w-[215px] px-3 flex items-center gap-2 rounded-lg border border-sky-400/50 bg-sky-700/60 text-[10px] cursor-pointer">
+
+                <i data-lucide="building-2"
+                   class="w-4 h-4"></i>
+
+                <span class="font-bold">
+                    Empresa:
+                </span>
+
+                <select id="empresaGlobal"
+                        class="bg-transparent outline-none flex-1 text-white font-semibold cursor-pointer">
+
+                    <option value=""
+                            class="bg-slate-800">
+
+                        Todas las Empresas
+
+                    </option>
+
+                </select>
+
+            </label>
+
+
+            <!-- DATOS USUARIO -->
+
+            <div class="flex items-center gap-2.5 pl-3 border-l border-sky-500/30">
+
+
+                <div id="avatarLetra"
+                     class="w-8 h-8 rounded-full bg-sky-800 border border-sky-400 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+
+                    U
+
+                </div>
+
+
+                <div class="flex flex-col text-left">
+
+                    <span id="nombreUsuarioSesion"
+                          class="text-xs font-bold text-white leading-tight">
+
+                        Usuario
+
+                    </span>
+
+
+                    <span id="rolUsuarioSesion"
+                          class="text-[10px] text-sky-300 font-medium leading-tight">
+
+                        Rol
+
+                    </span>
+
+                </div>
+
+
+                <button id="btnCerrarSesion"
+                        title="Cerrar Sesión"
+                        class="text-sky-200 hover:text-rose-400 p-1.5 transition ml-1">
+
+                    <i data-lucide="log-out"
+                       class="w-4 h-4"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<!-- =====================================================
+     CONTENIDO + SIDEBAR
+     ===================================================== -->
+
+<div class="sbss-navigation-layout">
+
+
+    <!-- BOTÓN ABRIR SIDEBAR -->
+
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+
+
+
+    <!-- =================================================
+         SIDEBAR
+         ================================================= -->
+
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú principal"></aside>
+
+
+
+    <!-- =================================================
+         MAIN
+         ================================================= -->
+
+    <main class="flex-1 min-w-0 p-5 space-y-4 transition-all duration-300">
+
+
+        <!-- =================================================
+             KPI
+             ================================================= -->
+
+        <section class="grid grid-cols-4 gap-5">
+
+
+            <div class="kpi border-emerald-600">
+
+                <div class="bg-emerald-600 text-white px-4 py-2 text-[16px]">
+
+                    En Turno Hoy
+
+                </div>
+
+                <div class="py-3 text-center text-black">
+
+                    <strong id="kpiTurno"
+                            class="text-[22px]">
+
+                        0 Colaboradores
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="kpi border-sky-600">
+
+                <div class="bg-sky-600 text-white px-4 py-2 text-[16px]">
+
+                    Asistencia Hoy
+
+                </div>
+
+                <div class="py-3 text-center text-black">
+
+                    <strong id="kpiAsistencia"
+                            class="text-[22px]">
+
+                        0% Presentes
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="kpi border-amber-500">
+
+                <div class="bg-amber-500 text-white px-4 py-2 text-[16px]">
+
+                    Targetaria Hoy
+
+                </div>
+
+                <div class="py-3 text-center text-black">
+
+                    <strong id="kpiAlertas"
+                            class="text-[22px]">
+
+                        0 Alertas
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="kpi border-rose-600">
+
+                <div class="bg-rose-600 text-white px-4 py-2 text-[16px]">
+
+                    Doc. Pendientes
+
+                </div>
+
+                <div class="py-3 text-center text-black">
+
+                    <strong id="kpiDocs"
+                            class="text-[22px]">
+
+                        0 Documentos
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             PERSONAL EN TURNO
+             ================================================= -->
+
+        <section class="panel overflow-hidden">
+
+
+            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
+
+
+                <h2 class="font-bold text-[16px] flex items-center gap-2">
+
+                    <i data-lucide="clock-3"
+                       class="w-5 h-5"></i>
+
+                    Personal en Turno Actualmente (Por Empresa)
+
+                </h2>
+
+
+                <div class="flex items-center gap-3 text-slate-500">
+
+                    <button id="btnSearchTurno"
+                            title="Buscar">
+
+                        <i data-lucide="search"
+                           class="w-5 h-5"></i>
+
+                    </button>
+
+
+                    <button id="btnFilterTurno"
+                            title="Filtros">
+
+                        <i data-lucide="filter"
+                           class="w-5 h-5"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- FILTROS -->
+
+            <div id="turnoFilters"
+                 class="hidden px-3 py-2 bg-sky-50 border-b border-sky-100 flex gap-3">
+
+                <input id="qTurno"
+                       class="h-8 flex-1 border rounded px-3 text-[11px]"
+                       placeholder="Buscar colaborador o empresa...">
+
+
+                <select id="estadoTurno"
+                        class="h-8 border rounded px-3 text-[11px]">
+
+                    <option value="">
+                        Todos los estados
+                    </option>
+
+                    <option value="En Turno">
+                        En Turno
+                    </option>
+
+                    <option value="Pendiente">
+                        Pendiente
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <!-- TABLA -->
+
+            <div class="p-3">
+
+                <div class="table-responsive">
+
+                    <table class="data-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Colaborador
+                                </th>
+
+                                <th>
+                                    Empresa
+                                </th>
+
+                                <th>
+                                    Hora Entrada
+                                </th>
+
+                                <th>
+                                    Hora Salida
+                                </th>
+
+                                <th>
+                                    Estado
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="tbodyTurno">
+
+                            <tr>
+
+                                <td colspan="5"
+                                    class="text-center py-4 text-slate-400">
+
+                                    Cargando información...
+
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             SEGUIMIENTO DE HORAS DE PRACTICANTES
+             ================================================= -->
+
+        <section class="panel overflow-hidden">
+            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
+                <h2 class="font-bold text-[16px] flex items-center gap-2">
+                    <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                    Practicantes próximos a completar sus horas
+                </h2>
+                <span class="text-[10px] text-slate-500">Seguimiento desde 80% de avance</span>
+            </div>
+            <div class="p-3">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Practicante</th>
+                                <th>Empresa</th>
+                                <th>Horas realizadas</th>
+                                <th>Horas pendientes</th>
+                                <th>Avance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyPracticantesProximos">
+                            <tr><td colspan="5" class="text-center py-4 text-slate-400">Cargando información...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- =================================================
+             ALERTAS DOCUMENTOS
+             ================================================= -->
+
+        <section class="panel overflow-hidden">
+
+
+            <div class="h-10 px-4 border-b border-[#d4e2ea] bg-gradient-to-r from-white to-slate-50 flex items-center justify-between text-black">
+
+
+                <h2 class="font-bold text-[16px] flex items-center gap-2">
+
+                    <i data-lucide="file-text"
+                       class="w-5 h-5"></i>
+
+                    Alertas de Documentos Pendientes de Entrega
+
+                </h2>
+
+
+                <div class="flex gap-3 text-slate-500">
+
+                    <button id="btnSearchDocs"
+                            title="Buscar">
+
+                        <i data-lucide="search"
+                           class="w-5 h-5"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- FILTRO -->
+
+            <div id="docFilters"
+                 class="hidden px-3 py-2 bg-sky-50 border-b border-sky-100">
+
+                <input id="qDocs"
+                       class="h-8 w-full border rounded px-3 text-[11px]"
+                       placeholder="Buscar colaborador, empresa o documento...">
+
+            </div>
+
+
+
+            <!-- TABLA -->
+
+            <div class="p-3">
+
+                <div class="table-responsive">
+
+                    <table class="data-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Colaborador
+                                </th>
+
+                                <th>
+                                    Empresa
+                                </th>
+
+                                <th>
+                                    Documento Faltante
+                                </th>
+
+                                <th class="text-center">
+                                    Acción
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="tbodyDocs">
+
+                            <tr>
+
+                                <td colspan="4"
+                                    class="text-center py-4 text-slate-400">
+
+                                    Cargando información...
+
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+</div>
+
+</div>
+
+
+
+<!-- =====================================================
+     SIDEBAR JS
+     ===================================================== -->
+
+<script src="js/sidebar.js"></script>
+
+
+
+<!-- =====================================================
+     DASHBOARD JS
+     ===================================================== -->
+
+<script>
+
+const token =
+    localStorage.getItem('sbss_token');
+
+const kpiTurno =
+    document.getElementById('kpiTurno');
+
+const kpiAsistencia =
+    document.getElementById('kpiAsistencia');
+
+const kpiAlertas =
+    document.getElementById('kpiAlertas');
+
+const kpiDocs =
+    document.getElementById('kpiDocs');
+
+const tbodyTurno =
+    document.getElementById('tbodyTurno');
+
+const tbodyDocs =
+    document.getElementById('tbodyDocs');
+
+const tbodyPracticantesProximos =
+    document.getElementById('tbodyPracticantesProximos');
+
+const empresaGlobal =
+    document.getElementById('empresaGlobal');
+
+
+let listadoTurnoOriginal = [];
+
+let listadoDocsOriginal = [];
+
+
+
+function renderizarPracticantesProximos(rows) {
+    if (!rows.length) {
+        tbodyPracticantesProximos.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">No hay practicantes próximos a completar sus horas.</td></tr>`;
+        return;
+    }
+    tbodyPracticantesProximos.innerHTML = rows.map(item => {
+        const pct = Math.max(0, Math.min(100, Number(item.porcentaje_avance) || 0));
+        return `
+          <tr>
+            <td><strong>${escapeHtml(item.colaborador || '')}</strong><div class="text-[10px] text-slate-500">${escapeHtml(item.cargo || '')}</div></td>
+            <td>${escapeHtml(item.empresa || '')}</td>
+            <td>${Number(item.horas_realizadas || 0).toFixed(2)} h / ${Number(item.horas_meta || 0).toFixed(2)} h</td>
+            <td>${Number(item.horas_pendientes || 0).toFixed(2)} h</td>
+            <td>
+              <div class="flex items-center gap-2 min-w-[180px]">
+                <div class="h-3 bg-slate-100 rounded-full flex-1 overflow-hidden border border-slate-200"><div class="h-full bg-gradient-to-r from-blue-600 to-sky-500 rounded-full" style="width:${pct}%"></div></div>
+                <strong>${pct.toFixed(1)}%</strong>
+              </div>
+            </td>
+          </tr>`;
+    }).join('');
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
+}
+
+/* =====================================================
+   CARGAR DASHBOARD
+   ===================================================== */
+
+async function cargarDashboard(empresaId = '') {
+
+    try {
+
+        const url = empresaId
+
+            ? `http://localhost:3000/api/dashboard?empresa_id=${empresaId}`
+
+            : 'http://localhost:3000/api/dashboard';
+
+
+        const respuesta = await fetch(url, {
+
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+
+        });
+
+
+        if (
+            respuesta.status === 401 ||
+            respuesta.status === 403
+        ) {
+
+            localStorage.removeItem('sbss_token');
+
+            localStorage.removeItem('sbss_usuario');
+
+            window.location.href =
+                'login.html';
+
+            return;
+
+        }
+
+
+        const data =
+            await respuesta.json();
+
+
+        if (!data.ok)
+            return;
+
+
+        kpiTurno.textContent =
+            `${data.kpis.enTurnoHoy} Colaboradores`;
+
+        kpiAsistencia.textContent =
+            `${data.kpis.porcentajeAsistencia} Presentes`;
+
+        kpiAlertas.textContent =
+            `${data.kpis.tardanzasHoy} Alertas`;
+
+        kpiDocs.textContent =
+            `${data.kpis.documentosPendientes} Documentos`;
+
+
+        if (
+            empresaGlobal.options.length <= 1 &&
+            data.empresas
+        ) {
+
+            data.empresas.forEach(emp => {
+
+                const opt =
+                    document.createElement('option');
+
+                opt.value =
+                    emp.id;
+
+                opt.textContent =
+                    emp.razon_social;
+
+                opt.className =
+                    'bg-slate-800 text-white';
+
+                empresaGlobal.appendChild(opt);
+
+            });
+
+        }
+
+
+        listadoTurnoOriginal =
+            data.personalEnTurno || [];
+
+
+        listadoDocsOriginal =
+            data.alertasDocumentos || [];
+
+
+        renderizarTurnos(
+            listadoTurnoOriginal
+        );
+
+
+        renderizarDocs(
+            listadoDocsOriginal
+        );
+
+        renderizarPracticantesProximos(
+            data.practicantesProximos || []
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Error al cargar datos del dashboard:',
+            error
+        );
+
+
+        tbodyTurno.innerHTML = `
+
+            <tr>
+
+                <td colspan="5"
+                    class="text-center py-4 text-rose-500">
+
+                    Error al conectar con el servidor
+
+                </td>
+
+            </tr>
+
+        `;
+
+
+        tbodyDocs.innerHTML = `
+
+            <tr>
+
+                <td colspan="4"
+                    class="text-center py-4 text-rose-500">
+
+                    Error al conectar con el servidor
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+}
+
+
+
+/* =====================================================
+   RENDERIZAR TURNOS
+   ===================================================== */
+
+function renderizarTurnos(lista) {
+
+    if (lista.length === 0) {
+
+        tbodyTurno.innerHTML = `
+
+            <tr>
+
+                <td colspan="5"
+                    class="text-center py-4 text-slate-400">
+
+                    No hay personal programado para hoy
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    tbodyTurno.innerHTML = lista.map(c => `
+
+        <tr>
+
+            <td>
+
+                <strong>
+                    ${c.colaborador}
+                </strong>
+
+                <span class="text-slate-500 text-[11px]">
+                    (${c.tipo_vinculo})
+                </span>
+
+            </td>
+
+
+            <td>
+                ${c.empresa}
+            </td>
+
+
+            <td>
+                ${c.hora_entrada}
+            </td>
+
+
+            <td>
+                ${c.hora_salida}
+            </td>
+
+
+            <td>
+
+                <span class="status-dot bg-emerald-500"></span>
+
+                En Turno
+
+            </td>
+
+        </tr>
+
+    `).join('');
+
+}
+
+
+
+/* =====================================================
+   RENDERIZAR DOCUMENTOS
+   ===================================================== */
+
+function renderizarDocs(lista) {
+
+    if (lista.length === 0) {
+
+        tbodyDocs.innerHTML = `
+
+            <tr>
+
+                <td colspan="4"
+                    class="text-center py-4 text-emerald-600 font-semibold">
+
+                    Todos los expedientes cuentan con su documentación obligatoria al día
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    tbodyDocs.innerHTML = lista.map(d => `
+
+        <tr>
+
+            <td>
+
+                <strong>
+                    ${d.colaborador}
+                </strong>
+
+            </td>
+
+
+            <td>
+                ${d.empresa}
+            </td>
+
+
+            <td class="text-rose-600 font-semibold">
+
+                ${d.documento_faltante}
+
+            </td>
+
+
+            <td class="text-center">
+
+                <button
+                    class="btn"
+                    onclick="location.href='FichaIndividual.html'">
+
+                    Subir Documento
+
+                </button>
+
+            </td>
+
+        </tr>
+
+    `).join('');
+
+}
+
+
+
+/* =====================================================
+   BOTÓN BUSCAR TURNOS
+   ===================================================== */
+
+document
+    .getElementById('btnSearchTurno')
+    .addEventListener('click', () => {
+
+        document
+            .getElementById('turnoFilters')
+            .classList.toggle('hidden');
+
+    });
+
+
+
+/* =====================================================
+   BOTÓN FILTRO TURNOS
+   ===================================================== */
+
+document
+    .getElementById('btnFilterTurno')
+    .addEventListener('click', () => {
+
+        document
+            .getElementById('turnoFilters')
+            .classList.toggle('hidden');
+
+    });
+
+
+
+/* =====================================================
+   BOTÓN BUSCAR DOCUMENTOS
+   ===================================================== */
+
+document
+    .getElementById('btnSearchDocs')
+    .addEventListener('click', () => {
+
+        document
+            .getElementById('docFilters')
+            .classList.toggle('hidden');
+
+    });
+
+
+
+/* =====================================================
+   BUSCAR TURNOS
+   ===================================================== */
+
+document
+    .getElementById('qTurno')
+    .addEventListener('input', (e) => {
+
+        const q =
+            e.target.value.toLowerCase();
+
+
+        const filtrados =
+            listadoTurnoOriginal.filter(c =>
+
+                c.colaborador
+                    .toLowerCase()
+                    .includes(q)
+
+                ||
+
+                c.empresa
+                    .toLowerCase()
+                    .includes(q)
+
+            );
+
+
+        renderizarTurnos(filtrados);
+
+    });
+
+
+
+/* =====================================================
+   BUSCAR DOCUMENTOS
+   ===================================================== */
+
+document
+    .getElementById('qDocs')
+    .addEventListener('input', (e) => {
+
+        const q =
+            e.target.value.toLowerCase();
+
+
+        const filtrados =
+            listadoDocsOriginal.filter(d =>
+
+                d.colaborador
+                    .toLowerCase()
+                    .includes(q)
+
+                ||
+
+                d.empresa
+                    .toLowerCase()
+                    .includes(q)
+
+                ||
+
+                d.documento_faltante
+                    .toLowerCase()
+                    .includes(q)
+
+            );
+
+
+        renderizarDocs(filtrados);
+
+    });
+
+
+
+/* =====================================================
+   CAMBIO DE EMPRESA
+   ===================================================== */
+
+empresaGlobal.addEventListener(
+    'change',
+    (e) => {
+
+        cargarDashboard(
+            e.target.value
+        );
+
+    }
+);
+
+
+
+/* =====================================================
+   INICIAR DASHBOARD
+   ===================================================== */
+
+cargarDashboard();
+
+</script>
+
+
+</body>
+</html>

@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 
 const SELECT_USUARIO = `
-  SELECT u.id AS usuario_id, u.email, u.activo,
+  SELECT u.id AS usuario_id, u.email, u.activo, u.sesion_version,
          r.nombre AS rol_nombre, e.id AS empleado_id,
          e.nombres, e.apellidos, e.foto_perfil, e.tipo_vinculo,
          emp.razon_social AS empresa_nombre

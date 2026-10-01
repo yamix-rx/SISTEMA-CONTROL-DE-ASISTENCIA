@@ -1,0 +1,21 @@
+.core-filters > * { min-width: 0; }
+#modalAsistencia form, #modalPermiso form, #modalHorario > div { max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
+#modalAsistencia { z-index: 1200; }
+#modalAsistencia input[type="checkbox"] { width: 16px !important; min-width: 16px; max-width: 16px; height: 16px !important; flex: 0 0 16px; padding: 0 !important; }
+#btnExportarExcel:disabled, #btnExportarPDF:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 768px) {
+  .core-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .core-filters > * { grid-column: span 1 !important; }
+  .core-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .sbss-header .sbss-brand { min-width: 0; width: auto; padding: 0 10px; }
+  .sbss-header label { display: none; }
+  #nombreUsuarioSesion { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  main { min-width: 0; padding: 10px !important; }
+  .core-heading { flex-wrap: wrap; gap: 12px; }
+  #modalHorario .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .core-filters { grid-template-columns: 1fr !important; }
+  #modalHorario .grid { grid-template-columns: 1fr; }
+  #modalHorario .grid > * { grid-column: span 1; }
+}

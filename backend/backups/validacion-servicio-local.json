@@ -1,0 +1,26 @@
+{
+  "fecha": "2026-09-19T14:19:01.637Z",
+  "baseUrl": "http://localhost:3000",
+  "comprobaciones": [
+    {
+      "ruta": "/",
+      "status": 200
+    },
+    {
+      "ruta": "/login.html",
+      "status": 200
+    },
+    {
+      "ruta": "/Administracion.html",
+      "status": 200
+    },
+    {
+      "ruta": "/api/auth/perfil",
+      "status": 401
+    },
+    {
+      "ruta": "/api/administracion/usuarios",
+      "status": 401
+    }
+  ]
+}

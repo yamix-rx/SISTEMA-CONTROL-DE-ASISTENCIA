@@ -1,0 +1,196 @@
+﻿
+tests\roles.test.js
+✔ login devuelve el panel y los permisos de cada uno de los tres roles (175.4804ms)
+✔ login rechaza roles desconocidos, cuentas inactivas y contraseñas incorrectas (34.7435ms)
+✔ el perfil refleja cambios de rol y empleado aunque el JWT conserve datos antiguos (10.113ms)
+✔ una sesión deja de servir al desactivar, borrar o cambiar a un rol desconocido (35.0409ms)
+✔ JWT ausentes, alterados y expirados se rechazan antes de consultar datos (61.3505ms)
+✔ el trabajador no puede leer ni escribir APIs administrativas, aunque falsifique el rol del token (141.8562ms)
+✔ administrador y RRHH pueden consultar gestión; sólo administrador puede escribir empresas (258.8152ms)
+✔ mi-panel devuelve únicamente el empleado de la sesión e ignora IDs ajenos (19.7562ms)
+✔ mi-panel se reserva al rol trabajador y no admite una identidad sin empleado (36.2054ms)
+✔ puesto y convenio mantienen la escritura reservada a administrador/RRHH y se validan en el servidor (59.1587ms)
+✔ ambos tipos de practicante muestran progreso y un trabajador sin meta no aparece completado (0.367ms)
+Error al verificar sesión: TEST_DB_UNAVAILABLE
+✔ si la base de datos no puede verificar la cuenta, no se autoriza usando el JWT (3.7256ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1244.4523
+tests\migracion-convenios.test.js
+✔ migración agrega campos nullable sin inferir fechas y una segunda ejecución no duplica columnas ni índices (14.8955ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 177.4257
+tests\login-frontend.test.js
+✔ inicio sin biblioteca de iconos: contraseña visible, POST y panel válido (54.2574ms)
+✔ el envío prematuro no transmite credenciales antes de verificar el servidor (1.5413ms)
+✔ Live Server local: verifica y abre el servidor correcto sin enviar contraseñas (2.8808ms)
+✔ Live Server en red: verifica y abre el servidor correcto sin enviar contraseñas (2.0428ms)
+✔ archivo local: verifica y abre el servidor correcto sin enviar contraseñas (1.7754ms)
+✔ servidor apagado muestra enlace y permite volver a comprobar sin mandar claves (2.0341ms)
+✔ un backend en otro puerto conserva su origen verificado (2.364ms)
+✔ credenciales rechazadas: error comprensible sin guardar sesión ni navegar (1.6632ms)
+✔ error 500 JSON: error comprensible sin guardar sesión ni navegar (1.5877ms)
+✔ respuesta HTML: error comprensible sin guardar sesión ni navegar (1.6404ms)
+✔ JSON mal formado: error comprensible sin guardar sesión ni navegar (3.994ms)
+✔ panel ajeno: error comprensible sin guardar sesión ni navegar (3.8753ms)
+✔ HTML inicial impide envío nativo y ya no requiere scripts de CDN (0.6262ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.7533
+tests\expediente.test.js
+Error al actualizar colaborador: Error
+✔ la ficha calcula avance decimal, tolerancia real y culminación sólo con horas cumplidas (5.089ms)
+✔ el historial pagina independientemente asistencias y permisos y conserva totales completos (2.241ms)
+✔ la paginación rechaza valores inválidos antes de consultar historiales (1.0863ms)
+✔ mi-panel acota todas las consultas al usuario vigente y excluye observaciones de RRHH (1.0525ms)
+✔ las notas del expediente se persisten con el ID y texto parametrizados (1.2867ms)
+✔ los filtros de personal combinan organización/estado/búsqueda y todos incluye inactivos (1.9302ms)
+✔ dashboard separa próximos y completados, incluye alertas y respeta la empresa (1.0168ms)
+✔ la actualización de ficha revierte todos los cambios si falla la meta de prácticas (4.1508ms)
+✔ no acepta fechas inexistentes, finalización antes del ingreso ni metas negativas (1.4631ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 56.5985
+tests\documentos.test.js
+✔ Documentos exige sesión válida y rechaza colaboradores en todas las operaciones (193.0845ms)
+✔ Admin y RRHH obtienen catálogos reales y nunca rutas de almacenamiento (24.3099ms)
+✔ el resumen conserva los estados al aplicar filtro de estado y respeta colaborador, empresa y búsqueda (65.5436ms)
+✔ subir crea una versión pendiente y conserva la anterior; descarga autorizada usa MIME real (65.7731ms)
+✔ Word DOC y DOCX conservan formato, bytes y versiones en carga, vista y descarga (90.973ms)
+✔ rechaza documentos Word renombrados, contenedores ajenos y archivos truncados antes de insertar (141.5886ms)
+✔ rechaza extensión falsa, base64 inválido, nombres con rutas y tamaños superiores a 5 MB (261.2783ms)
+Error en Documentos: TEST_INSERT_FAILURE
+✔ fallo al insertar elimina el archivo de carga; esquema ausente da instrucción concreta (55.0998ms)
+✔ rutas antiguas, traversal y archivos inexistentes no exponen contenido del servidor (84.9534ms)
+✔ revisión exige motivo para observado y guarda el usuario autenticado (81.156ms)
+✔ el parser devuelve JSON claro y se ejecuta después de autenticar (30.0724ms)
+✔ una revisión desactualizada devuelve 409 y no cambia una versión anterior (15.0651ms)
+✔ migración es idempotente, acepta nombre antiguo y valida tablas antes de alterar (2.3186ms)
+✔ colaborador puede abrir y descargar sus archivos; IDs ajenos devuelven 404 (150.0535ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1587.7441
+tests\documentos-generacion.test.js
+✔ catálogos incluyen tres plantillas editables y estructura seleccionable, solo para gestión (189.6787ms)
+✔ genera aceptación, constancia y culminación con datos seleccionados y PDF real (134.4803ms)
+✔ guardar una plantilla persiste y cambia futuros documentos; rechaza placeholders y HTML (126.9885ms)
+✔ validación impide fechas inexistentes, horas inválidas y cruces de empresa/área/cargo (132.4984ms)
+✔ plantilla modificada después de vista previa exige regenerar antes de descargar (49.0466ms)
+✔ PDF pagina textos extensos y conserva tildes, paréntesis y barras sin alterar su estructura (2.2346ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 899.8455
+tests\core.test.js
+✔ fechas y horas rechazan valores imposibles, segundos y rangos invertidos (61.3437ms)
+✔ cálculo de tardanza exacta, tolerancia configurada y horas trabajadas (2.6328ms)
+✔ horas invertidas requieren horario nocturno; estados administrativos no suman horas (0.7915ms)
+✔ editar asistencia usa programación histórica y audita UPDATE con ID real (2.4137ms)
+✔ nueva asistencia persiste instantánea, horas y auditoría INSERT (1.679ms)
+✔ registro antiguo sin programación conserva tardanza y horas al editar observaciones (1.2174ms)
+✔ horario parcial con tolerancia desconocida exige confirmación para cambiar el ingreso o pasar a presente (0.372ms)
+✔ confirmar horario original completa snapshot y recalcula con auditoría en la misma transacción (1.3754ms)
+✔ la confirmación explícita valida motivo, tolerancia y turno nocturno; no altera campos ya conocidos (0.55ms)
+✔ snapshot completo no permite sobreescritura por API, incluso enviando los mismos datos (0.7914ms)
+Error de asistencia: TEST_AUDIT_FAILED
+✔ fallo de auditoría revierte la confirmación y el recálculo; no publica persistida (0.9847ms)
+✔ horario guarda descanso y tolerancia sin eliminar registros (0.7846ms)
+✔ reportes: horas pendientes usan acumulado completo, faltas/permisos no duplican y % documentado (0.8263ms)
+✔ reporte consulta filtros en WHERE y respeta trabajador, cargo, estado y vínculo (1.2627ms)
+✔ permiso carga archivo real; propietario/RRHH acceden y otro colaborador recibe 404 (170.7489ms)
+✔ permiso rechaza sustento falso, exceso de tamaño y fechas/horas invertidas antes de persistir (133.8287ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 603.3755
+tests\convenios-puesto.test.js
+Error al actualizar colaborador: FIXTURE
+✔ el alta guarda puesto separado del cargo y convenio distinto a la finalización; ambos quedan en auditoría (4.8074ms)
+✔ el alta sin convenio conserva null aunque haya finalización, y admite fecha igual al ingreso (1.3043ms)
+✔ rechaza convenio inválido, anterior al ingreso o puesto inválido sin hacer escrituras (1.4787ms)
+✔ actualizar campos ajenos conserva puesto y vencimiento omitidos, incluyendo antes/después de auditoría (0.8849ms)
+✔ edición permite modificar y borrar explícitamente puesto/convenio, sin cambiar cargo (1.962ms)
+✔ cambiar a trabajador conserva el historial de prácticas y nunca borra el convenio omitido (1.3423ms)
+✔ cambiar ingreso más allá del convenio conservado se rechaza y revierte antes de escribir (0.5613ms)
+✔ un fallo al guardar convenio revierte también la edición del puesto (1.2277ms)
+✔ alertas de convenio existen sin contratos y filtran practicantes activos, empresa y ventana inclusiva de 0 a 30 días (1.0593ms)
+✔ listado filtra ambos tipos de practicante y permite buscar puesto sin interpolar el texto (0.5751ms)
+✔ catálogo y validación admiten Convenio de prácticas y conservan todos los tipos anteriores (1.1878ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 48.0502
+tests\contratos-capacitaciones.test.js
+✔ contrato acepta un registro vigente correcto y normaliza la moneda (1.6059ms)
+✔ contrato rechaza fechas invertidas (0.607ms)
+✔ contrato rechaza estados no permitidos (0.2641ms)
+✔ contrato limita horas semanales (0.209ms)
+✔ capacitación acepta modalidad virtual y valores de programación (0.7028ms)
+✔ capacitación rechaza una modalidad desconocida (0.2556ms)
+✔ capacitación rechaza fin anterior al inicio (0.2273ms)
+✔ capacitación rechaza porcentaje de cupo no entero o inválido (0.2419ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 27.8809
+tests\administracion-auditoria.test.js
+✔ valida correo normalizado y contraseñas completas dentro del límite bcrypt (15.4956ms)
+✔ auditoría oculta claves, hashes, tokens y archivos anidados conservando fecha y metadatos (2.0655ms)
+✔ solo administrador gestiona cuentas y una escritura rechazada queda como DENEGADO (144.5742ms)
+✔ crear cuenta almacena bcrypt y audita ID real sin exponer contraseña ni hash (816.1731ms)
+✔ rechaza cuentas con rol desconocido o colaborador inexistente sin insertarlas (771.9415ms)
+✔ cambio de perfil registra antes/después y revoca el token anterior (29.9786ms)
+✔ impide perder el acceso administrador propio y conservar cero administradores (32.2951ms)
+✔ restablecer contraseña audita UPDATE, oculta ambas claves y revoca sesión (712.6458ms)
+✔ auditoría de marcar distingue inserción de actualización y conserva horas anteriores (23.3304ms)
+✔ no permite trasladar áreas o cargos usados por personal a otra organización (47.8575ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2984.4838

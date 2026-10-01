@@ -19,6 +19,7 @@
     };
     let currentSession = null;
     let isLoading = false;
+    const pages = { asistencias: 1, permisos: 1 };
 
     function setText(id, value, fallback = 'No registrado') {
         element(id).textContent = value === null || value === undefined || value === '' ? fallback : String(value);
@@ -92,9 +93,46 @@
         body.append(fragment);
     }
 
+    async function openFile(path, filename, button, preview = false) {
+        const tab = preview ? window.open('', '_blank') : null;
+        if (preview && !tab) { setText('fileStatus', 'Permite ventanas emergentes para abrir la vista previa.'); element('fileStatus').hidden = false; return; }
+        if (tab) { tab.opener = null; tab.document.body.textContent = 'Preparando documento…'; }
+        button.disabled = true;
+        try {
+            const response = await SBSSSession.fetch(SBSSSession.API_BASE + path);
+            if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.mensaje || 'No se pudo recuperar el archivo.'); }
+            const url = URL.createObjectURL(await response.blob());
+            if (tab) tab.location.replace(url);
+            else { const a = document.createElement('a'); a.href = url; a.download = filename || 'documento'; document.body.append(a); a.click(); a.remove(); }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            element('fileStatus').hidden = true;
+        } catch (error) { if (tab) tab.close(); setText('fileStatus', error.message); element('fileStatus').hidden = false; }
+        finally { button.disabled = false; }
+    }
+
+    function fileButton(label, path, filename, preview = false) {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-secondary'; button.textContent = label;
+        button.addEventListener('click', () => openFile(path, filename, button, preview));
+        return button;
+    }
+
+    function fileActions(item) {
+        const td = cell(null);
+        if (!item.documento_id) return td;
+        td.replaceChildren(fileButton('Ver', `/documentos/mios/${item.documento_id}/archivo`, item.nombre_archivo, true), fileButton('Descargar', `/documentos/mios/${item.documento_id}/descargar`, item.nombre_archivo));
+        td.className = 'file-actions'; return td;
+    }
+
+    function permissionFile(item) {
+        const td = cell(null);
+        if (item.archivo_sustento) td.replaceChildren(fileButton('Descargar', `/asistencias/permisos/${item.id}/sustento?descargar=1`, item.archivo_sustento_nombre || 'sustento'));
+        return td;
+    }
+
     function renderAccount(usuario) {
         const fullName = [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ') || usuario.email || 'Mi cuenta';
-        setText('accountName', fullName);
+        setText('accountName', window.SBSSSession.abbreviateUserName(usuario) || fullName);
+        element('accountName').title = fullName;
         setText('accountRole', usuario.rol, 'Colaborador');
         setText('accountInitials', fullName.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase());
         setText('welcomeText', usuario.nombres ? `Hola, ${usuario.nombres}. Aquí puedes consultar tu información personal.` : 'Aquí puedes consultar tu información personal.');
@@ -112,22 +150,32 @@
         setText('profileCompany', empleado.empresa);
         setText('profileArea', empleado.area);
         setText('profilePosition', empleado.cargo);
+        setText('profileJob', empleado.puesto);
+        setText('profileAgreementEnd', empleado.fecha_vencimiento_convenio ? date(empleado.fecha_vencimiento_convenio) : 'No registrado');
+        element('profileAgreementField').hidden = !progress.esPracticante && !empleado.fecha_vencimiento_convenio;
         setText('profileDocument', [empleado.tipo_documento, empleado.numero_documento].filter(Boolean).join(' '));
         setText('profileRelationship', label(empleado.tipo_vinculo));
         setText('profileStartDate', date(empleado.fecha_ingreso));
         setText('profileEmail', currentSession.usuario.email);
+        setText('profilePhone', empleado.telefono);
+        setText('profileAddress', empleado.direccion);
+        setText('profileCareer', empleado.carrera);
+        setText('profileSchool', empleado.institucion_educativa);
+        setText('profileEnd', date(empleado.fecha_finalizacion));
         setBadge(element('employmentStatus'), empleado.estado);
 
         const today = new Date().getDay() || 7;
         const todayShifts = horarios.filter((item) => Number(item.dia_semana) === today);
         setText('todaySchedule', todayShifts.length ? todayShifts.map((item) => `${time(item.hora_entrada)} – ${time(item.hora_salida)}`).join(' / ') : 'Sin turno');
         setText('todayScheduleDetail', todayShifts.length ? `${days[today]} · Horario asignado` : `${days[today]} · Sin horario asignado para hoy`);
-        const latest = asistencias[0];
-        setText('lastAttendance', latest ? date(latest.fecha) : 'Sin registros');
-        setText('lastAttendanceDetail', latest ? `${label(latest.estado)} · Ingreso ${time(latest.hora_ingreso)}` : 'Aún no tienes asistencias registradas');
+        if (data.paginacion.asistencias.pagina === 1) {
+            const latest = asistencias[0];
+            setText('lastAttendance', latest ? date(latest.fecha) : 'Sin registros');
+            setText('lastAttendanceDetail', latest ? `${label(latest.estado)} · Ingreso ${time(latest.hora_ingreso)}` : 'Aún no tienes asistencias registradas');
+        }
         const pendingDocuments = documentos.filter((item) => (item.es_obligatorio === true || Number(item.es_obligatorio) === 1) && ['sin_entregar', 'pendiente', 'rechazado'].includes(String(item.estado_documento).toLowerCase()));
         setText('pendingDocuments', pendingDocuments.length);
-        setText('pendingPermissions', permisos.filter((item) => ['solicitado', 'pendiente'].includes(String(item.estado).toLowerCase())).length);
+        setText('pendingPermissions', data.resumenHistorial?.permisosSolicitados ?? 0);
 
         table('scheduleRows', horarios, 4, 'Aún no tienes un horario asignado. Consulta con el responsable de personal.', (item) => [
             cell(days[Number(item.dia_semana)] || 'Día no registrado'), cell(time(item.hora_entrada), 'nowrap'),
@@ -137,13 +185,20 @@
             cell(date(item.fecha), 'nowrap'), cell(time(item.hora_ingreso), 'nowrap'), cell(time(item.hora_salida), 'nowrap'),
             cell(`${number(item.minutos_tardanza)} min`, 'nowrap'), cell(number(item.horas_trabajadas), 'nowrap'), badgeCell(item.estado)
         ]);
-        table('documentRows', documentos, 5, 'Aún no hay tipos de documento configurados para tu expediente.', (item) => [
+        table('documentRows', documentos, 6, 'Aún no hay tipos de documento configurados para tu expediente.', (item) => [
             cell(item.tipo_documento, 'wrap'), cell(item.es_obligatorio === true || Number(item.es_obligatorio) === 1 ? 'Obligatorio' : 'Opcional'),
-            cell(item.nombre_archivo || 'Sin archivo registrado', 'wrap'), cell(date(item.fecha_subida), 'nowrap'), badgeCell(item.estado_documento)
+            cell(item.nombre_archivo || 'Sin archivo registrado', 'wrap'), cell(date(item.fecha_subida), 'nowrap'), badgeCell(item.estado_documento), fileActions(item)
         ]);
-        table('permissionRows', permisos, 4, 'Aún no tienes permisos registrados.', (item) => [
-            cell(date(item.fecha), 'nowrap'), cell(label(item.tipo_permiso), 'wrap'), cell(item.motivo, 'wrap'), badgeCell(item.estado)
+        table('permissionRows', permisos, 6, 'Aún no tienes permisos registrados.', (item) => [
+            cell(date(item.fecha_inicio) + ' — ' + date(item.fecha_fin), 'nowrap'), cell(time(item.hora_desde) + ' — ' + time(item.hora_hasta), 'nowrap'), cell(label(item.tipo_permiso), 'wrap'), cell(item.motivo, 'wrap'), badgeCell(item.estado), permissionFile(item)
         ]);
+        for (const [type, prefix] of [['asistencias', 'attendance'], ['permisos', 'permission']]) {
+            const meta = data.paginacion[type];
+            pages[type] = meta.pagina;
+            setText(prefix + 'Pagination', `Página ${meta.pagina} de ${meta.paginas} · ${meta.total} registros`);
+            element(prefix + 'Previous').disabled = meta.pagina <= 1;
+            element(prefix + 'Next').disabled = meta.pagina >= meta.paginas;
+        }
 
         const isIntern = progress.esPracticante === true;
         element('progreso').hidden = !isIntern;
@@ -151,11 +206,11 @@
         if (isIntern) {
             const target = Number(progress.horasMeta) || 0;
             const completed = Number(progress.horasRealizadas) || 0;
-            const percentage = target > 0 ? Math.min(100, Math.max(0, Math.round(completed / target * 100))) : 0;
+            const percentage = target > 0 ? Math.min(completed >= target ? 100 : 99.9, Math.max(0, Math.round(completed / target * 1000) / 10)) : 0;
             setText('completedHours', `${number(completed)} h`);
             setText('targetHours', target > 0 ? `${number(target)} h` : 'Sin asignar');
             setText('remainingHours', target > 0 ? `${number(Math.max(0, target - completed))} h` : '—');
-            setText('progressText', target > 0 ? 'Avance hacia tu meta de prácticas' : 'Tu meta de horas aún no ha sido asignada.');
+            setText('progressText', progress.horasCompletadas ? 'HORAS DE PRÁCTICAS COMPLETADAS' : target > 0 ? 'Avance hacia tu meta de prácticas' : 'Tu meta de horas aún no ha sido asignada.');
             setText('progressPercentage', target > 0 ? `${percentage}%` : '—');
             element('practiceProgress').value = percentage;
             element('practiceProgress').textContent = `${percentage}%`;
@@ -173,7 +228,8 @@
         element('panelContent').hidden = true;
         element('mainContent').setAttribute('aria-busy', 'true');
         try {
-            const response = await window.SBSSSession.fetch(`${window.SBSSSession.API_BASE}/mi-panel`, {
+            const params = new URLSearchParams({ asistencias_pagina: pages.asistencias, permisos_pagina: pages.permisos });
+            const response = await window.SBSSSession.fetch(`${window.SBSSSession.API_BASE}/mi-panel?${params}`, {
                 cache: 'no-store', signal: AbortSignal.timeout(15000)
             });
             const payload = await response.json().catch(() => null);
@@ -230,6 +286,12 @@
     element('logoutButton').addEventListener('click', () => window.SBSSSession.logout());
     element('refreshButton').addEventListener('click', loadPanel);
     element('retryButton').addEventListener('click', loadPanel);
+    window.addEventListener('storage', event => { if (event.key === 'sbss_asistencia_actualizada') loadPanel(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadPanel(); });
+    for (const [type, prefix] of [['asistencias', 'attendance'], ['permisos', 'permission']]) {
+        element(prefix + 'Previous').addEventListener('click', () => { if (!isLoading && pages[type] > 1) { pages[type]--; loadPanel(); } });
+        element(prefix + 'Next').addEventListener('click', () => { if (!isLoading) { pages[type]++; loadPanel(); } });
+    }
 
     async function initialize() {
         try {

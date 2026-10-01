@@ -2,8 +2,15 @@
 (function () {
   'use strict';
 
-  const API_BASE = 'http://localhost:3000/api';
+  const API_BASE = new URL('/api', location.href).href;
   const nativeFetch = window.fetch.bind(window);
+  if (!document.querySelector('link[rel="icon"]')) {
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/png';
+    favicon.href = 'assets/logo-sbss.png';
+    document.head.appendChild(favicon);
+  }
   const domReady = document.readyState === 'loading'
     ? new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }))
     : Promise.resolve();
@@ -12,7 +19,8 @@
     'empresas.html': 'empresas', 'fichaindividual.html': 'personal',
     'documentos.html': 'documentos', 'contratos.html': 'contratos',
     'capacitaciones.html': 'capacitaciones', 'horarios.html': 'horarios', 'registros.html': 'asistencia',
-    'reportes.html': 'reportes', 'mipanel.html': 'mi-panel'
+    'reportes.html': 'reportes', 'auditoria.html': 'auditoria', 'mipanel.html': 'mi-panel',
+    'administracion.html': 'administracion'
   };
   const currentPage = decodeURIComponent(location.pathname.split('/').pop() || 'index.html').toLowerCase();
   let verifiedSession = null;
@@ -64,6 +72,14 @@
     }
   }
 
+  function abbreviateUserName(usuario) {
+    return [usuario.nombres, usuario.apellidos]
+      .map(value => (value || '').trim().split(/\s+/).filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase())
+        .join(''))
+      .filter(Boolean).join('');
+  }
+
   function configureNavigation(session) {
     const { usuario, acceso } = session;
     const allowed = new Set(acceso.modulos);
@@ -96,7 +112,10 @@
     const name = document.getElementById('nombreUsuarioSesion');
     const role = document.getElementById('rolUsuarioSesion');
     const avatar = document.getElementById('avatarLetra');
-    if (name) name.textContent = `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim();
+    if (name) {
+      name.textContent = abbreviateUserName(usuario);
+      name.title = `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim();
+    }
     if (role) role.textContent = usuario.rol;
     if (avatar) avatar.textContent = (usuario.nombres || 'U').charAt(0).toUpperCase();
     document.querySelectorAll('#btnCerrarSesion, [data-logout]').forEach(button => { button.onclick = logout; });
@@ -138,7 +157,7 @@
     }
   }
 
-  const session = { API_BASE, ready: null, logout, get current() { return verifiedSession; } };
+  const session = { API_BASE, ready: null, logout, abbreviateUserName, get current() { return verifiedSession; } };
   window.SBSSSession = session;
   // También protege las peticiones de las pantallas existentes antes de cargar sus datos.
   window.fetch = async function (input, init = {}) {

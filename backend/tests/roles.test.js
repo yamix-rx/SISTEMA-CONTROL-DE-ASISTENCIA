@@ -13,7 +13,7 @@ let consultas;
 let failDatabase = false;
 
 const fichaFixtures = new Map([
-  [101, { id: 101, nombres: 'Persona', apellidos: 'Uno', tipo_vinculo: 'practicante_preprofesional', horas_totales_asignadas: 100 }],
+  [101, { id: 101, nombres: 'Persona', apellidos: 'Uno', tipo_vinculo: 'practicante_preprofesional', horas_totales_asignadas: 100, puesto: 'Auxiliar de formación', fecha_vencimiento_convenio: '2026-10-01', observaciones_rrhh: 'Nota reservada de RRHH' }],
   [202, { id: 202, nombres: 'Persona', apellidos: 'Dos', tipo_vinculo: 'trabajador', horas_totales_asignadas: 0 }]
 ]);
 
@@ -163,7 +163,8 @@ test('administrador y RRHH pueden consultar gestión; sólo administrador puede 
   consultas = [];
   assert.equal((await request('/api/empresas', { id: 2, method: 'POST', body: { razon_social: 'Fixture', ruc: '00000000001' } })).status, 403);
   assert.equal((await request('/api/empresas/1/estado', { id: 2, method: 'PATCH', body: { estado: 'inactivo' } })).status, 403);
-  assert.ok(consultas.every(q => /FROM usuarios u/.test(q.sql)));
+  assert.ok(consultas.every(q => /FROM usuarios u|INSERT INTO historial_cambios/.test(q.sql)), 'Solo deben autenticarse y auditarse los intentos denegados');
+  assert.equal(consultas.filter(q => /INSERT INTO historial_cambios/.test(q.sql) && q.params[3] === 'DENEGADO').length, 2);
   assert.equal((await request('/api/empresas', { id: 1, method: 'POST', body: { razon_social: 'Fixture', ruc: '00000000001' } })).status, 201);
 });
 
@@ -171,6 +172,9 @@ test('mi-panel devuelve únicamente el empleado de la sesión e ignora IDs ajeno
   const result = await request('/api/mi-panel?empleado_id=202&id=202', { authorization: `Bearer ${token(3, { empleado_id: 202, rol: ROLES.ADMIN })}` });
   assert.equal(result.status, 200);
   assert.equal(result.body.data.empleado.id, 101);
+  assert.equal(result.body.data.empleado.puesto, 'Auxiliar de formación');
+  assert.equal(result.body.data.empleado.fecha_vencimiento_convenio, '2026-10-01');
+  assert.ok(consultas.some(q => /e.puesto/.test(q.sql) && /pd.fecha_vencimiento_convenio/.test(q.sql)));
   assert.equal(result.body.data.progresoHoras.esPracticante, true);
   assert.equal(result.body.data.progresoHoras.horasRealizadas, 25.5);
   assert.equal(result.body.data.progresoHoras.horasPendientes, 74.5);
@@ -178,8 +182,11 @@ test('mi-panel devuelve únicamente el empleado de la sesión e ignora IDs ajeno
   assert.equal(result.body.data.asistencias[0].hora_ingreso, '08:00:00');
   assert.equal(result.body.data.permisos[0].motivo, 'permiso-101');
   const propias = consultas.filter(q => !/FROM usuarios u/.test(q.sql));
-  assert.equal(propias.length, 6);
-  for (const consulta of propias) assert.deepEqual(consulta.params, [101]);
+  assert.equal(propias.length, 8);
+  for (const consulta of propias) assert.equal(consulta.params[0], 101);
+  assert.equal(result.body.data.empleado.observaciones_rrhh, undefined);
+  assert.equal(result.body.data.paginacion.asistencias.pagina, 1);
+  assert.equal(result.body.data.paginacion.permisos.pagina, 1);
   assert.ok(propias.some(q => /LIMIT 30/.test(q.sql)));
   assert.ok(propias.some(q => /LIMIT 20/.test(q.sql)));
 });
@@ -188,6 +195,20 @@ test('mi-panel se reserva al rol trabajador y no admite una identidad sin emplea
   for (const id of [1, 2]) assert.equal((await request('/api/mi-panel', { id })).status, 403);
   cuentas.get(3).empleado_id = null;
   assert.equal((await request('/api/mi-panel', { id: 3 })).status, 403);
+});
+
+test('puesto y convenio mantienen la escritura reservada a administrador/RRHH y se validan en el servidor', async () => {
+  const body = { numero_documento: '12345678', nombres: 'Ana', apellidos: 'Prueba', empresa_id: 1, area_id: 1, cargo_id: 1,
+    fecha_ingreso: '2026-09-01', tipo_vinculo: 'practicante profesional', puesto: 'Nuevo puesto', fecha_vencimiento_convenio: '2026-02-30' };
+  for (const [method, path] of [['POST', '/api/personal'], ['PUT', '/api/personal/101']]) {
+    assert.equal((await request(path, { id: 3, method, body })).status, 403);
+    for (const id of [1, 2]) {
+      const result = await request(path, { id, method, body });
+      assert.equal(result.status, 400);
+      assert.match(result.body.mensaje, /vencimiento del convenio/);
+    }
+  }
+  assert.ok(!consultas.some(q => /UPDATE empleados SET|INSERT INTO empleados|INSERT INTO practicante_detalles/.test(q.sql)));
 });
 
 test('ambos tipos de practicante muestran progreso y un trabajador sin meta no aparece completado', async () => {

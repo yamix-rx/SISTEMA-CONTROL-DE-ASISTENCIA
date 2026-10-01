@@ -1,132 +1,57 @@
-const pool = require('../config/database');
-
-// 1. Obtener plantilla de horarios agrupada por colaborador
-exports.listarHorarios = async (req, res) => {
-  const { empresa_id, area_id, buscar } = req.query;
-
+﻿const pool = require('../config/database');
+const r = require('../services/asistenciaReglas');
+function fallo(res,error){if(!error.status)console.error('Error de horarios:',error.code||error.name);return res.status(error.status||500).json({ok:false,mensaje:error.status?error.message:'No se pudo guardar el horario.'});}
+exports.listarHorarios=async(req,res)=>{
   try {
-    let whereConditions = ['e.estado = "activo"'];
-    const params = [];
-
-    if (empresa_id) {
-      whereConditions.push('e.empresa_id = ?');
-      params.push(empresa_id);
+    const f=r.filtrosPersonal(req.query);
+    const [rows]=await pool.query(`SELECT e.id AS empleado_id,CONCAT(e.nombres,' ',e.apellidos) AS colaborador,e.numero_documento,e.tipo_vinculo,e.empresa_id,e.area_id,e.cargo_id,emp.razon_social AS empresa,ar.nombre AS area,c.nombre AS cargo,
+      h.id AS horario_id,h.dia_semana,h.hora_entrada,h.hora_salida,h.tolerancia_minutos,h.activo
+      FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
+      LEFT JOIN horarios h ON h.empleado_id=e.id WHERE e.estado='activo' AND ${f.where} ORDER BY e.apellidos,e.nombres,h.dia_semana`,f.params);
+    const empleados=new Map();
+    for(const row of rows){const {horario_id,dia_semana,hora_entrada,hora_salida,tolerancia_minutos,activo,...e}=row;
+      if(!empleados.has(e.empleado_id))empleados.set(e.empleado_id,{...e,malla_horarios:[]});
+      if(horario_id)empleados.get(e.empleado_id).malla_horarios.push({id:horario_id,dia_semana,hora_entrada,hora_salida,tolerancia_minutos:Number(tolerancia_minutos||0),activo:Boolean(activo)});
     }
-
-    if (area_id) {
-      whereConditions.push('e.area_id = ?');
-      params.push(area_id);
-    }
-
-    if (buscar) {
-      whereConditions.push('(e.nombres LIKE ? OR e.apellidos LIKE ? OR e.numero_documento LIKE ?)');
-      params.push(`%${buscar}%`, `%${buscar}%`, `%${buscar}%`);
-    }
-
-    const query = `
-      SELECT 
-        e.id AS empleado_id,
-        CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
-        e.numero_documento,
-        e.tipo_vinculo,
-        emp.razon_social AS empresa,
-        ar.nombre AS area,
-        c.nombre AS cargo,
-        COALESCE(
-          JSON_ARRAYAGG(
-            IF(h.id IS NOT NULL,
-              JSON_OBJECT(
-                'id', h.id,
-                'dia_semana', h.dia_semana,
-                'hora_entrada', h.hora_entrada,
-                'hora_salida', h.hora_salida,
-                'tolerancia_minutos', 0,
-                'activo', h.activo
-              ),
-              NULL
-            )
-          ),
-          JSON_ARRAY()
-        ) AS malla_horarios
-      FROM empleados e
-      INNER JOIN empresas emp ON e.empresa_id = emp.id
-      INNER JOIN areas ar ON e.area_id = ar.id
-      INNER JOIN cargos c ON e.cargo_id = c.id
-      LEFT JOIN horarios h ON h.empleado_id = e.id AND h.activo = TRUE
-      WHERE ${whereConditions.join(' AND ')}
-      GROUP BY e.id, e.nombres, e.apellidos, e.numero_documento, e.tipo_vinculo, emp.razon_social, ar.nombre, c.nombre
-      ORDER BY e.apellidos ASC
-    `;
-
-    const [rows] = await pool.query(query, params);
-
-    // Limpiar nulos dentro del array de horarios agregados
-    const data = rows.map(r => ({
-      ...r,
-      malla_horarios: Array.isArray(r.malla_horarios) 
-        ? r.malla_horarios.filter(item => item !== null)
-        : JSON.parse(r.malla_horarios || '[]').filter(item => item !== null)
-    }));
-
-    return res.status(200).json({ ok: true, data });
-  } catch (error) {
-    console.error('Error al listar horarios:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al consultar horarios.' });
-  }
+    return res.json({ok:true,data:[...empleados.values()]});
+  }catch(error){return fallo(res,error);}
 };
-
-// 2. Asignar o actualizar horario semanal de un colaborador
-exports.guardarHorarioSemanal = async (req, res) => {
-  const { empleado_id, dias, hora_entrada, hora_salida } = req.body;
-
-  if (!empleado_id || !Array.isArray(dias) || dias.length === 0 || !hora_entrada || !hora_salida) {
-    return res.status(400).json({ ok: false, mensaje: 'Faltan datos requeridos (colaborador, días y horas).' });
-  }
-
-  const connection = await pool.getConnection();
+exports.guardarHorarioSemanal=async(req,res)=>{
+  let connection;
   try {
-    await connection.beginTransaction();
-
-    // Eliminar o desactivar horarios existentes de los días seleccionados
-    await connection.query(`
-      DELETE FROM horarios 
-      WHERE empleado_id = ? AND dia_semana IN (?)
-    `, [empleado_id, dias]);
-
-    // Insertar los nuevos registros
-    const values = dias.map(d => [
-      empleado_id,
-      d,
-      hora_entrada,
-      hora_salida,
-      true
-    ]);
-
-    await connection.query(`
-      INSERT INTO horarios (empleado_id, dia_semana, hora_entrada, hora_salida, activo)
-      VALUES ?
-    `, [values]);
-
-    await connection.commit();
-    return res.status(200).json({ ok: true, mensaje: 'Horario semanal actualizado correctamente.' });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Error al guardar horario:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al registrar horario.' });
-  } finally {
-    connection.release();
-  }
+    const b=req.body,id=r.entero(b.empleado_id,'Trabajador');
+    if(!Array.isArray(b.dias)||!b.dias.length||b.dias.length>7)throw r.error('Seleccione entre uno y siete días.');
+    const dias=[...new Set(b.dias.map(x=>r.entero(x,'Día',1,7)))];
+    const entrada=r.hora(b.hora_entrada,'Hora de entrada'),salida=r.hora(b.hora_salida,'Hora de salida');
+    if(entrada===salida)throw r.error('La entrada y salida no pueden ser iguales.');
+    if(salida<entrada&&b.cruza_medianoche!==true)throw r.error('Para una salida al día siguiente marque turno nocturno.');
+    const tolerancia=r.entero(b.tolerancia_minutos??0,'Tolerancia',0,120);
+    if(b.estado&&!['asignado','descanso'].includes(b.estado))throw r.error('Estado de horario no válido.');
+    const activo=b.estado!=='descanso';
+    const editId=b.id?r.entero(b.id,'Horario'):null;
+    connection=await pool.getConnection();await connection.beginTransaction();
+    const [[empleado]]=await connection.query("SELECT id FROM empleados WHERE id=? AND estado='activo' FOR UPDATE",[id]);
+    if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
+    const [anteriores]=await connection.query('SELECT * FROM horarios WHERE empleado_id=? AND dia_semana IN (?) FOR UPDATE',[id,dias]);
+    if(editId){
+      const [[original]]=await connection.query('SELECT * FROM horarios WHERE id=? FOR UPDATE',[editId]);
+      if(!original)throw Object.assign(r.error('Horario no encontrado.'),{status:404});
+      if(Number(original.empleado_id)!==id||dias.length!==1||Number(original.dia_semana)!==dias[0])throw r.error('Para cambiar de persona o día, registre otro horario y retire el anterior.');
+    }
+    const nuevos=[];
+    for(const dia of dias){
+      const anterior=anteriores.find(x=>Number(x.dia_semana)===dia);
+      if(anterior){await connection.query('UPDATE horarios SET hora_entrada=?,hora_salida=?,tolerancia_minutos=?,activo=? WHERE id=?',[entrada,salida,tolerancia,activo,anterior.id]);nuevos.push({id:anterior.id,empleado_id:id,dia_semana:dia,hora_entrada:entrada,hora_salida:salida,tolerancia_minutos:tolerancia,activo});}
+      else {const [result]=await connection.query('INSERT INTO horarios (empleado_id,dia_semana,hora_entrada,hora_salida,tolerancia_minutos,activo) VALUES (?,?,?,?,?,?)',[id,dia,entrada,salida,tolerancia,activo]);nuevos.push({id:result.insertId,empleado_id:id,dia_semana:dia,hora_entrada:entrada,hora_salida:salida,tolerancia_minutos:tolerancia,activo});}
+    }
+    await connection.commit();res.locals||={};res.locals.auditoria={tabla:'horarios',registroId:nuevos[0].id,accion:anteriores.length?'UPDATE':'INSERT',anterior:anteriores,nuevos};
+    return res.json({ok:true,mensaje:activo?'Horario guardado correctamente.':'Día de descanso guardado correctamente.',data:nuevos});
+  }catch(error){if(connection)await connection.rollback();return fallo(res,error);}finally{if(connection)connection.release();}
 };
-
-// 3. Eliminar horario de un día específico
-exports.eliminarHorarioDia = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await pool.query('DELETE FROM horarios WHERE id = ?', [id]);
-    return res.status(200).json({ ok: true, mensaje: 'Turno eliminado correctamente.' });
-  } catch (error) {
-    console.error('Error al eliminar horario:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error al eliminar el turno.' });
-  }
+exports.eliminarHorarioDia=async(req,res)=>{
+  try {const id=r.entero(req.params.id,'Horario');const [[anterior]]=await pool.query('SELECT * FROM horarios WHERE id=?',[id]);
+    if(!anterior)throw Object.assign(r.error('Horario no encontrado.'),{status:404});
+    await pool.query('DELETE FROM horarios WHERE id=?',[id]);res.locals||={};res.locals.auditoria={tabla:'horarios',registroId:id,accion:'DELETE',anterior,nuevos:null};
+    return res.json({ok:true,mensaje:'Horario eliminado; las asistencias anteriores se conservan.'});
+  }catch(error){return fallo(res,error);}
 };

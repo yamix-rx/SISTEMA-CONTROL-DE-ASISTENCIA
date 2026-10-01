@@ -1,0 +1,31 @@
+{
+  "baseUrl": "http://127.0.0.1:3101",
+  "tokens": {
+    "admin": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvX2lkIjoxOSwic3YiOjAsImlhdCI6MTc4OTgzNDMyMCwiZXhwIjoxNzg5ODYzMTIwfQ.yHg_ThXWMKYkALMfs5Zfp_AY27DLc-GYAmSyB6v1DC8",
+    "colaborador": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvX2lkIjoyMCwic3YiOjEsImlhdCI6MTc4OTgzNDMyNCwiZXhwIjoxNzg5ODYzMTI0fQ.U8apkIQOuCzQ9dVNZDiLHKQLRX2GBrnuIq-M3f1O9a4",
+    "rrhh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvX2lkIjoyMSwic3YiOjAsImlhdCI6MTc4OTgzNDMyMiwiZXhwIjoxNzg5ODYzMTIyfQ.3SKAnfxrmYvfKN2OFQpKtJBMIr_i02-5VSnl7JuXNg0"
+  },
+  "empleadoId": 25,
+  "empresaId": 14,
+  "areaId": 12,
+  "cargoId": 14,
+  "adminId": 19,
+  "roles": [
+    {
+      "id": 1,
+      "nombre": "Administrador General"
+    },
+    {
+      "id": 2,
+      "nombre": "Recursos Humanos"
+    },
+    {
+      "id": 3,
+      "nombre": "Trabajador/Practicante"
+    }
+  ],
+  "documentoId": 12,
+  "permisoId": 8,
+  "legacyEmpleadoId": 26,
+  "legacyFecha": "2026-09-18"
+}

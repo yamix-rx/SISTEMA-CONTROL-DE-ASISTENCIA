@@ -41,6 +41,7 @@
                 <div><p class="eyebrow">Panel de Recursos Humanos</p><h1 id="saludo">Hola, bienvenido</h1><p class="welcome-description">Consulta la actividad de hoy y gestiona el personal, sus horarios y asistencias.</p></div>
                 <time id="fechaHoy" class="today"></time>
             </section>
+            <div class="dashboard-controls"><label>Empresa <select id="empresaResumen"><option value="">Todas las empresas</option></select></label><button id="btnActualizarResumen" type="button">Actualizar</button></div>
             <div class="data-status" id="estadoCarga" role="status" aria-live="polite"><span id="mensajeCarga">Cargando el resumen de hoy…</span><button type="button" id="btnReintentar" hidden>Volver a intentar</button></div>
             <section class="kpi-grid" aria-label="Resumen de hoy" id="resumenHoy" aria-busy="true">
                 <article class="kpi-card green"><div class="kpi-heading"><h2>En turno hoy</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-people"/></svg></span></div><p class="kpi-value" id="kpiTurno">—</p><p class="kpi-caption">Colaboradores programados</p></article>
@@ -48,6 +49,15 @@
                 <article class="kpi-card amber"><div class="kpi-heading"><h2>Tardanzas hoy</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-clock"/></svg></span></div><p class="kpi-value" id="kpiTardanzas">—</p><p class="kpi-caption">Registros con tardanza</p></article>
                 <article class="kpi-card rose"><div class="kpi-heading"><h2>Documentos pendientes</h2><span class="kpi-icon"><svg aria-hidden="true"><use href="#icon-document"/></svg></span></div><p class="kpi-value" id="kpiDocumentos">—</p><p class="kpi-caption">Pendientes en el resumen</p></article>
             </section>
+            <section class="kpi-grid extra-kpis" aria-label="Personal y novedades">
+                <article class="kpi-card"><h2>Trabajadores activos</h2><p id="kpiTrabajadores" class="kpi-value">—</p></article>
+                <article class="kpi-card"><h2>Practicantes activos</h2><p id="kpiPracticantes" class="kpi-value">—</p></article>
+                <article class="kpi-card"><h2>Faltas registradas hoy</h2><p id="kpiFaltas" class="kpi-value">—</p></article>
+                <article class="kpi-card"><h2>Permisos en asistencia hoy</h2><p id="kpiPermisos" class="kpi-value">—</p></article>
+            </section>
+            <section class="document-panel" aria-labelledby="tituloPracticas"><div class="section-heading"><div><h2 id="tituloPracticas">Seguimiento de horas de practicantes</h2><p>Todos los practicantes activos. Próximos desde el 80 %; completados al cumplir su meta.</p></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Avance de practicantes"><table><thead><tr><th>Practicante</th><th>Empresa</th><th>Horas realizadas / meta</th><th>Pendientes</th><th>Avance</th><th>Estado</th></tr></thead><tbody id="seguimientoPracticas"></tbody></table></div></section>
+            <section class="document-panel" aria-labelledby="tituloConveniosRRHH"><div class="section-heading"><div><h2 id="tituloConveniosRRHH">Convenios de prácticas por vencer</h2><p>Vencimiento registrado en la ficha del practicante durante los próximos 30 días.</p></div></div><div id="alertasConvenios" class="followup-alerts" role="status"></div></section>
+            <section class="document-panel" aria-labelledby="tituloAlertasRRHH"><div class="section-heading"><div><h2 id="tituloAlertasRRHH">Alertas de seguimiento</h2><p>Avance de prácticas, contratos en los próximos 30 días y colaboradores con 3 o más tardanzas este mes.</p></div></div><div id="alertasSeguimiento" class="followup-alerts"></div></section>
             <section class="work-section" aria-labelledby="tituloGestion">
                 <div class="section-heading"><div><h2 id="tituloGestion">Gestiona tu equipo</h2><p>Accede a tus herramientas de trabajo.</p></div></div>
                 <div class="shortcut-grid">

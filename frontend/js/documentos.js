@@ -7,9 +7,14 @@
     sin_entregar: 'Sin entregar', pendiente: 'Por revisar',
     validado: 'Validado', rechazado: 'Observado'
   };
-  const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+  const ALLOWED_MIME = new Set([
+    'application/pdf', 'image/jpeg', 'image/png',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]);
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   const initialEmployee = new URLSearchParams(location.search).get('empleado_id');
+  const generationView = new URLSearchParams(location.search).get('vista') === 'generar';
   const state = {
     catalogs: null, rows: [], selected: null, page: 1, total: 0, limit: 5,
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
@@ -289,6 +294,8 @@
     state.previewController?.abort();
     state.previewController = null;
     $('archivoVista').replaceChildren();
+    $('btnAbrirVistaCompleta').hidden = true;
+    state.previewBlob = null;
     if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
     state.previewUrl = null;
     state.selected = null;
@@ -338,7 +345,8 @@
     try {
       const blob = await request(`/documentos/${row.documento_id}/archivo`, { signal: state.previewController.signal }, true);
       if (revision !== state.previewRevision) return;
-      if (!ALLOWED_MIME.has(blob.type.split(';')[0])) throw new Error('No se puede mostrar este formato. Puedes descargar el archivo para revisarlo.');
+      const mime = blob.type.split(';')[0];
+      if (!ALLOWED_MIME.has(mime)) throw new Error('No se puede mostrar este formato. Puedes descargar el archivo para revisarlo.');
       state.previewUrl = URL.createObjectURL(blob);
       let preview;
       if (blob.type.startsWith('image/')) {
@@ -348,12 +356,17 @@
         preview.addEventListener('error', () => {
           if (revision === state.previewRevision) previewFailure(row, 'El navegador no pudo mostrar la imagen. Puedes descargarla para revisarla.');
         }, { once: true });
-      } else {
+      } else if (mime === 'application/pdf') {
+        state.previewBlob = blob;
+        $('btnAbrirVistaCompleta').hidden = false;
         preview = node('object');
         preview.type = 'application/pdf';
-        preview.data = `${state.previewUrl}#toolbar=0&navpanes=0&view=FitH`;
+        preview.data = `${state.previewUrl}#toolbar=0&navpanes=0&view=Fit`;
         preview.setAttribute('aria-label', `Vista previa de ${row.nombre_archivo}`);
         preview.appendChild(node('p', '', 'Tu navegador no muestra PDF aquí. Usa el botón Descargar documento.'));
+      } else {
+        preview = node('div', 'preview-empty');
+        preview.append(icon('file-text'), node('h3', '', 'Archivo de Word'), node('p', '', 'Los archivos DOC y DOCX se almacenan en el expediente y pueden descargarse para su revisión.'));
       }
       $('archivoVista').replaceChildren(preview);
     } catch (error) {
@@ -418,8 +431,9 @@
       formError('errorSubir', 'Selecciona colaborador, tipo de documento y archivo.');
       return;
     }
-    if (!/\.(pdf|jpe?g|png)$/i.test(file.name) || (file.type && !ALLOWED_MIME.has(file.type))) {
-      formError('errorSubir', 'Selecciona un archivo PDF, JPG o PNG.');
+    // El MIME que informa el navegador puede ser genérico; el servidor verifica el contenido.
+    if (!/\.(pdf|jpe?g|png|docx|doc)$/i.test(file.name)) {
+      formError('errorSubir', 'Selecciona un archivo PDF, Word (DOC/DOCX), JPG o PNG.');
       return;
     }
     if (file.size === 0 || file.size > MAX_FILE_SIZE) {
@@ -451,7 +465,7 @@
   function setDialogBusy(id, busy) {
     const dialog = $(id);
     dialog.setAttribute('aria-busy', String(busy));
-    dialog.querySelectorAll('button, input, select').forEach(element => {
+    dialog.querySelectorAll('button, input, select, textarea').forEach(element => {
       if (busy) {
         element.dataset.previousDisabled = String(element.disabled);
         element.disabled = true;
@@ -491,99 +505,377 @@
     }
   }
 
-  function openGenerate(type = 'carta') {
-    if (!state.catalogs) return;
-    $('formGenerar').reset();
-    formError('errorGenerar');
-    $('generarTipo').value = type;
-    $('generarEmpleado').value = state.selected ? String(state.selected.empleado_id) : state.employeeId;
-    $('modalGenerar').showModal();
+  async function loadGenerationCatalogs(force = false) {
+    if (!state.generationCatalogs || force) state.generationCatalogs = await request('/documentos/generacion/catalogos');
+    const catalogs = state.generationCatalogs;
+    fillSelect('generarEmpresa', catalogs.empresas, 'razon_social', 'Selecciona una empresa');
+    fillSelect('plantillaCodigo', catalogs.plantillas.map(item => ({ ...item, id: item.codigo })),
+      item => catalogs.modelos?.find(model => model.id === item.codigo)?.nombre || item.titulo, 'Selecciona una plantilla');
+    return catalogs;
   }
 
-  function writePrintPreview(win, ficha, type) {
-    const employee = ficha.empleado;
-    const titles = { carta: 'CARTA DE PRESENTACIÓN', horas: 'CONSTANCIA DE HORAS', trabajo: 'CERTIFICADO DE TRABAJO' };
-    const title = titles[type];
-    const doc = win.document;
-    doc.documentElement.lang = 'es';
-    doc.title = `${title} - ${employee.colaborador_completo}`;
-    const charset = doc.createElement('meta');
-    charset.setAttribute('charset', 'UTF-8');
-    const viewport = doc.createElement('meta');
-    viewport.name = 'viewport';
-    viewport.content = 'width=device-width, initial-scale=1.0';
-    const style = doc.createElement('style');
-    style.textContent = '*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#24354b;font:15px/1.8 Georgia,serif}.toolbar{padding:16px 24px;background:#114e79;color:white;display:flex;align-items:center;justify-content:space-between;gap:20px;font:13px/1.5 Arial,sans-serif}.toolbar button{border:0;border-radius:5px;padding:11px 16px;cursor:pointer;background:white;color:#135780;font-weight:700}.toolbar p{margin:0}.sheet{background:white;max-width:794px;min-height:1000px;margin:30px auto;padding:65px 70px;box-shadow:0 2px 12px #1233}.brand{font:700 19px/1.4 Arial,sans-serif;color:#174f77;border-bottom:2px solid #174f77;padding-bottom:16px;margin:0 0 8px}.draft{font:11px/1.5 Arial,sans-serif;color:#6c7989;margin:0 0 55px}h1{text-align:center;font:700 20px/1.5 Arial,sans-serif;letter-spacing:.8px;margin:0 0 45px}.sheet p{margin:0 0 23px;overflow-wrap:anywhere}.date{text-align:right;margin-top:40px!important}.signature{margin:90px 0 0;border-top:1px solid #455;width:280px;padding-top:10px;text-align:center;font:13px/1.7 Arial,sans-serif}.signature span{display:block;color:#687887;font-size:11px}.source{margin-top:60px!important;color:#6d7989;font:10px/1.6 Arial,sans-serif;border-top:1px solid #ddd;padding-top:12px}@page{size:A4;margin:20mm}@media print{body{background:white}.toolbar{display:none}.sheet{max-width:none;min-height:0;padding:0;margin:0;box-shadow:none}.draft{color:#444}.source{break-inside:avoid}}@media(max-width:600px){.sheet{padding:35px 25px;margin:15px}.toolbar{align-items:flex-start}.toolbar button{flex-shrink:0;padding:10px}.sheet h1{font-size:18px}.signature{max-width:100%}}';
-    doc.head.replaceChildren(charset, viewport, style, doc.createElement('title'));
-    doc.title = `${title} - ${employee.colaborador_completo}`;
-    const create = (tag, cls, value) => {
-      const element = doc.createElement(tag);
-      if (cls) element.className = cls;
-      if (value !== undefined) element.textContent = String(value);
-      return element;
-    };
-    const toolbar = create('div', 'toolbar');
-    const instruction = create('p', '', 'Vista previa para impresión · Revisa el contenido antes de emitirlo. En la ventana de impresión puedes elegir Guardar como PDF.');
-    const print = create('button', '', 'Imprimir / Guardar PDF');
-    print.type = 'button';
-    print.addEventListener('click', () => win.print());
-    toolbar.append(instruction, print);
-    const sheet = create('main', 'sheet');
-    sheet.append(create('div', 'brand', employee.empresa), create('p', 'draft', 'BORRADOR · Pendiente de revisión y firma del responsable'), create('h1', '', title));
-    const fullName = employee.colaborador_completo || `${employee.nombres} ${employee.apellidos}`;
-    const identity = `${employee.tipo_documento || 'Documento'} N.° ${employee.numero_documento}`;
-    if (type === 'carta') {
-      sheet.append(create('p', '', 'A quien corresponda:'), create('p', '', `Por medio de la presente, ${employee.empresa} presenta a ${fullName}, identificado(a) con ${identity}, registrado(a) como ${employee.cargo || 'colaborador(a)'} en el área de ${employee.area || 'la empresa'}.`), create('p', '', 'Esta carta se extiende para su presentación y para las gestiones que correspondan. La información consignada procede de su ficha de personal y debe ser verificada por el responsable antes de la firma.'));
-    } else if (type === 'horas') {
-      const hours = Number(ficha.progresoHoras?.horasRealizadas);
-      if (!Number.isFinite(hours)) throw new Error('No hay información válida de horas para generar la constancia.');
-      sheet.append(create('p', '', `Se deja constancia de que ${fullName}, identificado(a) con ${identity}, registra un total de ${hours.toLocaleString('es-PE', { maximumFractionDigits: 2 })} horas de asistencia en ${employee.empresa}, de acuerdo con la información disponible en el sistema al momento de esta consulta.`), create('p', '', `Área: ${employee.area || 'Sin área registrada'}. Cargo: ${employee.cargo || 'Sin cargo registrado'}.`), create('p', '', 'La cantidad corresponde a la suma de las horas registradas en las asistencias del colaborador. El responsable deberá revisar y validar estos registros antes de emitir la constancia.'));
-    } else {
-      if (employee.tipo_vinculo !== 'trabajador') throw new Error('El certificado de trabajo corresponde a colaboradores con vínculo de trabajador. Para esta persona puedes generar una carta de presentación o constancia de horas.');
-      const joining = employee.fecha_ingreso ? ` con fecha de ingreso ${displayDate(employee.fecha_ingreso)}` : '';
-      sheet.append(create('p', '', `${employee.empresa} hace constar que ${fullName}, identificado(a) con ${identity}, figura en sus registros de personal como trabajador(a) en el cargo de ${employee.cargo || 'cargo no registrado'}, en el área de ${employee.area || 'área no registrada'}${joining}.`), create('p', '', `Estado registrado en el sistema: ${employee.estado || 'No especificado'}.`), create('p', '', 'Se extiende el presente documento con base en la información de su ficha de personal. Los datos y el período laboral deberán ser confirmados por el responsable antes de su emisión.'));
+  function normalizedName(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/&/g, ' y ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  }
+
+  function generationModel() {
+    return state.generationCatalogs?.modelos?.find(item => item.id === $('generarModelo').value);
+  }
+
+  function matchingCompanyModel(models) {
+    const company = state.generationCatalogs?.empresas.find(item => String(item.id) === $('generarEmpresa').value);
+    if (!company) return null;
+    if (Object.hasOwn(company, 'empresa_modelo_clave')) return models.find(item => item.empresa_clave === company.empresa_modelo_clave) || null;
+    const ruc = String(company.ruc || '').replace(/[\s-]/g, '');
+    if (ruc) return models.find(item => String(item.empresa_ruc || item.datos_predeterminados?.ruc || '') === ruc) || null;
+    const normalizeCompany = value => normalizedName(value).replace(/\s+(?:s a c|sac|s a|sa|e i r l|eirl)$/, '').trim();
+    const name = normalizeCompany(company.razon_social);
+    return models.find(item => (item.empresa_aliases || [item.empresa_clave]).some(alias => {
+      const candidate = normalizeCompany(alias);
+      return candidate && name === candidate;
+    })) || null;
+  }
+
+  function matchingModel(models) {
+    const employee = state.generationFicha?.empleado;
+    if (!employee) return null;
+    if ($('generarTipo').value === 'aceptacion') return matchingCompanyModel(models);
+    const career = normalizedName(employee.carrera);
+    if (!career) return null;
+    return models.find(item => [item.carrera, ...(item.carrera_aliases || [])].some(alias => normalizedName(alias) === career));
+  }
+
+  function dateInputValue(value) {
+    const iso = String(value || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
+  }
+
+  function modelFieldGroup(key) {
+    if (key.startsWith('institucion_') || key.startsWith('destinatario')) return 'Institución educativa y destinatario';
+    if (key.startsWith('empresa_') || key.startsWith('representante') || key === 'actividad_economica') return 'Empresa y representante';
+    if (['carrera', 'direccion', 'fecha_nacimiento'].includes(key)) return 'Datos personales y formación';
+    return 'Fechas, horario y responsable';
+  }
+
+  function renderModelFields() {
+    const model = generationModel();
+    $('generarDatosModelo').replaceChildren();
+    const template = state.generationCatalogs?.plantillas.find(item => item.codigo === (model?.id || $('generarTipo').value)) || model;
+    if (!template) return;
+    const employee = state.generationFicha?.empleado || {};
+    const company = state.generationCatalogs.empresas.find(item => String(item.id) === $('generarEmpresa').value) || {};
+    const defaults = { ...model?.datos_predeterminados };
+    const companyModel = matchingCompanyModel((state.generationCatalogs.modelos || []).filter(item => item.codigo === 'aceptacion'));
+    Object.entries(companyModel?.datos_predeterminados || {}).forEach(([key, value]) => {
+      if (/^(empresa_|representante|supervisor)/.test(key) || key === 'actividad_economica') defaults[key] = value;
+    });
+    ['carrera', 'institucion_educativa', 'direccion', 'fecha_nacimiento', 'fecha_ingreso'].forEach(key => {
+      if (employee[key]) defaults[key] = employee[key];
+    });
+    const endDate = model ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
+    if (endDate) defaults.fecha_finalizacion = endDate;
+    if (company.direccion) defaults.empresa_direccion = company.direccion;
+    if (model?.carrera) defaults.carrera = model.carrera;
+    const required = new Set(model?.campos_requeridos || []);
+    const placeholders = new Set([...`${template.titulo || ''}\n${template.cuerpo || ''}`.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
+    if (model || template.personalizada) placeholders.forEach(key => required.add(key));
+    if (placeholders.has('formacion_academica')) { placeholders.add('carrera'); placeholders.add('institucion_educativa'); }
+    if (placeholders.has('lugar_fecha')) placeholders.add('ciudad');
+    const groups = new Map();
+    (state.generationCatalogs.campos_modelo || []).filter(field => required.has(field.clave) || placeholders.has(field.clave)).forEach(field => {
+      const groupName = modelFieldGroup(field.clave);
+      if (!groups.has(groupName)) {
+        const fieldset = node('fieldset', 'model-fieldset');
+        fieldset.appendChild(node('legend', '', groupName));
+        const grid = node('div', 'generation-fields');
+        fieldset.appendChild(grid);
+        groups.set(groupName, grid);
+        $('generarDatosModelo').appendChild(fieldset);
+      }
+      const label = node('label', '', field.etiqueta + (required.has(field.clave) ? ' *' : ''));
+      const input = node(field.tipo === 'textarea' ? 'textarea' : 'input');
+      if (input.tagName === 'INPUT') input.type = ['date', 'number', 'tel', 'email'].includes(field.tipo) ? field.tipo : 'text';
+      if (input.tagName === 'TEXTAREA') { input.rows = 3; label.classList.add('model-wide'); }
+      input.id = 'generarDato_' + field.clave;
+      input.name = field.clave;
+      input.dataset.documentField = field.clave;
+      input.required = required.has(field.clave);
+      input.maxLength = field.maximo || 1000;
+      if (input.type === 'number') { input.min = '0'; input.step = '0.01'; }
+      input.value = input.type === 'date' ? dateInputValue(defaults[field.clave]) : String(defaults[field.clave] ?? '');
+      label.htmlFor = input.id;
+      label.appendChild(input);
+      groups.get(groupName).appendChild(label);
+    });
+  }
+
+  function fillGenerationModels() {
+    const models = (state.generationCatalogs?.modelos || []).filter(item => item.codigo === $('generarTipo').value);
+    const acceptance = $('generarTipo').value === 'aceptacion';
+    $('generarModeloSelector').hidden = !models.length;
+    fillSelect('generarModelo', models, 'nombre', acceptance ? 'Plantilla general de aceptación' : 'Selecciona un modelo');
+    const selected = matchingModel(models);
+    $('generarModelo').required = Boolean(models.length) && (!acceptance || Boolean(selected));
+    $('generarModelo').options[0].disabled = acceptance && Boolean(selected);
+    $('generarModelo').value = selected?.id || '';
+    $('generarModeloAyuda').textContent = selected
+      ? 'Modelo seleccionado según los datos del expediente. Revisa la información antes de emitir.'
+      : acceptance ? 'Se usará la plantilla general. Puedes elegir un modelo si corresponde a la empresa seleccionada.'
+        : 'Selecciona el modelo correspondiente a la carrera del colaborador.';
+    renderModelFields();
+    $('generarModeloCampos').hidden = !models.length && !$('generarDatosModelo').children.length;
+  }
+
+  function fillGenerationAreas() {
+    fillSelect('generarArea', (state.generationCatalogs?.areas || []).filter(item => String(item.empresa_id) === $('generarEmpresa').value), 'nombre', 'Selecciona un área');
+    fillGenerationPositions();
+  }
+
+  function fillGenerationPositions() {
+    fillSelect('generarCargo', (state.generationCatalogs?.cargos || []).filter(item => String(item.area_id) === $('generarArea').value), 'nombre', 'Selecciona un cargo');
+  }
+
+  function fillGenerationHours() {
+    const progress = state.generationFicha?.progresoHoras;
+    if (!progress) return;
+    $('generarHoras').value = Number(['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes($('generarTipo').value) ? progress.horasMeta : progress.horasRealizadas) || 0;
+    $('generarHorasAyuda').textContent = 'Expediente: ' + (Number(progress.horasRealizadas) || 0) + ' horas registradas de ' + (Number(progress.horasMeta) || 0) + ' previstas. Puedes ajustar las horas de este documento antes de emitirlo.';
+  }
+
+  async function fillGenerationEmployee() {
+    const revision = (state.employeeRevision || 0) + 1;
+    state.employeeRevision = revision;
+    state.generationFicha = null;
+    $('generarHoras').value = '';
+    $('generarEmpresa').value = '';
+    fillGenerationAreas();
+    fillGenerationModels();
+    const id = $('generarEmpleado').value;
+    state.employeeLoading = Boolean(id);
+    $('btnCrearVista').disabled = Boolean(id);
+    if (!id) return;
+    formError('errorGenerar');
+    try {
+      const response = await request('/personal/' + id);
+      if (revision !== state.employeeRevision) return;
+      const ficha = response.data || response;
+      if (!ficha.empleado) throw new Error('No se encontró la ficha del colaborador.');
+      state.generationFicha = ficha;
+      $('generarEmpresa').value = String(ficha.empleado.empresa_id);
+      fillGenerationAreas();
+      $('generarArea').value = String(ficha.empleado.area_id);
+      fillGenerationPositions();
+      $('generarCargo').value = String(ficha.empleado.cargo_id);
+      fillGenerationHours();
+      fillGenerationModels();
+    } catch (error) { if (revision === state.employeeRevision) formError('errorGenerar', friendlyError(error)); }
+    finally {
+      if (revision === state.employeeRevision) {
+        state.employeeLoading = false;
+        $('btnCrearVista').disabled = false;
+      }
     }
-    sheet.appendChild(create('p', 'date', `Fecha de elaboración: ${new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}`));
-    const signature = create('div', 'signature', 'Firma del responsable');
-    signature.append(create('span', '', 'Nombre y cargo: ________________________'));
-    sheet.append(signature, create('p', 'source', 'Elaborado desde SBSS con los datos actuales del sistema. Este borrador no contiene firma ni sello de autorización.'));
-    doc.body.replaceChildren(toolbar, sheet);
+  }
+
+  async function openGenerate(type = 'aceptacion') {
+    if (!state.catalogs || state.generating || $('modalGenerar').open) return;
+    $('formGenerar').reset();
+    state.generationFicha = null;
+    formError('errorGenerar');
+    $('generarTipo').value = Array.from($('generarTipo').options).some(option => option.value === type) ? type : 'aceptacion';
+    $('generarDatosModelo').replaceChildren();
+    $('generarModeloCampos').hidden = true;
+    const now = new Date();
+    $('generarFecha').value = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    $('generarEmpleado').value = state.selected ? String(state.selected.empleado_id) : state.employeeId;
+    $('modalGenerar').showModal();
+    setDialogBusy('modalGenerar', true);
+    try { await loadGenerationCatalogs(true); fillGenerationAreas(); }
+    catch (error) { state.generationCatalogs = null; formError('errorGenerar', friendlyError(error)); }
+    finally { setDialogBusy('modalGenerar', false); }
+    if (state.generationCatalogs) await fillGenerationEmployee();
   }
 
   async function submitGenerate(event) {
     event.preventDefault();
-    if (state.generating) return;
+    if (state.generating || state.employeeLoading) return;
     formError('errorGenerar');
-    if (!$('generarEmpleado').value) return;
-    // Abrir durante el clic evita que los navegadores bloqueen la ventana tras el fetch.
-    const preview = window.open('', '_blank');
-    if (!preview) {
-      formError('errorGenerar', 'El navegador bloqueó la ventana. Permite ventanas emergentes para este sitio y vuelve a generar el documento.');
-      return;
-    }
-    preview.opener = null;
-    preview.document.title = 'Preparando documento';
-    preview.document.body.textContent = 'Preparando la vista previa con los datos del colaborador…';
-    const employeeId = $('generarEmpleado').value;
-    const type = $('generarTipo').value;
     state.generating = true;
+    const payload = {
+      codigo: $('generarTipo').value, empleado_id: Number($('generarEmpleado').value),
+      empresa_id: Number($('generarEmpresa').value), area_id: Number($('generarArea').value),
+      cargo_id: Number($('generarCargo').value), fecha: $('generarFecha').value, horas: $('generarHoras').value
+    };
+    const model = generationModel();
+    if (model) payload.modelo_id = model.id;
+    const documentFields = Array.from($('generarDatosModelo').querySelectorAll('[data-document-field]'));
+    if (documentFields.length) payload.datos_documento = Object.fromEntries(documentFields.map(input => [input.dataset.documentField, input.value.trim()]));
     setDialogBusy('modalGenerar', true);
     $('btnCrearVista').textContent = 'Preparando…';
     try {
-      const data = await request(`/personal/${employeeId}`);
-      const ficha = data.data || data;
-      if (!ficha.empleado) throw new Error('No se encontraron los datos del colaborador.');
-      if (preview.closed) throw new Error('Se cerró la ventana de vista previa. Genera el documento nuevamente.');
-      writePrintPreview(preview, ficha, type);
+      const { documento } = await request('/documentos/generar/vista-previa', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const generatedPayload = { ...payload, revision_plantilla: documento.revision_plantilla };
+      const blob = await request('/documentos/generar/pdf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(generatedPayload)
+      }, true);
+      if (blob.type.split(';')[0] !== 'application/pdf') throw new Error('No se pudo obtener un PDF válido.');
+      state.generatedDocument = documento;
+      state.generatedPayload = generatedPayload;
+      const career = documento.carrera ?? payload.datos_documento?.carrera ?? state.generationFicha?.empleado?.carrera ?? '';
       $('modalGenerar').close();
-    } catch (error) {
-      if (!preview.closed) preview.close();
-      formError('errorGenerar', friendlyError(error));
-    } finally {
+      openPdfViewer(blob, {
+        ...documento, carrera: career, editable: true,
+        tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
+        papel: documento.estilo === 'formal'
+          ? (['convenio_pasantia', 'plan_capacitacion'].includes(documento.codigo) ? 'A4 · 210 × 297 mm' : 'Carta · 216 × 279 mm')
+          : 'A4 · 210 × 297 mm'
+      });
+    } catch (error) { formError('errorGenerar', friendlyError(error)); }
+    finally {
       state.generating = false;
       setDialogBusy('modalGenerar', false);
       $('btnCrearVista').textContent = 'Abrir vista previa';
     }
+  }
+
+  function releasePdfViewer() {
+    clearTimeout(state.viewerLoadTimer);
+    $('generadoPdf').removeAttribute('src');
+    $('abrirPdfExterno').removeAttribute('href');
+    if (state.viewerUrl) URL.revokeObjectURL(state.viewerUrl);
+    state.viewerUrl = null;
+    state.viewerReady = false;
+    $('btnImprimirPdf').disabled = true;
+  }
+
+  function loadPdfViewer() {
+    state.viewerReady = false;
+    $('btnImprimirPdf').disabled = true;
+    $('estadoVistaPdf').textContent = 'Cargando documento…';
+    $('generadoPdf').src = state.viewerUrl + '#toolbar=0&navpanes=0&view=' + state.viewerZoom;
+    clearTimeout(state.viewerLoadTimer);
+    state.viewerLoadTimer = setTimeout(() => {
+      if (state.viewerUrl && !state.viewerReady) $('estadoVistaPdf').textContent = 'Si el documento no aparece, ábrelo en otra pestaña o descárgalo.';
+    }, 8000);
+  }
+
+  function openPdfViewer(blob, documento) {
+    releasePdfViewer();
+    state.viewerUrl = URL.createObjectURL(blob);
+    state.viewerDocument = documento;
+    state.viewerZoom = 'Fit';
+    $('generadoPdf').hidden = false;
+    $('documentoGenerado').hidden = true;
+    $('btnAmpliarPdf').textContent = 'Ajustar al ancho';
+    $('btnAmpliarPdf').setAttribute('aria-pressed', 'false');
+    $('btnAmpliarPdf').setAttribute('aria-label', 'Ampliar documento al ancho');
+    $('btnAmpliarPdf').disabled = false;
+    $('tituloDocumentoGenerado').textContent = documento.tipo_documento_nombre || documento.titulo;
+    $('generadoColaborador').textContent = documento.trabajador;
+    $('generadoEmpresaContexto').textContent = documento.empresa;
+    $('generadoCarrera').textContent = documento.carrera || '';
+    $('generadoCarreraDato').hidden = !documento.carrera;
+    $('btnTextoGenerado').textContent = 'Ver texto';
+    $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
+    $('btnTextoGenerado').hidden = !documento.cuerpo;
+    $('btnVolverGenerar').hidden = !documento.editable;
+    $('generadoModelo').textContent = documento.modelo_nombre || '';
+    $('generadoModelo').hidden = !documento.modelo_nombre;
+    $('generadoPapel').textContent = documento.papel ? 'Tamaño del documento: ' + documento.papel : '';
+    $('generadoPapel').hidden = !documento.papel;
+    $('generadoEmpresa').textContent = documento.empresa;
+    $('generadoTitulo').textContent = documento.titulo || documento.tipo_documento_nombre;
+    $('generadoCuerpo').textContent = (documento.cuerpo || '').replace(/\f/g, '\n\n');
+    $('abrirPdfExterno').href = state.viewerUrl;
+    formError('errorPdf');
+    loadPdfViewer();
+    $('modalDocumentoGenerado').showModal();
+  }
+
+  function printPdf() {
+    if (!state.viewerUrl || !state.viewerReady) return;
+    formError('errorPdf');
+    // Se imprime el mismo PDF que se previsualiza y descarga, incluso en modo texto.
+    const frame = $('generadoPdf');
+    frame.hidden = false;
+    $('documentoGenerado').hidden = true;
+    $('btnAmpliarPdf').disabled = false;
+    $('btnTextoGenerado').textContent = 'Ver texto';
+    $('btnTextoGenerado').setAttribute('aria-pressed', 'false');
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (_) {
+      formError('errorPdf', 'Abre el PDF en otra pestaña para imprimirlo con el visor de tu navegador.');
+    }
+  }
+
+  async function downloadGenerated() {
+    if (!state.viewerUrl || state.downloadingGenerated) return;
+    state.downloadingGenerated = true;
+    $('btnPdfGenerado').disabled = true;
+    formError('errorPdf');
+    try {
+      const anchor = node('a');
+      anchor.href = state.viewerUrl;
+      anchor.download = state.viewerDocument.nombre_archivo || 'documento.pdf';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (error) { formError('errorPdf', friendlyError(error)); }
+    finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
+  }
+
+  function fillTemplateEditor() {
+    const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
+    $('plantillaTitulo').value = template?.titulo || '';
+    $('plantillaCuerpo').value = template?.cuerpo || '';
+    formError('errorPlantilla');
+  }
+
+  async function openTemplateEditor() {
+    if ($('modalPlantillas').open) return;
+    $('modalPlantillas').showModal();
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const catalogs = await loadGenerationCatalogs(true);
+      $('plantillaCodigo').value = catalogs.plantillas[0]?.codigo || '';
+      fillTemplateEditor();
+      $('plantillaCampos').replaceChildren(...catalogs.campos.map(campo => {
+        const button = node('button', '', '{{' + campo + '}}');
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          const input = $('plantillaCuerpo');
+          input.setRangeText('{{' + campo + '}}', input.selectionStart, input.selectionEnd, 'end');
+          input.focus();
+        });
+        return button;
+      }));
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally { setDialogBusy('modalPlantillas', false); }
+  }
+
+  async function saveTemplate(event) {
+    event.preventDefault();
+    if (state.savingTemplate) return;
+    state.savingTemplate = true;
+    formError('errorPlantilla');
+    const codigo = $('plantillaCodigo').value;
+    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value };
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const { plantilla } = await request('/documentos/plantillas/' + encodeURIComponent(codigo), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      state.generationCatalogs.plantillas = state.generationCatalogs.plantillas.map(item => item.codigo === codigo ? plantilla : item);
+      $('modalPlantillas').close();
+      notify('Plantilla guardada. Se utilizará en los próximos documentos.');
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally { state.savingTemplate = false; setDialogBusy('modalPlantillas', false); }
   }
 
   function applyFilters() {
@@ -620,6 +912,14 @@
     $('btnReintentar').addEventListener('click', () => loadDocuments());
     $('btnActualizarLista').addEventListener('click', () => loadDocuments());
     $('btnCerrarVista').addEventListener('click', () => clearPreview());
+    $('btnAbrirVistaCompleta').addEventListener('click', () => {
+      if (!state.previewBlob || !state.selected) return;
+      const row = state.selected;
+      openPdfViewer(state.previewBlob, {
+        tipo_documento_nombre: row.tipo_documento, trabajador: row.colaborador,
+        empresa: row.empresa, nombre_archivo: row.nombre_archivo
+      });
+    });
     $('btnDescargar').addEventListener('click', event => downloadFile(state.selected, event.currentTarget));
     $('btnSubir').addEventListener('click', () => openUpload());
     $('btnNuevaVersion').addEventListener('click', () => openUpload(state.selected));
@@ -629,6 +929,46 @@
     $('btnGenerar').addEventListener('click', () => openGenerate());
     document.querySelectorAll('[data-plantilla]').forEach(button => button.addEventListener('click', () => openGenerate(button.dataset.plantilla)));
     $('formGenerar').addEventListener('submit', submitGenerate);
+    $('generarEmpleado').addEventListener('change', fillGenerationEmployee);
+    $('generarTipo').addEventListener('change', () => { fillGenerationHours(); fillGenerationModels(); });
+    $('generarEmpresa').addEventListener('change', () => { fillGenerationAreas(); fillGenerationModels(); });
+    $('generarModelo').addEventListener('change', () => {
+      $('generarModeloAyuda').textContent = 'Revisa y completa los datos del modelo seleccionado. Los campos con * son obligatorios.';
+      renderModelFields();
+    });
+    $('generarArea').addEventListener('change', fillGenerationPositions);
+    $('btnPdfGenerado').addEventListener('click', downloadGenerated);
+    $('btnImprimirPdf').addEventListener('click', printPdf);
+    $('generadoPdf').addEventListener('load', () => {
+      if (!state.viewerUrl || !$('generadoPdf').getAttribute('src')?.startsWith(state.viewerUrl)) return;
+      clearTimeout(state.viewerLoadTimer);
+      state.viewerReady = true;
+      $('btnImprimirPdf').disabled = false;
+      $('estadoVistaPdf').textContent = 'Si no ves el documento, abre el PDF en otra pestaña.';
+    });
+    $('modalDocumentoGenerado').addEventListener('close', releasePdfViewer);
+    $('btnAmpliarPdf').addEventListener('click', () => {
+      if (!state.viewerUrl) return;
+      const expand = state.viewerZoom !== 'FitH';
+      state.viewerZoom = expand ? 'FitH' : 'Fit';
+      $('generadoPdf').src = state.viewerUrl + '#toolbar=0&navpanes=0&view=' + state.viewerZoom;
+      $('btnAmpliarPdf').textContent = expand ? 'Página completa' : 'Ajustar al ancho';
+      $('btnAmpliarPdf').setAttribute('aria-pressed', String(expand));
+      $('btnAmpliarPdf').setAttribute('aria-label', expand ? 'Mostrar página completa' : 'Ampliar documento al ancho');
+    });
+    $('btnTextoGenerado').addEventListener('click', () => {
+      const showText = $('documentoGenerado').hidden;
+      $('documentoGenerado').hidden = !showText;
+      $('generadoPdf').hidden = showText;
+      $('btnAmpliarPdf').disabled = showText;
+      $('btnTextoGenerado').textContent = showText ? 'Ver PDF' : 'Ver texto';
+      $('btnTextoGenerado').setAttribute('aria-pressed', String(showText));
+    });
+    $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
+    $('btnPlantillas').addEventListener('click', openTemplateEditor);
+    $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('formPlantilla').addEventListener('submit', saveTemplate);
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
@@ -636,17 +976,29 @@
       state.listController?.abort();
       state.previewController?.abort();
       if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+      releasePdfViewer();
     });
   }
 
   async function initialize() {
     const session = await window.SBSSSession.ready;
     if (!session) return;
+    if (generationView) {
+      document.title = 'SBSS · Generar documentos';
+      document.body.classList.add('generation-view');
+      document.querySelector('.page-heading h1').textContent = 'Generar documentos';
+      document.querySelector('.page-heading p').textContent = 'Selecciona una plantilla, completa los datos y descarga el documento en PDF.';
+      const expediente = node('a', 'button button-outline', 'Ver documentos del personal');
+      expediente.href = 'Documentos.html';
+      document.querySelector('.heading-actions').append(expediente);
+    }
     bindEvents();
     const initialState = new URLSearchParams(location.search).get('estado');
     if (Object.hasOwn(STATES, initialState)) $('fEstado').value = initialState;
     setCatalogButtons();
     await loadDocuments();
+    const initialTemplate = new URLSearchParams(location.search).get('generar');
+    if ((initialTemplate || generationView) && state.catalogs) await openGenerate(initialTemplate || 'aceptacion');
   }
 
   initialize();

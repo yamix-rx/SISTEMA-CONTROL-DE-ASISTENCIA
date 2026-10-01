@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBSS · Contratos</title>
+  <link rel="stylesheet" href="css/session.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/contratos.css">
+  <script src="js/navigation.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/sidebar.js" defer></script>
+  <script src="js/contratos.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 17.9 15"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M8 11v7M12 11v7M16 11v7M6 7l1 14h10l1-14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </defs></svg>
+
+  <header class="sbss-header module-header">
+    <div class="sbss-brand">SBSS</div><span class="header-context">Gestión de personal</span>
+    <div class="user-details"><strong id="nombreUsuarioSesion">Usuario</strong><span id="rolUsuarioSesion"></span></div>
+    <span class="avatar" id="avatarLetra">U</span>
+    <button class="logout-button" id="btnCerrarSesion" type="button">Salir</button>
+  </header>
+
+  <div class="sbss-navigation-layout">
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú lateral"></button>
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú de módulos"></aside>
+
+    <main class="module-main" id="contenido">
+      <section class="page-heading">
+        <div class="heading-copy">
+          <span class="title-icon"><svg class="icon"><use href="#i-file"/></svg></span>
+          <div><h1>Gestión de Contratos</h1><p>Administra los contratos de los trabajadores y practicantes.</p></div>
+        </div>
+        <button class="button button-primary" id="btnNuevoContrato" type="button"><svg class="icon"><use href="#i-plus"/></svg>Nuevo contrato</button>
+      </section>
+
+      <div id="mensajeContratos" class="notice" hidden role="status"></div>
+
+      <section class="filters panel" aria-label="Filtros de contratos">
+        <label class="search-field">Buscar
+          <span class="search-box"><svg class="icon"><use href="#i-search"/></svg><input id="buscarContrato" type="search" placeholder="Nombre, DNI, código o tipo..."></span>
+        </label>
+        <label>Empresa<select id="filtroEmpresa"><option value="">Todas las empresas</option></select></label>
+        <label>Tipo de contrato<select id="filtroTipo"><option value="">Todos los tipos</option></select></label>
+        <label>Estado<select id="filtroEstado"><option value="">Todos los estados</option></select></label>
+        <div class="filter-actions">
+          <button class="button button-primary" id="btnBuscar" type="button"><svg class="icon"><use href="#i-search"/></svg>Buscar</button>
+          <button class="button button-outline" id="btnLimpiar" type="button"><svg class="icon"><use href="#i-refresh"/></svg>Limpiar</button>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="Resumen de contratos">
+        <button class="summary-card tone-blue" data-resumen-estado="" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-file"/></svg></span><span><small>Total de contratos</small><strong id="resTotal">0</strong></span></button>
+        <button class="summary-card tone-green" data-resumen-estado="vigente" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-check"/></svg></span><span><small>Vigentes</small><strong id="resVigentes">0</strong></span></button>
+        <button class="summary-card tone-amber" data-resumen-estado="por_vencer" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-clock"/></svg></span><span><small>Por vencer</small><strong id="resPorVencer">0</strong></span></button>
+        <button class="summary-card tone-red" data-resumen-estado="vencido" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-alert"/></svg></span><span><small>Vencidos</small><strong id="resVencidos">0</strong></span></button>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="panel-heading"><div><h2>Contratos registrados</h2><p id="contadorContratos">Cargando...</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Trabajador / Practicante</th><th>Empresa</th><th>Tipo de contrato</th><th>Fecha inicio</th><th>Fecha fin</th><th>Remuneración</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaContratos"><tr><td colspan="9" class="table-message">Cargando contratos...</td></tr></tbody>
+          </table>
+        </div>
+        <footer class="pagination"><span id="textoPaginacion">Mostrando 0 registros</span><div><button id="paginaAnterior" type="button" aria-label="Página anterior">‹</button><span id="paginasContratos"></span><button id="paginaSiguiente" type="button" aria-label="Página siguiente">›</button></div></footer>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="dialogContrato" class="form-dialog">
+    <form id="formContrato">
+      <input type="hidden" id="contratoId">
+      <div class="dialog-heading"><div><span class="eyebrow">CONTRATOS</span><h2 id="tituloFormContrato">Nuevo contrato</h2></div><button class="icon-button" type="button" data-close-dialog="dialogContrato"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      <p class="dialog-help">Registra la información contractual del colaborador.</p>
+      <div class="form-grid">
+        <label class="span-2">Colaborador *<select id="contratoEmpleado" required><option value="">Seleccione un colaborador</option></select></label>
+        <label>Código<input id="contratoCodigo" maxlength="40" placeholder="Automático si se deja vacío"></label>
+        <label>Tipo de contrato *<select id="contratoTipo" required></select></label>
+        <label>Modalidad<input id="contratoModalidad" maxlength="80" placeholder="Presencial, híbrida..."></label>
+        <label>Estado<select id="contratoEstado"><option value="borrador">Borrador</option><option value="vigente">Vigente</option><option value="finalizado">Finalizado</option><option value="cancelado">Cancelado</option></select></label>
+        <label>Fecha de inicio *<input id="contratoInicio" type="date" required></label>
+        <label>Fecha de fin<input id="contratoFin" type="date"></label>
+        <label>Remuneración (S/)<input id="contratoRemuneracion" type="number" min="0" step="0.01" placeholder="0.00"></label>
+        <label>Horas semanales<input id="contratoHoras" type="number" min="0.01" max="168" step="0.5" placeholder="48"></label>
+        <label class="span-2">Observaciones<textarea id="contratoObservaciones" rows="3" maxlength="4000" placeholder="Información adicional del contrato..."></textarea></label>
+      </div>
+      <p id="errorFormContrato" class="form-error" hidden></p>
+      <div class="dialog-actions"><button class="button button-outline" type="button" data-close-dialog="dialogContrato">Cancelar</button><button class="button button-primary" id="btnGuardarContrato" type="submit">Guardar contrato</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogDetalleContrato" class="detail-dialog">
+    <div class="dialog-heading"><div><span class="eyebrow">DETALLE</span><h2>Detalle del contrato</h2></div><button class="icon-button" type="button" data-close-dialog="dialogDetalleContrato"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div id="detalleContrato" class="detail-content"></div>
+    <div class="dialog-actions"><button class="button button-primary" type="button" data-close-dialog="dialogDetalleContrato">Cerrar</button></div>
+  </dialog>
+</body>
+</html>

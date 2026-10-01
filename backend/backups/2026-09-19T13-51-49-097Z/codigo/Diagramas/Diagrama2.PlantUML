@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+
+actor "Trabajador / Practicante" as Practicante
+
+rectangle "Sistema Control de Asistencia" {
+  usecase "CU-01: Iniciar Sesión" as CU01
+  usecase "CU-11: Consultar Expediente Individual" as CU11
+  usecase "CU-11a: Visualizar Barra de Progreso de Horas" as CU11a
+  usecase "CU-11b: Consultar % Asistencia y Tardanzas" as CU11b
+  usecase "CU-08a: Solicitar Permiso con Sustento" as CU08a
+  usecase "CU-10a: Descargar Constancias Emitidas" as CU10a
+}
+
+Practicante --> CU01
+Practicante --> CU11
+Practicante --> CU08a
+Practicante --> CU10a
+
+CU11 ..> CU11a : <<include>>
+CU11 ..> CU11b : <<include>>
+@enduml

@@ -7,6 +7,7 @@ const TIPOS_CONTRATO = [
   'Plazo fijo',
   'Prácticas preprofesionales',
   'Prácticas profesionales',
+  'Convenio de prácticas',
   'Locación de servicios',
   'Adenda'
 ];
@@ -93,6 +94,10 @@ function normalizarPayload(body, base = {}) {
 
   if (!data.empleado_id) throw errorHttp(400, 'El colaborador es obligatorio.');
   if (!data.tipo_contrato) throw errorHttp(400, 'El tipo de contrato es obligatorio.');
+  // Los registros históricos pueden conservar su tipo anterior; los nuevos tipos deben pertenecer al catálogo.
+  if (!TIPOS_CONTRATO.includes(data.tipo_contrato) && data.tipo_contrato !== base.tipo_contrato) {
+    throw errorHttp(400, 'Tipo de contrato no permitido.');
+  }
   if (!data.fecha_inicio) throw errorHttp(400, 'La fecha de inicio es obligatoria.');
   if (data.fecha_fin && data.fecha_fin < data.fecha_inicio) {
     throw errorHttp(400, 'La fecha de fin no puede ser anterior a la fecha de inicio.');

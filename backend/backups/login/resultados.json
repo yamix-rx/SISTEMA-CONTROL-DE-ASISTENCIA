@@ -1,0 +1,157 @@
+{
+  "checkedAt": "2026-09-19T14:52:39.528Z",
+  "results": [
+    {
+      "name": "servidor-directo",
+      "url": "http://localhost:3000/login.html",
+      "width": 390,
+      "javascript": [],
+      "requests": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        }
+      ],
+      "responses": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        }
+      ],
+      "layout": {
+        "url": "http://localhost:3000/login.html",
+        "viewport": 390,
+        "scrollWidth": 390,
+        "cardWidth": 350,
+        "fieldsDisabled": false,
+        "submitDisabled": false,
+        "connectionHidden": true,
+        "passwordType": "password",
+        "formMethod": "post",
+        "externalIcons": "undefined"
+      },
+      "screenshot": "servidor-directo-390.png",
+      "ok": true
+    },
+    {
+      "name": "servidor-directo",
+      "url": "http://localhost:3000/login.html",
+      "width": 1440,
+      "javascript": [],
+      "requests": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        }
+      ],
+      "responses": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        }
+      ],
+      "layout": {
+        "url": "http://localhost:3000/login.html",
+        "viewport": 1440,
+        "scrollWidth": 1440,
+        "cardWidth": 380,
+        "fieldsDisabled": false,
+        "submitDisabled": false,
+        "connectionHidden": true,
+        "passwordType": "password",
+        "formMethod": "post",
+        "externalIcons": "undefined"
+      },
+      "screenshot": "servidor-directo-1440.png",
+      "ok": true
+    },
+    {
+      "name": "archivo-local",
+      "url": "file:///C:/Users/dr891/OneDrive/Desktop/Promo%20de%20Asistencia/SISTEMA-CONTROL-DE-ASISTENCIA/frontend/login.html",
+      "width": 390,
+      "javascript": [],
+      "requests": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        }
+      ],
+      "responses": [
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        }
+      ],
+      "layout": {
+        "url": "http://localhost:3000/login.html",
+        "viewport": 390,
+        "scrollWidth": 390,
+        "cardWidth": 350,
+        "fieldsDisabled": false,
+        "submitDisabled": false,
+        "connectionHidden": true,
+        "passwordType": "password",
+        "formMethod": "post",
+        "externalIcons": "undefined"
+      },
+      "screenshot": "archivo-local-390.png",
+      "ok": true
+    },
+    {
+      "name": "servidor-estatico",
+      "url": "http://localhost:5500/login.html",
+      "width": 390,
+      "javascript": [],
+      "requests": [
+        {
+          "url": "http://localhost:5500/api/auth/disponibilidad",
+          "method": "GET"
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "method": "GET"
+        }
+      ],
+      "responses": [
+        {
+          "url": "http://localhost:5500/api/auth/disponibilidad",
+          "status": 404
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        },
+        {
+          "url": "http://localhost:3000/api/auth/disponibilidad",
+          "status": 200
+        }
+      ],
+      "layout": {
+        "url": "http://localhost:3000/login.html",
+        "viewport": 390,
+        "scrollWidth": 390,
+        "cardWidth": 350,
+        "fieldsDisabled": false,
+        "submitDisabled": false,
+        "connectionHidden": true,
+        "passwordType": "password",
+        "formMethod": "post",
+        "externalIcons": "undefined"
+      },
+      "screenshot": "servidor-estatico-390.png",
+      "ok": true
+    }
+  ]
+}

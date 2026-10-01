@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "action": "Alta, edición y borrado opcional de puesto/convenio; contexto exclusivo de practicantes",
+      "width": 390,
+      "ok": true,
+      "bounds": {
+        "documentWidth": 390,
+        "width": 390,
+        "dialogWidth": 352,
+        "scrollWidth": 350,
+        "clientWidth": 350
+      }
+    },
+    {
+      "action": "Alta, edición y borrado opcional de puesto/convenio; contexto exclusivo de practicantes",
+      "width": 1440,
+      "ok": true,
+      "bounds": {
+        "documentWidth": 1425,
+        "width": 1440,
+        "dialogWidth": 900,
+        "scrollWidth": 898,
+        "clientWidth": 898
+      }
+    },
+    {
+      "action": "Personal normal: trabajador inicial y cambio de vínculo conserva fecha histórica por omisión",
+      "ok": true
+    }
+  ],
+  "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '29 set. 2026'\n- '29/09/2026'\n     ^\n",
+  "javascript": []
+}
