@@ -97,6 +97,43 @@ test('login devuelve el panel y los permisos de cada uno de los tres roles', asy
   }
 });
 
+test('login acepta contraseñas en texto plano y en formato BCrypt', async () => {
+  const plainText = 'Password-en-texto-plano';
+  cuentas.get(1).password = plainText;
+  cuentas.get(2).password = passwordHash;
+
+  const plainLogin = await request('/api/auth/login', { method: 'POST', body: { email: cuentas.get(1).email, password: plainText } });
+  assert.equal(plainLogin.status, 200);
+  assert.equal(plainLogin.body.usuario.rol, ROLES.ADMIN);
+
+  const hashLogin = await request('/api/auth/login', { method: 'POST', body: { email: cuentas.get(2).email, password } });
+  assert.equal(hashLogin.status, 200);
+  assert.equal(hashLogin.body.usuario.rol, ROLES.RRHH);
+});
+
+test('login funciona aunque la base de datos no tenga la columna sesion_version', async () => {
+  const database = require('../config/database');
+  const originalQuery = database.query.bind(database);
+  database.query = async (sql, params = []) => {
+    if (/sesion_version/.test(sql)) {
+      throw Object.assign(new Error('Unknown column "sesion_version" in field list'), { code: 'ER_BAD_FIELD_ERROR' });
+    }
+    return originalQuery(sql, params);
+  };
+
+  try {
+    const { buscarPorEmail } = require('../services/usuarioService');
+    const usuario = await buscarPorEmail('admin@fixture.invalid');
+    assert.ok(usuario);
+    assert.equal(usuario.email, 'admin@fixture.invalid');
+    const result = await request('/api/auth/login', { method: 'POST', body: { email: usuario.email, password } });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.usuario.rol, ROLES.ADMIN);
+  } finally {
+    database.query = originalQuery;
+  }
+});
+
 test('login rechaza roles desconocidos, cuentas inactivas y contraseñas incorrectas', async () => {
   cuentas.get(1).rol_nombre = 'Administrador';
   cuentas.get(2).activo = 0;

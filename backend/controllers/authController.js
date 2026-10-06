@@ -4,6 +4,16 @@ const { buscarPorEmail, usuarioPublico } = require('../services/usuarioService')
 const { obtenerAcceso } = require('../config/accessPolicy');
 const { registrarAuditoria } = require('../services/auditoriaService');
 
+function passwordMatches(passwordIngresada, passwordGuardada) {
+  if (typeof passwordGuardada !== 'string' || !passwordGuardada.trim()) return false;
+
+  if (passwordGuardada.startsWith('$2a$') || passwordGuardada.startsWith('$2b$') || passwordGuardada.startsWith('$2y$')) {
+    return bcrypt.compareSync(passwordIngresada, passwordGuardada);
+  }
+
+  return passwordIngresada === passwordGuardada;
+}
+
 exports.login = async (req, res) => {
   const { email, password } = req.body || {};
 
@@ -13,7 +23,7 @@ exports.login = async (req, res) => {
 
   try {
     const usuario = await buscarPorEmail(email.trim());
-    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+    if (!usuario || !passwordMatches(password, usuario.password)) {
       await registrarAuditoria({
         usuario_id: usuario?.usuario_id || null,
         tabla_afectada: 'sesiones',
@@ -42,7 +52,7 @@ exports.login = async (req, res) => {
     }
 
     // El token identifica la cuenta. Rol y empleado se consultan en cada petición.
-    const token = jwt.sign({ usuario_id: usuario.usuario_id, sv: Number(usuario.sesion_version || 0) }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ usuario_id: usuario.usuario_id, sv: Number(usuario?.sesion_version ?? 0) }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || '8h', algorithm: 'HS256'
     });
 

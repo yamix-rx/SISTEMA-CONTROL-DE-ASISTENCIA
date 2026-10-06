@@ -70,6 +70,8 @@ async function actualizarUsuario(usuarioId, body, actorId) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
+    const [columnas] = await connection.query("SHOW COLUMNS FROM usuarios LIKE 'sesion_version'");
+    const usaSesionVersion = columnas.length > 0;
     // Serializa cambios de administradores para impedir eliminar el último acceso.
     const [admins] = await connection.query(`SELECT u.id FROM usuarios u JOIN roles r ON r.id=u.rol_id
       WHERE u.activo=1 AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
@@ -79,7 +81,11 @@ async function actualizarUsuario(usuarioId, body, actorId) {
     const pierdeAdmin = !habilitado || perfil.nombre !== ROLES.ADMIN;
     if (usuario === Number(actorId) && pierdeAdmin) throw error('No puede desactivar ni quitar el perfil administrador a su propia cuenta.');
     if (pierdeAdmin && admins.some(a => a.id === usuario) && admins.length <= 1) throw error('Debe conservar al menos un administrador activo.');
-    await connection.query('UPDATE usuarios SET email=?, rol_id=?, activo=?, sesion_version=sesion_version+1 WHERE id=?', [email, rol, habilitado, usuario]);
+    const sql = usaSesionVersion
+      ? 'UPDATE usuarios SET email=?, rol_id=?, activo=?, sesion_version=sesion_version+1 WHERE id=?'
+      : 'UPDATE usuarios SET email=?, rol_id=?, activo=? WHERE id=?';
+    const params = usaSesionVersion ? [email, rol, habilitado, usuario] : [email, rol, habilitado, usuario];
+    await connection.query(sql, params);
     await connection.commit();
   } catch (e) { await connection.rollback(); throw e; }
   finally { connection.release(); }
@@ -88,7 +94,10 @@ async function actualizarUsuario(usuarioId, body, actorId) {
 async function restablecerClave(usuarioId, password) {
   const usuario = id(usuarioId);
   const hash = await bcrypt.hash(validarClave(password), 12);
-  const [result] = await pool.query('UPDATE usuarios SET password=?, sesion_version=sesion_version+1 WHERE id=?', [hash, usuario]);
+  const [columnas] = await pool.query("SHOW COLUMNS FROM usuarios LIKE 'sesion_version'");
+  const usaSesionVersion = columnas.length > 0;
+  const sql = usaSesionVersion ? 'UPDATE usuarios SET password=?, sesion_version=sesion_version+1 WHERE id=?' : 'UPDATE usuarios SET password=? WHERE id=?';
+  const [result] = await pool.query(sql, usaSesionVersion ? [hash, usuario] : [hash, usuario]);
   if (!result.affectedRows) throw error('La cuenta no existe.', 404);
   return usuario;
 }

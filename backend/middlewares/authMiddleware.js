@@ -18,7 +18,8 @@ exports.verificarToken = async (req, res, next) => {
 
   try {
     const usuario = await buscarPorId(decoded.usuario_id);
-    if (!usuario || Number(usuario.activo) !== 1 || Number(decoded.sv || 0) !== Number(usuario.sesion_version || 0)) {
+    const versionActual = Number(usuario?.sesion_version ?? 0);
+    if (!usuario || Number(usuario.activo) !== 1 || Number(decoded.sv || 0) !== versionActual) {
       return res.status(401).json({ ok: false, mensaje: 'La sesión ya no está activa. Inicie sesión nuevamente.' });
     }
     const acceso = obtenerAcceso(usuario.rol_nombre);
