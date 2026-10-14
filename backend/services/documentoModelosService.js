@@ -31,13 +31,13 @@ const CAMPOS_MODELO = Object.freeze([
 const FIRMAS = `
 _______________________________
 {{trabajador}}
-Documento de identidad: {{documento}}
+{{documento}}
 (Estudiante)
 
 _______________________________
 {{representante}}
 {{representante_cargo}}
-Contacto del supervisor: {{supervisor_telefono}}
+Contacto: {{supervisor_telefono}}
 
 _______________________________
 CENTRO DE FORMACIÓN PROFESIONAL
@@ -122,8 +122,7 @@ function cuerpoPlan(carrera) {
 [X] Plan Específico de Pasantía en la Empresa.
 [ ] Plan/Itinerario de Pasantía de Docentes y Catedráticos.
 
-I. DATOS GENERALES
-DE LA EMPRESA
+I. DATOS GENERALES DE LA EMPRESA
 1. Razón social de la empresa: {{empresa}}
 2. Actividad económica: {{actividad_economica}}
 3. Nombre del área en la que realizará el beneficiario su actividad formativa: {{area}}
@@ -135,15 +134,16 @@ DEL CENTRO DE FORMACIÓN PROFESIONAL
 EL BENEFICIARIO
 1.3. Nombres y apellidos del beneficiario: {{trabajador}}
 1.4. Condiciones pactadas entre el Beneficiario, la Empresa y el Centro de Formación Profesional:
-Monto de la subvención S/.: No aplica.
-Jornada formativa (días, horas): {{horario}}
-Pasante en: {{carrera}}
-Área: {{area}}
+Monto de la subvención S/. | No aplica.
+Jornada formativa (días, horas) | {{horario}}
+Pasante en | {{carrera}}
+Área | {{area}}
 
-II. OBJETIVO DEL PLAN
+\fII. OBJETIVO DEL PLAN
 Señala la información básica pertinente del proceso que el beneficiario seguirá a través de la modalidad materia del Convenio.
 2.1. Objetivos que debe lograr el beneficiario al término de su formación en la empresa (tomar como referencia los objetivos planteados para cada modalidad en la Ley Nº 28518).
-\fIII. ACTIVIDADES FORMATIVAS EN LA EMPRESA
+
+III. ACTIVIDADES FORMATIVAS EN LA EMPRESA
 3.1. Función principal del puesto de trabajo u ocupación donde se realizará la actividad formativa laboral
 ${carrera.funcion}
 
@@ -164,13 +164,13 @@ Competencias genéricas/transversales | Indicador de logro
 2. Comunicación oral y escrita | 2.1 ${carrera.indicador_comunicacion || 'Nivel de convencimiento para cerrar contratos.'}
 3. Capacidad crítica y autocrítica | 3.1 Argumentos individuales.
 4. Capacidad de análisis y síntesis | 4.1 Aportación de ideas innovadoras.
-\fIV. DURACIÓN
+
+IV. DURACIÓN
 4.1. Inicio y término
 Fecha de inicio: {{fecha_ingreso}}
 Fecha de término: {{fecha_finalizacion}}
 
 V. CONTEXTO FORMATIVO
-Elemento | Descripción
 INFRAESTRUCTURA Y AMBIENTE | {{empresa}}
 MAQUINARIAS/EQUIPOS | Computadora personal, dispositivo móvil.
 HERRAMIENTAS | Archivadores, libros de actas, etc.
@@ -182,7 +182,7 @@ Relación de áreas o departamentos donde rotará el/los beneficiarios, con la a
 Área o departamento
 1. {{area}}
 
-VII. MONITOREO Y EVALUACIÓN
+\fVII. MONITOREO Y EVALUACIÓN
 1. Evaluación personal del beneficiario en relación con los logros alcanzados a nivel de competencias específicas y competencias genéricas/transversales.
 2. Observación de las actividades formativas realizadas por el/los beneficiarios en la empresa:
 - A través de 4 (cuatro) Raps – Reportes de Actividades Periódicas, elaborados por el estudiante y firmados por el supervisor en la empresa.
@@ -214,9 +214,10 @@ function datosEmpresa(empresa) {
 }
 
 function modeloCarta(empresa) {
-  const cuerpo = `{{ciudad}}, {{fecha}}
+  const cuerpo = `${['sbss', 'camara'].includes(empresa.clave) ? '{{fecha}}' : '{{ciudad}}, {{fecha}}'}
 ${empresa.clave === 'nanas' ? '\n{{institucion_educativa}}\n' : ''}
 Estimado(a):
+
 {{destinatario}}
 {{destinatario_cargo}}
 
@@ -226,7 +227,7 @@ De mi consideración:
 
 Por medio de la presente me dirijo a usted para expresarle mi saludo cordial, y a la vez hacer de su conocimiento que nuestra empresa ha aceptado al siguiente estudiante:
 
-{{trabajador}} — {{documento}}
+- {{trabajador}} - {{documento}}
 
 Para desarrollo del proyecto en la modalidad de pasantía antes mencionado por un periodo de {{duracion}} o {{horas}} horas y así complementar su formación académica, del curso de prácticas, el cual es obligatorio para el estudiante y en lo dispuesto en la Ley Sobre Modalidades Formativas Laborales (Nº 28518).
 
@@ -236,7 +237,6 @@ Los datos para registro son los siguientes:
 - Supervisor del practicante: {{supervisor}}
 - Cel. supervisor: {{supervisor_telefono}}
 - Área de desempeño: {{area}}
-{{formacion_academica}}
 
 Atentamente,
 

@@ -14,6 +14,9 @@ function generarPdfFormal(documento) {
   if (documento.diseno === 'carta' || ['aceptacion', 'constancia_practicas', 'culminacion', 'carta', 'horas', 'trabajo'].includes(documento.codigo)) {
     return require('./documentoCartaPdfService').generarPdfCarta(documento);
   }
+  if (['convenio_pasantia', 'plan_capacitacion'].includes(documento.codigo)) {
+    return require('./documentoConvenioPdfService').generarPdfConvenio(documento);
+  }
   return new Promise((resolve, reject) => {
     const carta = documento.codigo === 'aceptacion';
     const regular = carta ? 'Times-Roman' : 'Helvetica';

@@ -19,10 +19,13 @@ function rutaFirma(clave) {
 }
 
 function generarPdfCarta(documento) {
+  if (documento.codigo === 'aceptacion' && Object.hasOwn(MARCAS, documento.logo || '')) {
+    return require('./documentoAceptacionPdfService').generarPdfAceptacion(documento);
+  }
   return new Promise((resolve, reject) => {
     const margen = 72;
     const doc = new PDFDocument({
-      size: 'LETTER', pdfVersion: '1.4', margins: { top: margen, bottom: 45, left: margen, right: 54 },
+      size: 'A4', pdfVersion: '1.4', margins: { top: margen, bottom: 45, left: margen, right: 54 },
       bufferPages: true,
       info: { Title: documento.titulo, Author: documento.empresa, Subject: documento.modelo_nombre || documento.titulo }
     });

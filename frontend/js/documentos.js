@@ -729,9 +729,7 @@
       openPdfViewer(blob, {
         ...documento, carrera: career, editable: true,
         tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
-        papel: documento.estilo === 'formal'
-          ? (['convenio_pasantia', 'plan_capacitacion'].includes(documento.codigo) ? 'A4 · 210 × 297 mm' : 'Carta · 216 × 279 mm')
-          : 'A4 · 210 × 297 mm'
+        papel: 'A4 · 210 × 297 mm'
       });
     } catch (error) { formError('errorGenerar', friendlyError(error)); }
     finally {
