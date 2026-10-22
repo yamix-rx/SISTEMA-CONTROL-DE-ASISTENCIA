@@ -184,29 +184,29 @@ body{
 .chart-card{min-width:0;padding:16px}
 .chart-card-wide{grid-column:1/-1}
 .chart-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
-.chart-heading h2{color:#49383b;font-size:15px;font-weight:700}
-.chart-heading p,.chart-caption{margin-top:4px;color:#79696a;font-size:11px}
-.chart-empty{padding:22px 12px;color:#79696a;font-size:12px;text-align:center}
-.attendance-total{margin-bottom:12px;color:#49383b;font-size:13px;font-weight:700}
-.stacked-track,.late-track{display:flex;width:100%;height:18px;overflow:hidden;border-radius:999px;background:#efe7e1}
+.chart-heading h2{color:var(--sbss-ink);font-size:15px;font-weight:700}
+.chart-heading p,.chart-caption{margin-top:4px;color:#547184;font-size:11px}
+.chart-empty{padding:22px 12px;color:#547184;font-size:12px;text-align:center}
+.attendance-total{margin-bottom:12px;color:var(--sbss-ink);font-size:13px;font-weight:700}
+.stacked-track,.late-track{display:flex;width:100%;height:18px;overflow:hidden;border-radius:999px;background:#d6e7f2}
 .stacked-track span,.late-track span{display:block;height:100%}
 .chart-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin-top:16px}
-.chart-legend-item{display:flex;align-items:center;gap:8px;color:#59494a;font-size:12px}
-.chart-legend-item strong{margin-left:auto;color:#49383b}
+.chart-legend-item{display:flex;align-items:center;gap:8px;color:#345b75;font-size:12px}
+.chart-legend-item strong{margin-left:auto;color:var(--sbss-ink)}
 .chart-swatch{width:10px;height:10px;flex:0 0 10px;border-radius:50%}
 .staff-chart-content{display:flex;align-items:center;justify-content:center;gap:28px}
 .donut-svg{width:150px;height:150px;flex:0 0 150px}
 .donut-svg circle{fill:none;stroke-width:22}
-.donut-track{stroke:#efe7e1}.donut-workers{stroke:#bd7e86}.donut-interns{stroke:#a795b5}
-.donut-total{fill:#49383b;font-size:25px;font-weight:700;text-anchor:middle}
-.donut-label{fill:#79696a;font-size:11px;text-anchor:middle}
+.donut-track{stroke:#d6e7f2}.donut-workers{stroke:var(--sbss-blue)}.donut-interns{stroke:var(--sbss-cyan)}
+.donut-total{fill:var(--sbss-ink);font-size:25px;font-weight:700;text-anchor:middle}
+.donut-label{fill:#547184;font-size:11px;text-anchor:middle}
 .late-list{display:grid;gap:13px}
 .late-row{display:grid;grid-template-columns:minmax(130px,1fr) minmax(100px,2fr) 34px;align-items:center;gap:12px}
 .late-copy{display:grid;min-width:0;gap:2px}
 .late-copy strong,.late-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.late-copy strong{color:#49383b;font-size:12px}.late-copy span{color:#79696a;font-size:10px}
-.late-track{height:10px}.late-track span{border-radius:999px;background:#bc7883}
-.late-count{color:#49383b;font-size:12px;text-align:right}
+.late-copy strong{color:var(--sbss-ink);font-size:12px}.late-copy span{color:#547184;font-size:10px}
+.late-track{height:10px}.late-track span{border-radius:999px;background:var(--sbss-blue)}
+.late-count{color:var(--sbss-ink);font-size:12px;text-align:right}
 @media(max-width:900px){.dashboard-charts{grid-template-columns:1fr}.chart-card-wide{grid-column:auto}}
 @media(max-width:540px){.staff-chart-content{flex-direction:column;gap:14px}.chart-legend{width:100%}.late-row{grid-template-columns:minmax(105px,1fr) minmax(65px,1.3fr) 28px;gap:8px}}
 
@@ -1187,10 +1187,10 @@ let listadoDocsOriginal = [];
 function renderizarGraficos(data) {
         const kpis = data.kpis || {};
         const asistencia = [
-                { label: 'Presentes', value: Number(kpis.presentesHoy) || 0, color: '#bd7e86' },
-                { label: 'Tardanzas', value: Number(kpis.tardanzasHoy) || 0, color: '#d49b78' },
-                { label: 'Faltas', value: Number(kpis.faltasHoy) || 0, color: '#a795b5' },
-                { label: 'Permisos', value: Number(kpis.permisosHoy) || 0, color: '#8eaaa0' }
+                { label: 'Presentes', value: Number(kpis.presentesHoy) || 0, color: '#198754' },
+                { label: 'Tardanzas', value: Number(kpis.tardanzasHoy) || 0, color: '#b77908' },
+                { label: 'Faltas', value: Number(kpis.faltasHoy) || 0, color: '#dc3545' },
+                { label: 'Permisos', value: Number(kpis.permisosHoy) || 0, color: 'var(--sbss-blue)' }
         ].map(item => ({ ...item, value: Math.max(0, item.value) }));
         const totalAsistencia = asistencia.reduce((total, item) => total + item.value, 0);
         const asistenciaChart = document.getElementById('graficoAsistencia');
@@ -1224,8 +1224,8 @@ function renderizarGraficos(data) {
                     <text class="donut-label" x="90" y="107">activos</text>
                 </svg>
                 <div class="chart-legend">
-                    <div class="chart-legend-item"><span class="chart-swatch" style="background:#bd7e86" aria-hidden="true"></span><span>Trabajadores</span><strong>${trabajadores}</strong></div>
-                    <div class="chart-legend-item"><span class="chart-swatch" style="background:#a795b5" aria-hidden="true"></span><span>Practicantes</span><strong>${practicantes}</strong></div>
+                    <div class="chart-legend-item"><span class="chart-swatch" style="background:var(--sbss-blue)" aria-hidden="true"></span><span>Trabajadores</span><strong>${trabajadores}</strong></div>
+                    <div class="chart-legend-item"><span class="chart-swatch" style="background:var(--sbss-cyan)" aria-hidden="true"></span><span>Practicantes</span><strong>${practicantes}</strong></div>
                 </div>
             </div>`;
 

@@ -2,6 +2,7 @@
 /* Permite encoger controles y tablas dentro de la cuadrícula móvil. */
 .admin-grid > * { min-width: 0; }
 .admin-form textarea { width: 100%; min-width: 0; min-height: 90px; max-width: 100%; padding: 9px; border: 1px solid #c9dce7; border-radius: 5px; font: inherit; resize: vertical; }
+.admin-form,.admin-panel { border-color: #b8d5e7; background: #eaf4fb; }
 .admin-form { width: 100%; }
 .admin-form fieldset, .admin-form input, .admin-form select { max-width: 100%; }
 .admin-header .sbss-brand { width: auto; flex: 0 0 auto; }

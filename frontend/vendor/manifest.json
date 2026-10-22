@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "contentSha256": "6dbe1a624aa6b5df0566622cc21ac3266ffc5bd26bb8fc31e22e83af9bb5ae87",
+  "contentSha256": "54039e1d1b4f7ff0ed4c3da9f4f3c72ab55f545484c1b35aff67b5832af9f955",
   "tools": {
     "node": ">=24"
   },

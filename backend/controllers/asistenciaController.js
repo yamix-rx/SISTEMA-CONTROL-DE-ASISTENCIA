@@ -1,5 +1,6 @@
 ﻿const pool = require('../config/database');
 const r = require('../services/asistenciaReglas');
+const diaria = require('../services/asistenciaDiariaService');
 const archivos = require('../services/documentoArchivoService');
 const { sanitizar } = require('../services/auditoriaService');
 const { ROLES } = require('../config/accessPolicy');
@@ -13,21 +14,8 @@ function auditar(res, tabla, registroId, accion, anterior, nuevos) {
 }
 exports.listarAsistencias = async (req, res) => {
   try {
-    const fecha = r.fecha(req.query.fecha || r.hoy()), f = r.filtrosPersonal(req.query), estado = req.query.estado;
-    if (estado && !r.ESTADOS.includes(estado)) throw r.error('Estado no válido.');
-    const [rows] = await pool.query(`SELECT a.id AS asistencia_id,e.id AS empleado_id,COALESCE(a.fecha,?) AS fecha,
-      a.hora_ingreso,a.hora_salida,a.tolerancia_minutos,
-      CASE WHEN a.id IS NULL THEN h.hora_entrada ELSE a.hora_programada_entrada END AS hora_programada,
-      CASE WHEN a.id IS NULL THEN h.hora_entrada ELSE a.hora_programada_entrada END AS hora_programada_entrada,
-      CASE WHEN a.id IS NULL THEN h.hora_salida ELSE a.hora_programada_salida END AS hora_programada_salida,
-      a.minutos_tardanza,a.horas_trabajadas,a.estado,a.observacion,
-      CONCAT(e.nombres,' ',e.apellidos) AS colaborador,e.numero_documento,e.empresa_id,e.area_id,e.cargo_id,
-      emp.razon_social AS empresa,ar.nombre AS area,c.nombre AS cargo
-      FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
-      LEFT JOIN horarios h ON h.empleado_id=e.id AND h.dia_semana=WEEKDAY(?)+1 AND h.activo=TRUE
-      LEFT JOIN asistencias a ON a.empleado_id=e.id AND a.fecha=?
-      WHERE (e.estado='activo' OR a.id IS NOT NULL) AND ${f.where} ${estado ? 'AND a.estado=?' : ''}
-      ORDER BY e.apellidos,e.nombres,e.id`, [fecha,fecha,fecha,...f.params,...(estado ? [estado] : [])]);
+    const fecha = r.fecha(req.query.fecha || r.hoy());
+    const rows = await diaria.listar({ desde: fecha, filtros: req.query });
     return res.json({ ok:true,fecha,data:rows });
   } catch (error) { return fallo(res,error); }
 };

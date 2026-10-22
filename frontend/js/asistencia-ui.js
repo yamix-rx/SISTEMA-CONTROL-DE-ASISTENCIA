@@ -2,7 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   async function api(url, options = {}) {
-    const response = await fetch(url, {...options, headers:{Authorization:`Bearer ${localStorage.getItem('sbss_token')}`, ...(options.body ? {'Content-Type':'application/json'} : {}),...options.headers}});
+    const response = await fetch(url, {...options, cache:'no-store', headers:{Authorization:`Bearer ${localStorage.getItem('sbss_token')}`, ...(options.body ? {'Content-Type':'application/json'} : {}),...options.headers}});
     const data = await response.json().catch(()=>({}));
     if (!response.ok || !data.ok) throw new Error(data.mensaje || 'No se pudo completar la solicitud.');
     return data;

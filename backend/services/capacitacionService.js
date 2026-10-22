@@ -4,6 +4,17 @@ const ESTADOS = new Set(['borrador', 'programada', 'en_curso', 'finalizada', 'ca
 const MODALIDADES = new Set(['presencial', 'virtual', 'hibrida']);
 const ESTADOS_PARTICIPANTE = new Set(['inscrito', 'en_curso', 'aprobado', 'desaprobado', 'no_asistio', 'cancelado']);
 
+// Las fechas y horas de la programación se interpretan en Perú (UTC-05).
+// Sin hora, el inicio es a medianoche y el fin incluye todo el último día.
+const AHORA_PERU_SQL = "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
+const ESTADO_HORARIO_SQL = `CASE
+  WHEN cap.estado NOT IN ('programada', 'en_curso') THEN cap.estado
+  WHEN ${AHORA_PERU_SQL} >= CASE WHEN cap.hora_fin IS NULL
+    THEN TIMESTAMP(DATE_ADD(cap.fecha_fin, INTERVAL 1 DAY), '00:00:00')
+    ELSE TIMESTAMP(cap.fecha_fin, cap.hora_fin) END THEN 'finalizada'
+  WHEN ${AHORA_PERU_SQL} >= TIMESTAMP(cap.fecha_inicio, COALESCE(cap.hora_inicio, '00:00:00')) THEN 'en_curso'
+  ELSE cap.estado END`;
+
 function errorHttp(status, message) {
   const error = new Error(message);
   error.status = status;
@@ -134,7 +145,7 @@ async function listar(filtros = {}) {
   if (filtros.estado) {
     const estado = String(filtros.estado).toLowerCase();
     if (!ESTADOS.has(estado)) throw errorHttp(400, 'Filtro de estado no permitido.');
-    where.push('cap.estado = ?');
+    where.push(`(${ESTADO_HORARIO_SQL}) = ?`);
     params.push(estado);
   }
   if (filtros.modalidad) {
@@ -171,7 +182,7 @@ async function listar(filtros = {}) {
     SELECT cap.id, cap.titulo, cap.categoria, cap.descripcion, cap.modalidad, cap.proveedor,
            cap.empresa_id, emp.razon_social AS empresa, cap.fecha_inicio, cap.fecha_fin,
            cap.hora_inicio, cap.hora_fin, cap.horas, cap.lugar, cap.enlace, cap.cupo,
-           cap.obligatorio, cap.estado, cap.created_at, cap.updated_at,
+           cap.obligatorio, ${ESTADO_HORARIO_SQL} AS estado, cap.estado AS estado_registrado, cap.created_at, cap.updated_at,
            SUM(CASE WHEN cp.estado <> 'cancelado' THEN 1 ELSE 0 END) AS inscritos,
            SUM(CASE WHEN cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
            SUM(CASE WHEN cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
@@ -200,7 +211,11 @@ async function listar(filtros = {}) {
 }
 
 async function resumen() {
-  const [rows] = await pool.query(`SELECT estado, COUNT(*) AS cantidad FROM capacitaciones GROUP BY estado`);
+  const [rows] = await pool.query(`
+    SELECT estado, COUNT(*) AS cantidad FROM (
+      SELECT ${ESTADO_HORARIO_SQL} AS estado FROM capacitaciones cap
+    ) estados GROUP BY estado
+  `);
   const [[participantes]] = await pool.query(`
     SELECT COUNT(*) AS inscritos,
            SUM(CASE WHEN estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
@@ -224,7 +239,7 @@ async function resumen() {
 async function obtenerPorId(id, connection = pool) {
   const capacitacionId = enteroPositivo(id, 'La capacitación');
   const [rows] = await connection.query(`
-    SELECT cap.*, emp.razon_social AS empresa
+    SELECT cap.*, ${ESTADO_HORARIO_SQL} AS estado, cap.estado AS estado_registrado, emp.razon_social AS empresa
     FROM capacitaciones cap
     LEFT JOIN empresas emp ON emp.id = cap.empresa_id
     WHERE cap.id = ? LIMIT 1
@@ -291,7 +306,7 @@ async function actualizar(id, body, usuarioId) {
   try {
     await connection.beginTransaction();
     const actual = await obtenerPorId(capacitacionId, connection);
-    const data = normalizarPayload(body, actual);
+    const data = normalizarPayload(body, { ...actual, estado: actual.estado_registrado });
     await validarEmpresa(connection, data.empresa_id);
     if (data.cupo) {
       const [[conteo]] = await connection.query(`
@@ -340,7 +355,10 @@ async function agregarParticipantes(id, body) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [capRows] = await connection.query('SELECT * FROM capacitaciones WHERE id = ? FOR UPDATE', [capacitacionId]);
+    const [capRows] = await connection.query(`
+      SELECT cap.*, ${ESTADO_HORARIO_SQL} AS estado
+      FROM capacitaciones cap WHERE cap.id = ? FOR UPDATE
+    `, [capacitacionId]);
     if (!capRows.length) throw errorHttp(404, 'Capacitación no encontrada.');
     const cap = capRows[0];
     if (['finalizada', 'cancelada'].includes(cap.estado)) throw errorHttp(409, 'No se pueden agregar participantes a una capacitación finalizada o cancelada.');
@@ -456,7 +474,7 @@ async function historialEmpleado(empleadoIdRaw) {
   if (!empleados.length) throw errorHttp(404, 'Colaborador no encontrado.');
   const [rows] = await pool.query(`
     SELECT cap.id AS capacitacion_id, cap.titulo, cap.categoria, cap.modalidad, cap.fecha_inicio, cap.fecha_fin,
-           cap.horas, cap.estado AS estado_capacitacion, cp.estado, cp.asistencia_porcentaje, cp.nota,
+           cap.horas, ${ESTADO_HORARIO_SQL} AS estado_capacitacion, cp.estado, cp.asistencia_porcentaje, cp.nota,
            cp.fecha_completado, cp.observaciones, cp.certificado_documento_id
     FROM capacitacion_participantes cp
     INNER JOIN capacitaciones cap ON cap.id = cp.capacitacion_id
@@ -493,5 +511,5 @@ module.exports = {
   retirarParticipante,
   historialEmpleado,
   eliminar,
-  _internals: { normalizarPayload }
+  _internals: { normalizarPayload, ESTADO_HORARIO_SQL, AHORA_PERU_SQL }
 };

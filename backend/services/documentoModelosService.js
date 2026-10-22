@@ -1,4 +1,5 @@
 const datos = require('../data/modelos-documentos.json');
+const plantillasPracticas = require('./documentoPlantillasPracticas');
 
 // Los datos variables siempre son campos. El catálogo no contiene estudiantes
 // de los PDF originales ni incorpora las firmas o los sellos de los ejemplos.
@@ -300,7 +301,20 @@ function modelosCarrera(carrera) {
   }));
 }
 
-const MODELOS = [...datos.empresas.map(modeloCarta), ...datos.carreras.flatMap(modelosCarrera)];
+function modelosPracticas(empresa) {
+  return Object.entries(plantillasPracticas).map(([codigo, plantilla]) => ({
+    id: `${codigo}_${empresa.clave}`,
+    nombre: `${plantilla.nombre} · ${empresa.nombre}`,
+    codigo, empresa_clave: empresa.clave, empresa_ruc: empresa.ruc,
+    empresa_aliases: [...empresa.aliases],
+    titulo: plantilla.titulo, cuerpo: plantilla.cuerpo,
+    datos_predeterminados: { ...datosEmpresa(empresa), ciudad: 'Trujillo' },
+    campos_requeridos: camposRequeridos(plantilla.cuerpo).filter(campo => campo !== 'lugar_fecha'),
+    estilo: 'formal', logo: empresa.clave
+  }));
+}
+
+const MODELOS = [...datos.empresas.map(modeloCarta), ...datos.empresas.flatMap(modelosPracticas), ...datos.carreras.flatMap(modelosCarrera)];
 
 function normalizar(valor) {
   return String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -356,7 +370,7 @@ function resolverModelo({ codigo, empresa, ruc, carrera, modelo_id } = {}) {
     if (modelo.carrera && normalizar(carrera) && modelo.carrera !== carreraEncontrada?.nombre) {
       throw incompatible('El modelo seleccionado no corresponde a la carrera del estudiante.');
     }
-  } else if (codigo === 'aceptacion' && empresaEncontrada) {
+  } else if (['aceptacion', 'constancia_practicas', 'culminacion'].includes(codigo) && empresaEncontrada) {
     modelo = MODELOS.find(item => item.codigo === codigo && item.empresa_clave === empresaEncontrada.clave);
   } else if (['convenio_pasantia', 'plan_capacitacion'].includes(codigo) && carreraEncontrada) {
     modelo = MODELOS.find(item => item.codigo === codigo && item.carrera === carreraEncontrada.nombre);

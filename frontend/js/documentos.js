@@ -13,6 +13,7 @@
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ]);
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
+  const GENERATION_TYPES = new Set(['aceptacion', 'constancia_practicas', 'culminacion']);
   const initialEmployee = new URLSearchParams(location.search).get('empleado_id');
   const generationView = new URLSearchParams(location.search).get('vista') === 'generar';
   const state = {
@@ -511,7 +512,15 @@
   }
 
   async function loadGenerationCatalogs(force = false) {
-    if (!state.generationCatalogs || force) state.generationCatalogs = await request('/documentos/generacion/catalogos');
+    if (!state.generationCatalogs || force) {
+      const catalogs = await request('/documentos/generacion/catalogos');
+      const modelos = (catalogs.modelos || []).filter(model => GENERATION_TYPES.has(model.codigo));
+      const templateCodes = new Set([...GENERATION_TYPES, ...modelos.map(model => model.id)]);
+      state.generationCatalogs = {
+        ...catalogs, modelos,
+        plantillas: catalogs.plantillas.filter(template => templateCodes.has(template.codigo))
+      };
+    }
     const catalogs = state.generationCatalogs;
     fillSelect('generarEmpresa', catalogs.empresas, 'razon_social', 'Selecciona una empresa');
     fillSelect('plantillaCodigo', catalogs.plantillas.map(item => ({ ...item, id: item.codigo })),
@@ -542,15 +551,6 @@
     })) || null;
   }
 
-  function matchingModel(models) {
-    const employee = state.generationFicha?.empleado;
-    if (!employee) return null;
-    if ($('generarTipo').value === 'aceptacion') return matchingCompanyModel(models);
-    const career = normalizedName(employee.carrera);
-    if (!career) return null;
-    return models.find(item => [item.carrera, ...(item.carrera_aliases || [])].some(alias => normalizedName(alias) === career));
-  }
-
   function dateInputValue(value) {
     const iso = String(value || '').slice(0, 10);
     return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
@@ -578,7 +578,7 @@
     ['carrera', 'institucion_educativa', 'direccion', 'fecha_nacimiento', 'fecha_ingreso'].forEach(key => {
       if (employee[key]) defaults[key] = employee[key];
     });
-    const endDate = model ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
+    const endDate = $('generarTipo').value === 'aceptacion' ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
     if (endDate) defaults.fecha_finalizacion = endDate;
     if (company.direccion) defaults.empresa_direccion = company.direccion;
     if (model?.carrera) defaults.carrera = model.carrera;
@@ -616,18 +616,18 @@
   }
 
   function fillGenerationModels() {
-    const models = (state.generationCatalogs?.modelos || []).filter(item => item.codigo === $('generarTipo').value);
-    const acceptance = $('generarTipo').value === 'aceptacion';
+    const available = (state.generationCatalogs?.modelos || []).filter(item => item.codigo === $('generarTipo').value);
+    const selected = state.generationFicha?.empleado ? matchingCompanyModel(available) : null;
+    const models = selected ? [selected] : [];
     $('generarModeloSelector').hidden = !models.length;
-    fillSelect('generarModelo', models, 'nombre', acceptance ? 'Plantilla general de aceptación' : 'Selecciona un modelo');
-    const selected = matchingModel(models);
-    $('generarModelo').required = Boolean(models.length) && (!acceptance || Boolean(selected));
-    $('generarModelo').options[0].disabled = acceptance && Boolean(selected);
+    fillSelect('generarModelo', models, 'nombre', 'Plantilla general del documento');
+    $('generarModelo').required = Boolean(selected);
+    $('generarModelo').options[0].disabled = Boolean(selected);
     $('generarModelo').value = selected?.id || '';
     $('generarModeloAyuda').textContent = selected
-      ? 'Modelo seleccionado según los datos del expediente. Revisa la información antes de emitir.'
-      : acceptance ? 'Se usará la plantilla general. Puedes elegir un modelo si corresponde a la empresa seleccionada.'
-        : 'Selecciona el modelo correspondiente a la carrera del colaborador.';
+      ? 'Plantilla seleccionada automáticamente según la empresa del colaborador. Revisa los datos antes de emitir.'
+      : state.generationFicha?.empleado ? 'No hay una plantilla específica para esta empresa. Se usará la plantilla general del documento.'
+        : 'Selecciona un colaborador para cargar la plantilla de su empresa.';
     renderModelFields();
     $('generarModeloCampos').hidden = !models.length && !$('generarDatosModelo').children.length;
   }
@@ -644,7 +644,7 @@
   function fillGenerationHours() {
     const progress = state.generationFicha?.progresoHoras;
     if (!progress) return;
-    $('generarHoras').value = Number(['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes($('generarTipo').value) ? progress.horasMeta : progress.horasRealizadas) || 0;
+    $('generarHoras').value = Number($('generarTipo').value === 'aceptacion' ? progress.horasMeta : progress.horasRealizadas) || 0;
     $('generarHorasAyuda').textContent = 'Expediente: ' + (Number(progress.horasRealizadas) || 0) + ' horas registradas de ' + (Number(progress.horasMeta) || 0) + ' previstas. Puedes ajustar las horas de este documento antes de emitirlo.';
   }
 
@@ -658,7 +658,7 @@
     fillGenerationModels();
     const id = $('generarEmpleado').value;
     state.employeeLoading = Boolean(id);
-    $('btnCrearVista').disabled = Boolean(id);
+    $('btnCrearVista').disabled = true;
     if (!id) return;
     formError('errorGenerar');
     try {
@@ -678,7 +678,7 @@
     finally {
       if (revision === state.employeeRevision) {
         state.employeeLoading = false;
-        $('btnCrearVista').disabled = false;
+        $('btnCrearVista').disabled = !state.generationFicha;
       }
     }
   }

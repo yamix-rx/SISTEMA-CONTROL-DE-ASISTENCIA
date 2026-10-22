@@ -2,25 +2,19 @@ const { createHash } = require('node:crypto');
 const pool = require('../config/database');
 const { idPositivo } = require('./documentoService');
 const { catalogoModelos, resolverModelo, resolverEmpresa, CAMPOS_MODELO } = require('./documentoModelosService');
+const plantillasPracticas = require('./documentoPlantillasPracticas');
 
 const CAMPOS = Object.freeze([...new Set(['trabajador', 'documento', 'empresa', 'ruc', 'fecha', 'fecha_ingreso', 'fecha_finalizacion', 'cargo', 'area', 'horas', 'horas_meta', 'formacion_academica', 'lugar_fecha', ...CAMPOS_MODELO.map(campo => campo.clave)])]);
 const CAMPOS_CALCULADOS_OPCIONALES = new Set(['formacion_academica', 'lugar_fecha']);
 const NOMBRES_DOCUMENTOS = Object.freeze({ aceptacion: 'Carta de aceptación', constancia_practicas: 'Constancia de prácticas',
-  culminacion: 'Carta de culminación', carta: 'Carta de presentación', horas: 'Constancia de horas', trabajo: 'Certificado de trabajo',
+  culminacion: 'Carta de culminación de prácticas', carta: 'Carta de presentación', horas: 'Constancia de horas', trabajo: 'Certificado de trabajo',
   convenio_pasantia: 'Convenio de pasantía', plan_capacitacion: 'Plan de capacitación' });
 const PREDETERMINADAS = Object.freeze({
   aceptacion: {
     titulo: 'CARTA DE ACEPTACIÓN PARA PROYECTO DE PASANTÍA',
     cuerpo: '{{lugar_fecha}}\n\nEstimado(a):\n{{destinatario}}\n{{destinatario_cargo}}\n\nASUNTO: Aceptación para Proyecto de Pasantía\n\nDe mi consideración:\n\nPor medio de la presente me dirijo a usted para expresarle mi saludo cordial, y a la vez hacer de su conocimiento que nuestra empresa ha aceptado al siguiente estudiante:\n\n{{trabajador}} — {{documento}}\n\nPara desarrollo del proyecto en la modalidad de pasantía antes mencionado por un periodo de {{duracion}} o {{horas}} horas y así complementar su formación académica, del curso de prácticas, el cual es obligatorio para el estudiante y en lo dispuesto en la Ley Sobre Modalidades Formativas Laborales (Nº 28518).\n\nLos datos para registro son los siguientes:\n- RUC empresa: {{ruc}}\n- Razón social: {{empresa}}\n- Supervisor del practicante: {{supervisor}}\n- Cel. supervisor: {{supervisor_telefono}}\n- Área de desempeño: {{area}}\n{{formacion_academica}}\n\nAtentamente,\n\n\n_______________________________\n{{supervisor}}'
   },
-  constancia_practicas: {
-    titulo: 'CONSTANCIA DE PRÁCTICAS',
-    cuerpo: '{{lugar_fecha}}\n\n{{empresa}}, con RUC {{ruc}}, deja constancia de que {{trabajador}}, identificado(a) con {{documento}}, realiza prácticas en el área de {{area}}, desempeñando el cargo de {{cargo}}.\n\n{{formacion_academica}}\n\nFecha de inicio: {{fecha_ingreso}}.\nHoras de prácticas realizadas: {{horas}} horas.\n\nSe expide la presente constancia a solicitud del interesado(a), para los fines que estime conveniente.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
-  },
-  culminacion: {
-    titulo: 'CARTA DE CULMINACIÓN DE PRÁCTICAS',
-    cuerpo: '{{lugar_fecha}}\n\n{{empresa}}, con RUC {{ruc}}, hace constar que {{trabajador}}, identificado(a) con {{documento}}, culminó sus prácticas en el área de {{area}}, desempeñando el cargo de {{cargo}}.\n\n{{formacion_academica}}\n\nFecha de inicio: {{fecha_ingreso}}.\nFecha de finalización: {{fecha_finalizacion}}.\nTotal de horas de prácticas: {{horas}} horas.\n\nSe extiende la presente para los fines que el interesado(a) considere pertinentes.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
-  },
+  ...Object.fromEntries(Object.entries(plantillasPracticas).map(([codigo, { titulo, cuerpo }]) => [codigo, { titulo, cuerpo }])),
   carta: {
     titulo: 'CARTA DE PRESENTACIÓN',
     cuerpo: '{{lugar_fecha}}\n\nA quien corresponda:\n\n{{empresa}} presenta a {{trabajador}}, identificado(a) con {{documento}}, quien desempeña el cargo de {{cargo}} en el área de {{area}}.\n\n{{formacion_academica}}\n\nSe extiende la presente para las gestiones correspondientes.\n\nAtentamente,\n\n\n________________________________\n{{supervisor}}\nFirma del responsable'
@@ -65,9 +59,10 @@ function revision(plantilla) {
 }
 async function plantillas() {
   const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos ORDER BY codigo');
-  const definiciones = [...Object.entries(PREDETERMINADAS), ...catalogoModelos().map(modelo => [modelo.id, { titulo: modelo.titulo, cuerpo: modelo.cuerpo }])];
-  return definiciones.map(([codigo, predeterminada]) => {
-    const almacenada = rows.find(row => row.codigo === codigo);
+  const definiciones = [...Object.entries(PREDETERMINADAS), ...catalogoModelos().map(modelo => [modelo.id, { titulo: modelo.titulo, cuerpo: modelo.cuerpo }, modelo.codigo])];
+  return definiciones.map(([codigo, predeterminada, tipo]) => {
+    const almacenada = rows.find(row => row.codigo === codigo)
+      || (Object.hasOwn(plantillasPracticas, tipo || '') ? rows.find(row => row.codigo === tipo) : null);
     const plantilla = almacenada ? { titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html } : { ...predeterminada };
     return { codigo, ...plantilla, personalizada: Boolean(almacenada), revision: revision(plantilla) };
   });
@@ -154,7 +149,7 @@ async function preparar(body = {}) {
   const [templates, [empleados], [estructura]] = await Promise.all([
     plantillas(),
     pool.query(`SELECT e.id, e.nombres, e.apellidos, e.tipo_documento, e.numero_documento,
-      e.tipo_vinculo, e.fecha_ingreso, e.fecha_finalizacion, e.carrera, e.institucion_educativa,
+      e.tipo_vinculo, e.empresa_id, e.fecha_ingreso, e.fecha_finalizacion, e.carrera, e.institucion_educativa,
       e.direccion, e.fecha_nacimiento, e.puesto, pd.fecha_vencimiento_convenio,
       COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta
       FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
@@ -167,10 +162,11 @@ async function preparar(body = {}) {
   if (!empleados.length) throw error('No se encontró el colaborador.', 404);
   if (!estructura.length) throw error('La empresa, el área y el cargo deben corresponder entre sí.');
   const empleado = empleados[0];
+  if (Number(empleado.empresa_id) !== empresaId) throw error('La empresa del documento debe corresponder a la empresa registrada del colaborador.');
   const identidad = resolverEmpresa({ empresa: estructura[0].empresa, ruc: estructura[0].ruc });
   if (codigo === 'trabajo' && empleado.tipo_vinculo !== 'trabajador') throw error('El certificado de trabajo corresponde a colaboradores con vínculo de trabajador.');
-  if (['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) && !String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante')) throw error('Este documento corresponde a colaboradores con vínculo de practicante.');
-  const modelo = ['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo)
+  if (['convenio_pasantia', 'plan_capacitacion'].includes(codigo) && !String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante')) throw error('Este documento corresponde a colaboradores con vínculo de practicante.');
+  const modelo = ['aceptacion', 'constancia_practicas', 'culminacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo)
     ? resolverModelo({ codigo, empresa: estructura[0].empresa, ruc: estructura[0].ruc, carrera: adicionales.carrera ?? empleado.carrera, modelo_id: body.modelo_id }) : null;
   if (body.modelo_id && !modelo) throw error('El modelo seleccionado no corresponde al tipo de documento.');
   if (!modelo && ['convenio_pasantia', 'plan_capacitacion'].includes(codigo)) throw error('No hay un modelo UPN disponible para la carrera seleccionada.');
@@ -185,7 +181,7 @@ async function preparar(body = {}) {
     direccion: empleado.direccion, fecha_nacimiento: fechaIso(empleado.fecha_nacimiento),
     puesto: empleado.puesto || estructura[0].cargo,
     fecha, fecha_ingreso: fechaIso(empleado.fecha_ingreso),
-    fecha_finalizacion: fechaIso(modelo ? empleado.fecha_vencimiento_convenio || empleado.fecha_finalizacion : empleado.fecha_finalizacion),
+    fecha_finalizacion: fechaIso(['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) ? empleado.fecha_vencimiento_convenio || empleado.fecha_finalizacion : empleado.fecha_finalizacion),
     horas, horas_meta: Number(empleado.horas_meta || 0)
   };
   // Los modelos aportan únicamente datos institucionales. Los datos registrados y

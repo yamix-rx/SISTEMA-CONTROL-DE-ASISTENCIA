@@ -142,9 +142,24 @@ test('reportes: horas pendientes usan acumulado completo, faltas/permisos no dup
  const filtro=reglas.filtrosPersonal({empresa_id:'2',area_id:'4',cargo_id:'6',empleado_id:'10',tipo_vinculo:'practicante'});assert.deepEqual(filtro.params,[2,4,6,10]);assert.match(filtro.where,/LIKE 'practicante%'/);
 });
 test('reporte consulta filtros en WHERE y respeta trabajador, cargo, estado y vínculo',async()=>{
- queryImpl=async sql=>sql.includes('SELECT e.id AS empleado_id')?[[{empleado_id:10,horas_meta:320}]]:[[]];
+ queryImpl=async sql=>sql.includes('SELECT e.id AS empleado_id')?[[{empleado_id:10,horas_meta:320},{empleado_id:11,horas_meta:320}]]:
+   sql.includes('SELECT a.*')?[[{empleado_id:10,fecha:'2026-09-01',estado:'tardanza',hora_ingreso:'08:10',horas_trabajadas:8}]]:[[]];
  const res=response();await reporte.obtenerConsolidado({query:{fecha_inicio:'2026-09-01',fecha_fin:'2026-09-10',empresa_id:'2',cargo_id:'6',empleado_id:'10',tipo_vinculo:'practicante',estado:'tardanza'}},res);
- assert.equal(res.statusCode,200);const e=llamadas[0];assert.match(e.sql,/WHERE e\.empresa_id = \?/);assert.match(e.sql,/EXISTS/);assert.deepEqual(e.params,[2,6,10,'2026-09-01','2026-09-10','tardanza']);assert.equal(res.body.data.fecha_fin,'2026-09-10');
+ assert.equal(res.statusCode,200);const e=llamadas[0];assert.match(e.sql,/WHERE e\.empresa_id = \?/);assert.deepEqual(e.params,[2,6,10]);
+ assert.deepEqual(llamadas.find(x=>x.sql.includes('SELECT a.*')).params,['2026-09-01','2026-09-10',2,6,10,'tardanza']);
+ assert.deepEqual(res.body.data.detalles.map(x=>x.empleado_id),[10]);assert.equal(res.body.data.fecha_fin,'2026-09-10');
+});
+
+test('el reporte incorpora faltas automáticas y conserva marcaciones reales sin duplicarlas',async()=>{
+ queryImpl=async sql=>{
+  if(sql.includes('SELECT e.id AS empleado_id'))return [[{empleado_id:10,horas_meta:320},{empleado_id:11,horas_meta:320}]];
+  if(sql.includes('SELECT a.*'))return [[{empleado_id:10,fecha:'2026-09-01',estado:'presente',hora_ingreso:'08:00',horas_trabajadas:8}]];
+  if(sql.startsWith('WITH RECURSIVE'))return [[{empleado_id:11,fecha:'2026-09-01',estado:'falta',automatico:1,horas_trabajadas:0}]];
+  return [[]];
+ };
+ const res=response();await reporte.obtenerConsolidado({query:{fecha_inicio:'2026-09-01',fecha_fin:'2026-09-01'}},res);
+ assert.equal(res.statusCode,200);assert.equal(res.body.data.kpis.total_faltas,1);assert.equal(res.body.data.kpis.total_presentes,1);
+ assert.equal(res.body.data.kpis.total_marcaciones,2);assert.equal(res.body.data.kpis.porcentaje_asistencia,50);
 });
 let permiso;
 function permisoQueries(sql,params){

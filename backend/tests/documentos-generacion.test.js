@@ -15,7 +15,7 @@ const cuentas = new Map([
 ]);
 const empleado = {
   id: 101, nombres: 'María José', apellidos: 'Núñez Agüero', tipo_documento: 'DNI',
-  numero_documento: '99999991', tipo_vinculo: 'practicante_preprofesional',
+  numero_documento: '99999991', tipo_vinculo: 'practicante_preprofesional', empresa_id: 10,
   fecha_ingreso: '2026-06-01', fecha_finalizacion: '2026-09-19', horas_meta: 320
 };
 const pool = { async query(sql, params = []) {

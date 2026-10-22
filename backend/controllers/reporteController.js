@@ -1,5 +1,6 @@
 ﻿const pool = require('../config/database');
 const r = require('../services/asistenciaReglas');
+const diaria = require('../services/asistenciaDiariaService');
 exports.obtenerConsolidado = async (req, res) => {
   try {
     const [inicio, fin] = r.rango(req.query.fecha_inicio, req.query.fecha_fin);
@@ -7,22 +8,27 @@ exports.obtenerConsolidado = async (req, res) => {
     if (estado && !r.ESTADOS.includes(estado)) throw r.error('Estado de asistencia no válido.');
     const filtroEstado = estado ? 'AND a.estado=?' : '';
     const params = [inicio,fin,...f.params,...(estado ? [estado] : [])];
-    const [empleados] = await pool.query(`SELECT e.id AS empleado_id,e.empresa_id,e.area_id,e.cargo_id,
+    let [empleados] = await pool.query(`SELECT e.id AS empleado_id,e.empresa_id,e.area_id,e.cargo_id,
       CONCAT(e.nombres,' ',e.apellidos) AS colaborador,e.numero_documento,e.tipo_vinculo,e.estado AS estado_personal,
       emp.razon_social AS empresa,ar.nombre AS area,c.nombre AS cargo,
       CASE WHEN LOWER(e.tipo_vinculo) LIKE 'practicante%' THEN COALESCE(pd.horas_meta,e.horas_totales_asignadas,320) ELSE 0 END AS horas_meta
       FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
       LEFT JOIN practicante_detalles pd ON pd.empleado_id=e.id WHERE ${f.where}
-      ${estado ? 'AND EXISTS (SELECT 1 FROM asistencias ax WHERE ax.empleado_id=e.id AND ax.fecha BETWEEN ? AND ? AND ax.estado=?)' : ''}
-      ORDER BY e.apellidos,e.nombres,e.id`, [...f.params,...(estado ? [inicio,fin,estado] : [])]);
-    const [[marcaciones],[totales],[permisos]] = await Promise.all([
+      ORDER BY e.apellidos,e.nombres,e.id`, f.params);
+    const [[marcaciones],[totales],[permisos],automaticas] = await Promise.all([
       pool.query(`SELECT a.* FROM asistencias a JOIN empleados e ON e.id=a.empleado_id WHERE a.fecha BETWEEN ? AND ? AND ${f.where} ${filtroEstado} ORDER BY a.fecha,a.empleado_id`,params),
       pool.query(`SELECT a.empleado_id,COALESCE(SUM(a.horas_trabajadas),0) AS horas_acumuladas FROM asistencias a JOIN empleados e ON e.id=a.empleado_id WHERE a.fecha<=? AND ${f.where} GROUP BY a.empleado_id`,[fin,...f.params]),
-      pool.query(`SELECT p.empleado_id,p.estado,COUNT(*) AS cantidad FROM permisos p JOIN empleados e ON e.id=p.empleado_id WHERE p.fecha_inicio<=? AND p.fecha_fin>=? AND ${f.where} GROUP BY p.empleado_id,p.estado`,[fin,inicio,...f.params])
+      pool.query(`SELECT p.empleado_id,p.estado,COUNT(*) AS cantidad FROM permisos p JOIN empleados e ON e.id=p.empleado_id WHERE p.fecha_inicio<=? AND p.fecha_fin>=? AND ${f.where} GROUP BY p.empleado_id,p.estado`,[fin,inicio,...f.params]),
+      diaria.listar({ desde: inicio, hasta: fin, filtros: req.query, soloAutomaticas: true })
     ]);
-    const data = construirReporte(empleados,marcaciones,totales,permisos);
+    const registros = [...marcaciones,...automaticas].sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||Number(a.empleado_id)-Number(b.empleado_id));
+    if (estado) {
+      const ids = new Set(registros.map(a=>Number(a.empleado_id)));
+      empleados = empleados.filter(e=>ids.has(Number(e.empleado_id)));
+    }
+    const data = construirReporte(empleados,registros,totales,permisos);
     return res.json({ok:true,data:{...data,fecha_inicio:inicio,fecha_fin:fin,
-      criterio_porcentaje:'Asistencias presentes, tardanzas y justificadas con ingreso / días registrados como presente, tardanza, falta o justificado. No incluye días sin registrar ni permisos, descansos, feriados o vacaciones.',
+      criterio_porcentaje:'Asistencias presentes, tardanzas y justificadas con ingreso / días con presente, tardanza, falta o justificado. Los turnos finalizados sin marcación se consideran faltas según la plantilla semanal vigente. No incluye turnos pendientes, permisos, descansos, feriados o vacaciones.',
       criterio_horas:'Horas del periodo según filtros; horas acumuladas y pendientes hasta la fecha final, incluyendo todos los estados.'}});
   } catch (error) {
     if (!error.status) console.error('Error de reporte:',error.code||error.name);

@@ -1,4 +1,6 @@
 const pool = require('../config/database');
+const diaria = require('../services/asistenciaDiariaService');
+const { hoy } = require('../services/asistenciaReglas');
 
 exports.obtenerDatosDashboard = async (req, res) => {
   const { empresa_id } = req.query;
@@ -9,7 +11,6 @@ exports.obtenerDatosDashboard = async (req, res) => {
 
     // Filtro dinámico opcional por empresa
     const filtroEmpresaHorario = empresa_id ? 'AND e.empresa_id = ?' : '';
-    const filtroEmpresaAsistencia = empresa_id ? 'AND a.empleado_id IN (SELECT id FROM empleados WHERE empresa_id = ?)' : '';
     const paramsEmpresa = empresa_id ? [empresa_id] : [];
 
     // 2. KPI: Colaboradores en turno hoy (Lunes=1 ... Domingo=7)
@@ -35,13 +36,10 @@ exports.obtenerDatosDashboard = async (req, res) => {
     const totalEnTurno = new Set(filasEnTurno.map(item => item.id)).size;
 
     // 3. Asistencias registradas hoy
-    const [asistenciasHoy] = await pool.query(`
-      SELECT estado, COUNT(*) as total 
-      FROM asistencias a
-      WHERE a.fecha = CURDATE()
-      ${filtroEmpresaAsistencia}
-      GROUP BY estado
-    `, paramsEmpresa);
+    const registrosHoy = await diaria.listar({ desde: hoy(), filtros: { empresa_id } });
+    const porEstado = new Map();
+    registrosHoy.forEach(row => porEstado.set(row.estado,(porEstado.get(row.estado)||0)+1));
+    const asistenciasHoy = [...porEstado].map(([estado,total])=>({estado,total}));
 
     let totalPresentes = 0;
     let totalTardanzas = 0;

@@ -28,7 +28,7 @@ beforeEach(() => {
   guardadas = new Map();
   empleado = {
     id: 101, nombres: 'Ana María', apellidos: 'Prueba Integración', tipo_documento: 'DNI',
-    numero_documento: '99990001', tipo_vinculo: 'practicante_preprofesional',
+    numero_documento: '99990001', tipo_vinculo: 'practicante_preprofesional', empresa_id: 10,
     carrera: 'Ing. de Sistemas', institucion_educativa: 'Universidad Privada del Norte',
     direccion: 'Domicilio del estudiante de prueba 123', fecha_nacimiento: '2002-03-15',
     fecha_ingreso: '2026-08-03', fecha_finalizacion: '2026-12-31',
@@ -168,4 +168,56 @@ test('no mezcla un modelo corporativo o de carrera con un expediente incompatibl
   empleado.institucion_educativa = 'Universidad de Prueba Ajena';
   await assert.rejects(preparar(payload({ codigo: 'convenio_pasantia', datos_documento: { horario: 'Lunes de 09:00 a 13:00' } })),
     error => error.status === 400 && /UPN/.test(error.message));
+});
+
+test('los nombres de las siete empresas registradas seleccionan sus tres plantillas para practicantes y trabajadores', async () => {
+  const empresas = [
+    ['Droguería Silsan S.A.C.', 'silsan'], ['Importadora Silsan S.A.C.', 'silsan'],
+    ['SBSS Outsourcing E.I.R.L.', 'sbss'], ['Nanas & Amas del Norte S.A.C.', 'nanas'],
+    ['Centro de Conciliación SBSS', 'camara'], ['Estudio Jurídico SBSS', 'sbss'], ['ONG MESPO', 'ong']
+  ];
+  for (const [empresa, clave] of empresas) {
+    estructura.empresa = empresa;
+    for (const tipo_vinculo of ['practicante_preprofesional', 'trabajador']) {
+      empleado.tipo_vinculo = tipo_vinculo;
+      for (const codigo of ['aceptacion', 'constancia_practicas', 'culminacion']) {
+        const documento = await preparar(payload({ codigo }));
+        assert.equal(documento.modelo_id, `${codigo === 'aceptacion' ? 'carta_aceptacion' : codigo}_${clave}`, empresa);
+        assert.equal(documento.logo, clave);
+        assert.equal(documento.empresa, empresa);
+        assert.ok(documento.cuerpo.includes(empresa));
+        assert.doesNotMatch(documento.cuerpo, /\{\{/);
+        if (codigo === 'culminacion') {
+          assert.match(documento.cuerpo, /31 de diciembre de 2026/);
+          assert.doesNotMatch(documento.cuerpo, /3 de noviembre de 2026/);
+        }
+      }
+    }
+  }
+});
+
+test('constancia y culminación conservan los cambios generales y permiten una plantilla propia por empresa', async () => {
+  for (const codigo of ['constancia_practicas', 'culminacion']) {
+    await guardarPlantilla(codigo, { titulo: 'Documento general', cuerpo: 'General para {{trabajador}} de {{empresa}}.' });
+    assert.match((await preparar(payload({ codigo }))).cuerpo, /^General para/);
+    const plantilla = await guardarPlantilla(`${codigo}_sbss`, {
+      titulo: 'Documento de {{empresa}}', cuerpo: 'Texto exclusivo para {{trabajador}} de {{empresa}}.'
+    });
+    const documento = await preparar(payload({ codigo }));
+    assert.match(documento.cuerpo, /^Texto exclusivo para/);
+    assert.equal(documento.revision_plantilla, plantilla.revision);
+    estructura.empresa = 'Nanas & Amas del Norte S.A.C.';
+    assert.match((await preparar(payload({ codigo }))).cuerpo, /^General para/);
+    estructura.empresa = 'SBSS OUTSOURCING S.A.C.';
+  }
+});
+
+test('rechaza mezclar la empresa del colaborador o plantillas de otra empresa en los tres documentos', async () => {
+  for (const codigo of ['aceptacion', 'constancia_practicas', 'culminacion']) {
+    const prefijo = codigo === 'aceptacion' ? 'carta_aceptacion' : codigo;
+    await assert.rejects(preparar(payload({ codigo, modelo_id: `${prefijo}_nanas` })), { status: 400 });
+    empleado.empresa_id = 11;
+    await assert.rejects(preparar(payload({ codigo })), error => error.status === 400 && /empresa registrada/.test(error.message));
+    empleado.empresa_id = 10;
+  }
 });

@@ -79,14 +79,14 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         <div class="sbss-w-9 sbss-h-9 rounded-1 bg-info text-white d-grid sbss-place-center"><i data-lucide="calendar-days" class="sbss-w-6 sbss-h-6"></i></div>
         <div>
           <h1 class="sbss-fs-17 fw-bolder text-primary-emphasis">REGISTRO DE ASISTENCIA</h1>
-          <p class="sbss-fs-10 text-primary-emphasis">Registre diariamente la asistencia de su personal. El sistema calculará automáticamente las horas trabajadas y controlará las tardanzas.</p>
+          <p class="sbss-fs-10 text-primary-emphasis">La lista incluye los turnos del día y las asistencias registradas. Un turno pendiente pasa a falta al finalizar si no tiene marcación ni un permiso aprobado que lo cubra.</p>
         </div>
       </div>
       <div class="core-filters sbss-p-3 d-grid sbss-grid-cols-12 gap-3 align-items-end">
         <label class="sbss-col-span-2 sbss-fs-9 fw-bold">Fecha<input id="fFecha" type="date" class="control mt-1"></label>
         <label class="sbss-col-span-2 sbss-fs-9 fw-bold">Empresa<select id="fEmpresa" class="control mt-1"><option value="">Todas las Empresas</option></select></label>
         <label class="sbss-col-span-2 sbss-fs-9 fw-bold">Área<select id="fArea" class="control mt-1"><option value="">Todas las Áreas</option></select></label>
-        <label class="sbss-col-span-2 sbss-fs-9 fw-bold">Cargo<select id="fCargo" class="control mt-1"></select></label><label class="sbss-col-span-2 sbss-fs-9 fw-bold">Trabajador<select id="fTrabajador" class="control mt-1"></select></label><label class="sbss-col-span-2 sbss-fs-9 fw-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
+        <label class="sbss-col-span-2 sbss-fs-9 fw-bold">Cargo<select id="fCargo" class="control mt-1"></select></label><label class="sbss-col-span-2 sbss-fs-9 fw-bold">Trabajador<select id="fTrabajador" class="control mt-1"></select></label><label class="sbss-col-span-2 sbss-fs-9 fw-bold">Estado<select id="fEstado" class="control mt-1"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="presente">Presente</option><option value="falta">Falta</option><option value="tardanza">Tardanza</option><option value="permiso">Permiso</option><option value="descanso">Descanso</option><option value="feriado">Feriado</option><option value="vacaciones">Vacaciones</option><option value="justificado">Justificado</option></select></label>
         <div class="sbss-col-span-2"><input id="fBuscar" class="control" placeholder="Buscar trabajador..."></div>
         <button id="btnNuevaAsistencia" class="sbss-col-span-2 sbss-h-9 rounded-2 bg-info sbss-hover-blue text-white sbss-fs-10 fw-bold d-flex align-items-center justify-content-center gap-2"><i data-lucide="plus" class="sbss-w-4 sbss-h-4"></i>Registrar Asistencia</button>
       </div>

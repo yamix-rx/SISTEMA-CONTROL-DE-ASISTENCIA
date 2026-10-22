@@ -2,7 +2,10 @@
   'use strict';
 
   const API = '/capacitaciones';
-  const state = { pagina: 1, limite: 10, paginas: 1, catalogos: null, capacitacionActual: null };
+  const state = { pagina: 1, limite: 10, paginas: 1, catalogos: null, capacitacionActual: null, listRevision: 0 };
+  const AUTO_REFRESH_MS = 15000;
+  let refreshTimer = null;
+  let refreshing = false;
   const $ = id => document.getElementById(id);
   const statusLabel = value => ({
     borrador: 'Borrador', programada: 'Próxima', en_curso: 'En curso', finalizada: 'Finalizada', cancelada: 'Cancelada',
@@ -22,7 +25,7 @@
   }
 
   async function api(path, options = {}) {
-    const response = await fetch(`${window.SBSSSession.API_BASE}${API}${path}`, options);
+    const response = await fetch(`${window.SBSSSession.API_BASE}${API}${path}`, { ...options, cache: 'no-store' });
     let body = {};
     try { body = await response.json(); } catch (_) { /* sin cuerpo */ }
     if (!response.ok || body.ok === false) throw new Error(body.mensaje || 'No se pudo completar la operación.');
@@ -86,18 +89,34 @@
     return params.toString();
   }
 
-  async function loadList() {
-    $('tablaCapacitaciones').innerHTML = '<tr><td colspan="9" class="table-message">Cargando capacitaciones...</td></tr>';
+  async function loadList({ silent = false } = {}) {
+    const revision = ++state.listRevision;
+    if (!silent) $('tablaCapacitaciones').innerHTML = '<tr><td colspan="9" class="table-message">Cargando capacitaciones...</td></tr>';
     try {
       const result = await api(`/?${queryString()}`);
+      if (revision !== state.listRevision) return;
       state.paginas = result.paginacion?.paginas || 1;
       state.pagina = result.paginacion?.pagina || 1;
       renderRows(result.data || []);
       renderPagination(result.paginacion || { pagina: 1, paginas: 1, total: 0, limite: state.limite });
     } catch (error) {
+      if (revision !== state.listRevision || silent) return;
       $('tablaCapacitaciones').innerHTML = `<tr><td colspan="9" class="table-message">${escapeHtml(error.message)}</td></tr>`;
       notice(error.message, true);
     }
+  }
+
+  async function refreshAutomatically() {
+    if (document.hidden || refreshing) return;
+    refreshing = true;
+    try { await Promise.all([loadSummary(), loadList({ silent: true })]); }
+    catch (_) { /* Reintentar en el próximo intervalo sin interrumpir la edición. */ }
+    finally { refreshing = false; }
+  }
+
+  function startAutoRefresh() {
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(refreshAutomatically, AUTO_REFRESH_MS);
   }
 
   function renderRows(rows) {
@@ -178,7 +197,7 @@
       $('capCupo').value = c.cupo ?? '';
       $('capLugar').value = c.lugar || '';
       $('capEnlace').value = c.enlace || '';
-      $('capEstado').value = c.estado || 'borrador';
+      $('capEstado').value = c.estado_registrado || c.estado || 'borrador';
       $('capObligatoria').checked = Boolean(Number(c.obligatorio));
       $('capDescripcion').value = c.descripcion || '';
       $('dialogCapacitacion').showModal();
@@ -254,7 +273,7 @@
       first: { value: '', label: employees.length ? 'Seleccione un colaborador' : 'No hay colaboradores disponibles' },
       label: e => `${e.colaborador} · ${e.empresa}`
     });
-    $('btnAgregarParticipante').disabled = !employees.length;
+    $('btnAgregarParticipante').disabled = !employees.length || ['finalizada', 'cancelada'].includes(cap.estado);
   }
 
   function renderParticipants(cap) {
@@ -392,6 +411,11 @@
     try {
       await loadCatalogs();
       await Promise.all([loadSummary(), loadList()]);
+      startAutoRefresh();
+      document.addEventListener('visibilitychange', refreshAutomatically);
+      window.addEventListener('focus', refreshAutomatically);
+      window.addEventListener('pagehide', () => clearInterval(refreshTimer));
+      window.addEventListener('pageshow', () => { startAutoRefresh(); refreshAutomatically(); });
     } catch (error) { notice(error.message, true); }
   }
 
