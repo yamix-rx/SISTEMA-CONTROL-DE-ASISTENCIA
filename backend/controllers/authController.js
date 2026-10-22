@@ -7,7 +7,7 @@ const { registrarAuditoria } = require('../services/auditoriaService');
 exports.login = async (req, res) => {
   const { email, password } = req.body || {};
 
-  if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
+  if (typeof email !== 'string' || !email.trim() || email.length > 120 || typeof password !== 'string' || !password || Buffer.byteLength(password,'utf8') > 72) {
     return res.status(400).json({ ok: false, mensaje: 'Por favor, proporcione correo y contraseña.' });
   }
 
@@ -70,3 +70,13 @@ exports.login = async (req, res) => {
 };
 
 exports.perfil = (req, res) => res.json({ ok: true, usuario: req.usuario, acceso: req.acceso });
+
+exports.logout = async (req, res) => {
+  try {
+    await require('../config/database').query('UPDATE usuarios SET sesion_version=sesion_version+1 WHERE id=?', [req.usuario.id]);
+    res.locals.auditoria = { tabla: 'usuarios', registroId: req.usuario.id, accion: 'UPDATE', nuevos: { cierre_sesion: true } };
+    return res.json({ ok: true, mensaje: 'Sesión cerrada. Se invalidaron los accesos anteriores de esta cuenta.' });
+  } catch (error) {
+    return res.status(503).json({ ok: false, mensaje: 'No se pudo cerrar la sesión. Vuelva a intentar.' });
+  }
+};

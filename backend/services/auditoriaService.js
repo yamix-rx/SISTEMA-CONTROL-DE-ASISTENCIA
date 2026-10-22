@@ -25,7 +25,6 @@ async function registrarAuditoria({
   datos_nuevos = null,
   ip_origen = null
 }) {
-  try {
     await pool.query(
       `INSERT INTO historial_cambios
        (usuario_id, tabla_afectada, registro_id, accion, datos_anteriores, datos_nuevos, ip_origen)
@@ -40,10 +39,6 @@ async function registrarAuditoria({
         ip_origen || null
       ]
     );
-  } catch (error) {
-    // La auditoría no debe interrumpir una operación funcional del sistema.
-    console.error('Error registrando auditoría:', error.code || error.message);
-  }
 }
 
 module.exports = { registrarAuditoria, sanitizar };

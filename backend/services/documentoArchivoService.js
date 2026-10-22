@@ -86,4 +86,10 @@ function disposicionArchivo(nombre, descargar = false) {
   return `${descargar ? 'attachment' : 'inline'}; filename="${ascii}"; filename*=UTF-8''${utf8}`;
 }
 
-module.exports = { MAX_BYTES, validarArchivo, resolverRutaPrivada, guardarArchivo, eliminarArchivo, obtenerArchivo, disposicionArchivo };
+async function disponible(nombre) {
+  if (!nombre) return false;
+  try { await obtenerArchivo(nombre); return true; }
+  catch (error) { if (error.status === 404) return false; throw error; }
+}
+
+module.exports = { MAX_BYTES, validarArchivo, resolverRutaPrivada, guardarArchivo, eliminarArchivo, obtenerArchivo, disposicionArchivo, disponible };

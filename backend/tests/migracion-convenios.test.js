@@ -31,6 +31,7 @@ test('migración agrega campos nullable sin inferir fechas y una segunda ejecuci
   await migrar(connection);
   assert.ok(consultas.includes('ALTER TABLE `empleados` ADD COLUMN `puesto` VARCHAR(150) NULL'));
   assert.ok(consultas.includes('ALTER TABLE `practicante_detalles` ADD COLUMN `fecha_vencimiento_convenio` DATE NULL'));
+  assert.ok(consultas.includes('ALTER TABLE `tipo_documentos` ADD COLUMN `descripcion` TEXT NULL'));
   assert.ok(consultas.includes('CREATE INDEX idx_practicante_vencimiento ON practicante_detalles (fecha_vencimiento_convenio)'));
   assert.ok(!consultas.some(sql => /^\s*(?:DELETE|DROP TABLE|UPDATE empleados|UPDATE practicante_detalles)\b/.test(sql)));
   const inicioSegunda = consultas.length;

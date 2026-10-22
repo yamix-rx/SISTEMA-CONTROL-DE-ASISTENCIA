@@ -68,13 +68,16 @@ async function listar(query) {
       e.id AS empleado_id, CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
       e.numero_documento, e.empresa_id, emp.razon_social AS empresa,
       td.id AS tipo_documento_id, td.nombre AS tipo_documento, td.es_obligatorio,
-      de.nombre_archivo, de.fecha_subida, ${ESTADO_SQL} AS estado,
+      de.nombre_archivo, de.ruta_archivo, de.fecha_subida, ${ESTADO_SQL} AS estado,
       de.observacion, de.mime_type
     ${BASE_SQL} ${where}
     ORDER BY CASE WHEN de.id IS NULL THEN 0 WHEN de.estado = 'pendiente' THEN 1 WHEN de.estado = 'rechazado' THEN 2 ELSE 3 END,
       e.apellidos, e.nombres, e.id, td.nombre, td.id LIMIT ? OFFSET ?
   `, params);
-  return { documentos, total, pagina: filtros.pagina, limite: filtros.limite, resumen };
+  const publicos = await Promise.all(documentos.map(async ({ ruta_archivo, ...documento }) => ({ ...documento,
+    archivo_disponible: Boolean(documento.documento_id) && await archivos.disponible(ruta_archivo)
+  })));
+  return { documentos: publicos, total, pagina: filtros.pagina, limite: filtros.limite, resumen };
 }
 
 async function subir(body) {

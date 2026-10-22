@@ -12,6 +12,7 @@ let usuarios;
 let logs;
 let tiposDocumento;
 let tiposPermiso;
+let faltaDescripcion;
 const pool = {
   async query(sql, params = []) {
     if (/INSERT INTO historial_cambios/.test(sql)) {
@@ -32,7 +33,10 @@ const pool = {
     if (/SELECT id, razon_social, estado FROM empresas ORDER BY razon_social/.test(sql)) return [[]];
     if (/SELECT a\.id, a\.nombre, a\.empresa_id, e\.razon_social AS empresa FROM areas/.test(sql)) return [[]];
     if (/SELECT c\.id, c\.nombre, c\.area_id, a\.nombre AS area, a\.empresa_id FROM cargos/.test(sql)) return [[]];
-    if (/SELECT id, nombre, descripcion, es_obligatorio FROM tipo_documentos ORDER BY es_obligatorio DESC, nombre/.test(sql)) return [[...tiposDocumento.values()].sort((a, b) => b.es_obligatorio - a.es_obligatorio || a.nombre.localeCompare(b.nombre))];
+    if (/SELECT id, nombre, descripcion, es_obligatorio FROM tipo_documentos ORDER BY es_obligatorio DESC, nombre/.test(sql)) {
+      if (faltaDescripcion) throw Object.assign(new Error('Unknown column descripcion'), { code: 'ER_BAD_FIELD_ERROR' });
+      return [[...tiposDocumento.values()].sort((a, b) => b.es_obligatorio - a.es_obligatorio || a.nombre.localeCompare(b.nombre))];
+    }
     if (/SELECT id, nombre FROM tipo_permisos ORDER BY nombre/.test(sql)) return [[...tiposPermiso.values()].sort((a, b) => a.nombre.localeCompare(b.nombre))];
     // guardarTipoDocumento
     if (/UPDATE tipo_documentos SET nombre=/.test(sql)) {
@@ -79,6 +83,7 @@ before(async () => {
 });
 after(async () => { await new Promise(resolve => server.close(resolve)); });
 beforeEach(() => {
+  faltaDescripcion = false;
   usuarios = new Map([
     [1, { id: 1, rol_id: 1, activo: 1, sesion_version: 0 }],
     [2, { id: 2, rol_id: 2, activo: 1, sesion_version: 0 }]
@@ -99,6 +104,14 @@ test('el catálogo de administración incluye tipos de documento y de permiso', 
   assert.equal(result.status, 200);
   assert.deepEqual(result.body.data.tiposDocumento.map(t => t.nombre), ['DNI']);
   assert.deepEqual(result.body.data.tiposPermiso.map(t => t.nombre), ['Personal']);
+});
+
+test('una base antigua requiere actualizarse y no informa un error de guardado al consultar', async () => {
+  faltaDescripcion = true;
+  const result = await request('/api/administracion/catalogos');
+  assert.equal(result.status, 503);
+  assert.match(result.body.mensaje, /actualizar la base de datos/);
+  assert.doesNotMatch(result.body.mensaje, /guardar|Unknown column|SELECT/);
 });
 
 test('RR. HH. no puede administrar tipos, solo el administrador general', async () => {

@@ -82,7 +82,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
       await cdp.evaluate('document.getElementById("fFecha").value=' + JSON.stringify(config.legacyFecha) + ';document.getElementById("fTrabajador").value=' + JSON.stringify(String(config.legacyEmpleadoId)) + ';document.getElementById("fTrabajador").dispatchEvent(new Event("change"))');
       await waitFor('document.querySelectorAll("#tbodyAsistencia tr").length===1 && !!document.querySelector("#tbodyAsistencia button")');
       await cdp.evaluate('document.querySelector("#tbodyAsistencia button").click()');
-      await waitFor('!document.getElementById("modalAsistencia").classList.contains("hidden") && !document.getElementById("aProgramacionHistorica").classList.contains("hidden")');
+      await waitFor('document.getElementById("modalAsistencia").getBoundingClientRect().height>0 && getComputedStyle(document.getElementById("aProgramacionHistorica")).display!=="none"');
       const before = await cdp.evaluate('({checked:document.getElementById("aConfirmarHistorico").checked, values:["aOriginalEntrada","aOriginalSalida","aOriginalTolerancia","aOriginalMotivo"].map(id=>document.getElementById(id).value),disabled:document.getElementById("aOriginalEntrada").disabled})');
       assert.equal(before.checked, false); assert.equal(before.disabled, true); assert.ok(before.values.every(value => value === ''));
       await cdp.evaluate('document.getElementById("aConfirmarHistorico").click()');

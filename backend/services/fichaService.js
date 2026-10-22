@@ -31,7 +31,7 @@ async function obtenerFicha(id) {
                 ORDER BY dia_semana ASC, hora_entrada ASC`, [id]),
     pool.query(`
       SELECT td.id AS tipo_documento_id, td.nombre AS tipo_documento, td.es_obligatorio,
-             de.id AS documento_id, de.nombre_archivo,
+             de.id AS documento_id, de.nombre_archivo, de.ruta_archivo,
              CASE WHEN de.id IS NULL THEN 'sin_entregar' ELSE de.estado END AS estado_documento,
              de.fecha_subida
       FROM tipo_documentos td
@@ -62,7 +62,9 @@ async function obtenerFicha(id) {
       estado: horasCompletadas ? 'HORAS DE PRÁCTICAS COMPLETADAS' : 'EN PROGRESO'
     },
     horarios,
-    legajoDigital
+    legajoDigital: await Promise.all(legajoDigital.map(async ({ ruta_archivo, ...documento }) => ({ ...documento,
+      archivo_disponible: Boolean(documento.documento_id) && await require('./documentoArchivoService').disponible(ruta_archivo)
+    })))
   };
 }
 

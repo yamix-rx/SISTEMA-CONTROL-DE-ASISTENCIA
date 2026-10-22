@@ -57,12 +57,13 @@ exports.listarColaboradores = async (req, res) => {
 // 2. Obtener el expediente del colaborador desde el servicio compartido.
 exports.obtenerCatalogos = async (req, res) => {
   try {
-    const [[empresas], [areas], [cargos]] = await Promise.all([
+    const [[empresas], [areas], [cargos], [tiposPermiso]] = await Promise.all([
       pool.query(`SELECT id, razon_social, estado FROM empresas ORDER BY razon_social`),
       pool.query(`SELECT id, nombre, empresa_id FROM areas ORDER BY nombre`),
-      pool.query(`SELECT id, nombre, area_id FROM cargos ORDER BY nombre`)
+      pool.query(`SELECT id, nombre, area_id FROM cargos ORDER BY nombre`),
+      pool.query('SELECT id, nombre FROM tipo_permisos ORDER BY nombre')
     ]);
-    return res.status(200).json({ ok: true, data: { empresas, areas, cargos } });
+    return res.status(200).json({ ok: true, data: { empresas, areas, cargos, tiposPermiso } });
   } catch (error) {
     console.error('Error al obtener catálogos de personal:', error);
     return res.status(500).json({ ok: false, mensaje: 'Error al cargar catálogos.' });
@@ -112,6 +113,7 @@ function validarFecha(valor) {
 
 const VINCULOS_VALIDOS = new Set([
   'trabajador',
+  'practicante', // Registros históricos: RRHH decide su clasificación sin inferirla.
   'practicante preprofesional',
   'practicante profesional',
   'voluntario',
@@ -168,10 +170,26 @@ async function validarRelacionOrganizacional(payload) {
   return rows.length > 0;
 }
 
+function validarDatosPersonal(p) {
+  const rechazar = mensaje => { throw Object.assign(new Error(mensaje), { status: 400 }); };
+  if (!['DNI', 'CE', 'PASAPORTE'].includes(p.tipo_documento)) rechazar('Seleccione un tipo de documento válido.');
+  if (p.tipo_documento === 'DNI' ? !/^\d{8}$/.test(p.numero_documento) : !/^[A-Za-z0-9]{6,15}$/.test(p.numero_documento)) {
+    rechazar(p.tipo_documento === 'DNI' ? 'El DNI debe contener 8 dígitos.' : 'El documento debe contener entre 6 y 15 letras o dígitos.');
+  }
+  for (const [campo, limite] of Object.entries({ nombres: 100, apellidos: 100, telefono: 20, correo_personal: 120, direccion: 255, carrera: 100, institucion_educativa: 150, observaciones_rrhh: 10000 })) {
+    if ((p[campo]?.length || 0) > limite) rechazar(`${campo.replaceAll('_', ' ')} admite hasta ${limite} caracteres.`);
+  }
+  if (p.correo_personal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.correo_personal)) rechazar('Ingrese un correo personal válido.');
+  if (![p.empresa_id, p.area_id, p.cargo_id].every(n => Number.isSafeInteger(n) && n > 0)) rechazar('Seleccione empresa, área y cargo válidos.');
+  if (!Number.isFinite(p.horas_totales_asignadas) || p.horas_totales_asignadas < 0 || p.horas_totales_asignadas > 999999.99) rechazar('La meta debe estar entre 0 y 999999,99 horas.');
+  if (p.fecha_nacimiento && (p.fecha_nacimiento >= p.fecha_ingreso || p.fecha_nacimiento > require('../services/asistenciaReglas').hoy())) rechazar('La fecha de nacimiento debe preceder al ingreso y no puede ser futura.');
+}
+
 exports.crearColaborador = async (req, res) => {
   const p = normalizarPayload(req.body || {});
   try {
     Object.assign(p, normalizarPuestoConvenio(req.body || {}, p.fecha_ingreso));
+    validarDatosPersonal(p);
     if (p.fecha_vencimiento_convenio && !p.tipo_vinculo.startsWith('practicante')) return res.status(400).json({ ok: false, mensaje: 'El vencimiento del convenio corresponde a un practicante.' });
     if (!p.numero_documento || !p.nombres || !p.apellidos || !p.empresa_id || !p.area_id || !p.cargo_id || !p.fecha_ingreso) {
       return res.status(400).json({ ok: false, mensaje: 'Complete DNI, nombres, apellidos, empresa, área, cargo y fecha de ingreso.' });
@@ -227,6 +245,7 @@ exports.actualizarColaborador = async (req, res) => {
   const id = Number(req.params.id);
   try {
     normalizarPuestoConvenio(req.body || {}, p.fecha_ingreso);
+    validarDatosPersonal(p);
     if (req.body.fecha_vencimiento_convenio && !p.tipo_vinculo.startsWith('practicante')) return res.status(400).json({ ok: false, mensaje: 'El vencimiento del convenio corresponde a un practicante.' });
     if (!Number.isSafeInteger(id) || id <= 0 || !p.numero_documento || !p.nombres || !p.apellidos || !p.empresa_id || !p.area_id || !p.cargo_id || !p.fecha_ingreso) return res.status(400).json({ ok: false, mensaje: 'Complete los campos obligatorios.' });
     if (!VINCULOS_VALIDOS.has(p.tipo_vinculo)) return res.status(400).json({ ok: false, mensaje: 'Tipo de vínculo no válido.' });
@@ -273,29 +292,34 @@ exports.actualizarHorasPracticas = async (req, res) => {
   if (!Number.isInteger(empleadoId) || empleadoId <= 0) {
     return res.status(400).json({ ok: false, mensaje: 'Colaborador no válido.' });
   }
-  if (!Number.isFinite(horasMeta) || horasMeta <= 0) {
-    return res.status(400).json({ ok: false, mensaje: 'La meta de horas debe ser mayor a 0.' });
+  if (!Number.isFinite(horasMeta) || horasMeta <= 0 || horasMeta > 999999.99) {
+    return res.status(400).json({ ok: false, mensaje: 'La meta debe ser mayor a 0 y no superar 999999,99 horas.' });
   }
 
+  let connection;
   try {
-    const [empleadoRows] = await pool.query(`
-      SELECT id, tipo_vinculo FROM empleados WHERE id = ? LIMIT 1
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [empleadoRows] = await connection.query(`
+      SELECT id, tipo_vinculo FROM empleados WHERE id = ? LIMIT 1 FOR UPDATE
     `, [empleadoId]);
-    if (!empleadoRows.length) return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' });
+    if (!empleadoRows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
     if (!String(empleadoRows[0].tipo_vinculo || '').toLowerCase().startsWith('practicante')) {
-      return res.status(400).json({ ok: false, mensaje: 'El colaborador seleccionado no es practicante.' });
+      await connection.rollback(); return res.status(400).json({ ok: false, mensaje: 'El colaborador seleccionado no es practicante.' });
     }
 
-    await pool.query(`
+    await connection.query(`
       INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
       VALUES (?, ?, FALSE)
       ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)
     `, [empleadoId, horasMeta]);
-    await pool.query(`UPDATE empleados SET horas_totales_asignadas = ? WHERE id = ?`, [horasMeta, empleadoId]);
+    await connection.query(`UPDATE empleados SET horas_totales_asignadas = ? WHERE id = ?`, [horasMeta, empleadoId]);
+    await connection.commit();
 
     return res.status(200).json({ ok: true, mensaje: 'Meta de horas de prácticas actualizada correctamente.' });
   } catch (error) {
-    console.error('Error al actualizar horas de prácticas:', error);
+    if (connection) await connection.rollback();
+    console.error('Error al actualizar horas de prácticas:', error.code || error.name);
     return res.status(500).json({ ok: false, mensaje: 'Error al actualizar la meta de horas.' });
-  }
+  } finally { if (connection) connection.release(); }
 };

@@ -15,7 +15,7 @@
     <main>
       <h1>Usuarios y configuración</h1><p class="muted">Administra los accesos, las áreas y los cargos de tus empresas.</p>
       <p id="adminStatus" role="status" aria-live="polite">Cargando configuración…</p>
-      <nav class="admin-tabs" aria-label="Secciones de configuración"><a href="#cuentas">Usuarios</a><a href="#areas">Áreas</a><a href="#cargos">Cargos</a><a href="empresas.html">Empresas</a></nav>
+      <nav class="admin-tabs" aria-label="Secciones de configuración"><a href="#cuentas">Usuarios</a><a href="#areas">Áreas</a><a href="#cargos">Cargos</a><a href="#tipos-documento">Documentos</a><a href="#tipos-permiso">Permisos</a><a href="empresas.html">Empresas</a></nav>
       <section id="cuentas" class="admin-section"><h2>Cuentas de acceso</h2><div class="admin-grid">
         <form id="userForm" class="admin-form"><fieldset id="userFields" disabled><legend id="userTitle">Crear cuenta</legend>
           <input id="userId" type="hidden">
@@ -35,6 +35,14 @@
       <section id="cargos" class="admin-section"><h2>Cargos por área</h2><div class="admin-grid">
         <form id="positionForm" class="admin-form"><fieldset id="positionFields" disabled><legend id="positionTitle">Crear cargo</legend><input id="positionId" type="hidden"><label for="positionArea">Área / empresa</label><select id="positionArea" required></select><label for="positionName">Nombre del cargo</label><input id="positionName" maxlength="100" required><div class="actions"><button type="submit">Guardar cargo</button><button id="cancelPosition" class="secondary" type="button">Limpiar</button></div></fieldset></form>
         <div class="admin-panel table-wrap"><table><caption class="sr-only">Cargos registrados</caption><thead><tr><th>Cargo</th><th>Área / empresa</th><th>Acciones</th></tr></thead><tbody id="positionsBody"></tbody></table></div>
+      </div></section>
+      <section id="tipos-documento" class="admin-section"><h2>Tipos de documento</h2><p class="muted">Los documentos obligatorios se incluyen en el seguimiento de todos los expedientes.</p><div class="admin-grid">
+        <form id="documentTypeForm" class="admin-form"><fieldset id="documentTypeFields" disabled><legend id="documentTypeTitle">Crear tipo de documento</legend><input id="documentTypeId" type="hidden"><label for="documentTypeName">Nombre</label><input id="documentTypeName" maxlength="100" required><label for="documentTypeDescription">Descripción</label><textarea id="documentTypeDescription" maxlength="4000"></textarea><label for="documentTypeRequired">Entrega</label><select id="documentTypeRequired"><option value="0">Opcional</option><option value="1">Obligatoria</option></select><div class="actions"><button type="submit">Guardar tipo</button><button id="cancelDocumentType" class="secondary" type="button">Limpiar</button></div></fieldset></form>
+        <div class="admin-panel table-wrap"><table><caption class="sr-only">Tipos de documento</caption><thead><tr><th>Nombre</th><th>Entrega</th><th>Acciones</th></tr></thead><tbody id="documentTypesBody"></tbody></table></div>
+      </div></section>
+      <section id="tipos-permiso" class="admin-section"><h2>Tipos de permiso</h2><p class="muted">Renombrar un tipo conserva el nombre de los permisos ya registrados.</p><div class="admin-grid">
+        <form id="permissionTypeForm" class="admin-form"><fieldset id="permissionTypeFields" disabled><legend id="permissionTypeTitle">Crear tipo de permiso</legend><input id="permissionTypeId" type="hidden"><label for="permissionTypeName">Nombre</label><input id="permissionTypeName" maxlength="50" required><div class="actions"><button type="submit">Guardar tipo</button><button id="cancelPermissionType" class="secondary" type="button">Limpiar</button></div></fieldset></form>
+        <div class="admin-panel table-wrap"><table><caption class="sr-only">Tipos de permiso</caption><thead><tr><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="permissionTypesBody"></tbody></table></div>
       </div></section>
     </main>
   </div>

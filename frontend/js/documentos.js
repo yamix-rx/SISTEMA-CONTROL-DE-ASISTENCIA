@@ -266,11 +266,12 @@
       const date = node('td', 'date-cell', displayDate(row.fecha_subida));
       const status = node('td', 'status-cell');
       status.appendChild(badge(row.estado));
+      if(row.documento_id && row.archivo_disponible===false)status.appendChild(node('small','','Archivo no disponible: volver a cargar'));
       const actions = node('td', 'actions-cell');
       const view = actionButton(`Ver ${row.tipo_documento} de ${row.colaborador}`, 'eye', () => selectDocument(row, true));
       view.dataset.action = 'ver';
       actions.appendChild(view);
-      if (row.documento_id) {
+      if (row.documento_id && row.archivo_disponible!==false) {
         const download = actionButton(`Descargar ${row.tipo_documento} de ${row.colaborador}`, 'download', event => downloadFile(row, event.currentTarget));
         download.dataset.action = 'descargar';
         actions.appendChild(download);
@@ -326,8 +327,8 @@
     $('detalleFecha').textContent = row.fecha_subida ? `Cargado el ${displayDate(row.fecha_subida)}` : 'Este requisito aún no tiene un archivo.';
     $('observacionAnterior').textContent = row.observacion ? `Última revisión: ${row.observacion}` : '';
     $('observacionAnterior').hidden = !row.observacion;
-    $('btnDescargar').hidden = !row.documento_id;
-    $('revisionCampos').hidden = !row.documento_id;
+    $('btnDescargar').hidden = !row.documento_id || row.archivo_disponible===false;
+    $('revisionCampos').hidden = !row.documento_id || row.archivo_disponible===false;
     $('btnNuevaVersion').replaceChildren(icon('upload'), document.createTextNode(row.documento_id ? 'Subir nueva versión' : 'Subir documento'));
     $('btnObservar').disabled = state.reviewing;
     $('btnValidar').disabled = state.reviewing;
@@ -335,6 +336,10 @@
     if (focus) {
       $('panelVista').focus({ preventScroll: true });
       if (matchMedia('(max-width: 1080px)').matches) $('panelVista').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }
+    if (row.documento_id && row.archivo_disponible===false) {
+      $('archivoVista').append(icon('upload'),node('p','','El archivo registrado no está disponible. Sube una nueva versión para recuperar el expediente; se conservará el historial.'));
+      return;
     }
     if (!row.documento_id) {
       $('archivoVista').append(icon('upload'), node('p', '', 'Todavía no se ha entregado el archivo. Súbelo para iniciar la revisión.'));

@@ -34,7 +34,7 @@ class CDP {
   }
   async evaluate(expression) {
     const result = await this.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Error al evaluar la página.');
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Error al evaluar la página.');
     return result.result.value;
   }
   close() { this.ws.close(); }

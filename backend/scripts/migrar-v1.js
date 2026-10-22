@@ -34,8 +34,11 @@ async function migrar(connection, informar=()=>{}) {
   await add('documentos_empleado','revisado_por','INT NULL');
   await add('documentos_empleado','fecha_revision','DATETIME NULL');
   await add('documentos_empleado','mime_type','VARCHAR(100) NULL');
+  await add('tipo_documentos','descripcion','TEXT NULL');
   // Las metas admiten cualquier cantidad positiva, incluidas fracciones de hora.
   await connection.query('ALTER TABLE practicante_detalles MODIFY horas_meta DECIMAL(8,2) NOT NULL DEFAULT 320');
+  await connection.query('ALTER TABLE empleados MODIFY horas_totales_asignadas DECIMAL(8,2) NULL DEFAULT 0');
+  await connection.query("INSERT IGNORE INTO tipo_permisos (nombre) VALUES ('Personal'),('Salud'),('Estudios'),('Familiar'),('Otro')");
   await connection.query('ALTER TABLE horarios ALTER COLUMN tolerancia_minutos SET DEFAULT 0');
   await connection.query("ALTER TABLE historial_cambios MODIFY accion ENUM('INSERT','UPDATE','DELETE','LOGIN','LOGIN_FALLIDO','DENEGADO','ERROR') NOT NULL");
   const [indexes]=await connection.query('SELECT TABLE_NAME,INDEX_NAME FROM information_schema.statistics WHERE table_schema=DATABASE()');

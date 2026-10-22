@@ -119,6 +119,7 @@
     function fileActions(item) {
         const td = cell(null);
         if (!item.documento_id) return td;
+        if(item.archivo_disponible===false){td.textContent='Archivo no disponible. Contacta a RRHH.';return td;}
         td.replaceChildren(fileButton('Ver', `/documentos/mios/${item.documento_id}/archivo`, item.nombre_archivo, true), fileButton('Descargar', `/documentos/mios/${item.documento_id}/descargar`, item.nombre_archivo));
         td.className = 'file-actions'; return td;
     }
@@ -173,7 +174,7 @@
             setText('lastAttendance', latest ? date(latest.fecha) : 'Sin registros');
             setText('lastAttendanceDetail', latest ? `${label(latest.estado)} · Ingreso ${time(latest.hora_ingreso)}` : 'Aún no tienes asistencias registradas');
         }
-        const pendingDocuments = documentos.filter((item) => (item.es_obligatorio === true || Number(item.es_obligatorio) === 1) && ['sin_entregar', 'pendiente', 'rechazado'].includes(String(item.estado_documento).toLowerCase()));
+        const pendingDocuments = documentos.filter((item) => (item.es_obligatorio === true || Number(item.es_obligatorio) === 1) && (item.archivo_disponible===false || ['sin_entregar', 'pendiente', 'rechazado'].includes(String(item.estado_documento).toLowerCase())));
         setText('pendingDocuments', pendingDocuments.length);
         setText('pendingPermissions', data.resumenHistorial?.permisosSolicitados ?? 0);
 

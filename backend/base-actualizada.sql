@@ -66,7 +66,7 @@ CREATE TABLE empleados (
     puesto VARCHAR(150) NULL,
     
     tipo_vinculo VARCHAR(50) NOT NULL DEFAULT 'trabajador',
-    horas_totales_asignadas DECIMAL(6,2) NULL DEFAULT 0.00,
+    horas_totales_asignadas DECIMAL(8,2) NULL DEFAULT 0.00,
     horas_completadas DECIMAL(6,2) NULL DEFAULT 0.00,
     estado ENUM('activo', 'inactivo', 'finalizado', 'suspendido') DEFAULT 'activo',
     fecha_ingreso DATE NOT NULL,

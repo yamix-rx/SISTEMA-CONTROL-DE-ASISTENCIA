@@ -19,11 +19,13 @@
     rows.forEach((row,i)=>{const tr=document.createElement('tr');tr.append(...render(row,i).map(cell));body.append(tr);});
   }
   function button(label, action) {const b=document.createElement('button');b.type='button';b.textContent=label;b.className='text-sky-700 font-bold px-2 py-1';b.onclick=()=>Promise.resolve(action()).catch(error=>toast(error.message));return b;}
-  function toast(message){let node=$('toast');if(!node){node=document.createElement('div');node.className='fixed right-5 bottom-5 z-[100] bg-slate-900 text-white p-4 rounded-lg shadow text-sm';document.body.append(node);setTimeout(()=>node.remove(),5500);}else{node.classList.remove('hidden');setTimeout(()=>node.classList.add('hidden'),5500);}node.textContent=message;node.setAttribute('role','status');}
+  let toastTimer;
+  function toast(message){let node=$('toast');if(!node){node=document.createElement('div');node.id='toast';document.body.append(node);}clearTimeout(toastTimer);node.className='sbss-feedback position-fixed end-0 bottom-0 m-3 bg-dark text-white p-3 rounded-3 shadow';node.textContent=message;node.setAttribute('role','status');node.setAttribute('aria-live','polite');setVisible('toast',true);toastTimer=setTimeout(()=>setVisible('toast',false),5500);}
   const date=value=>value?String(value).slice(0,10):'—';
   const time=value=>value?String(value).slice(0,5):'—';
   const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  function show(id,visible){$(id).classList.toggle('hidden',!visible);$(id).classList.toggle('flex',visible);}
+  function setVisible(id,visible){const node=$(id);node.hidden=!visible;node.classList.remove('hidden','flex');node.classList.toggle('d-none',!visible);}
+  function show(id,visible){setVisible(id,visible);$(id).classList.toggle('d-flex',visible);}
   async function catalogs(){const [c,e]=await Promise.all([api('/api/personal/catalogos'),api('/api/personal?estado=todos')]);return {...c.data,empleados:e.data};}
   function cascade(data,prefix,worker='Trabajador'){
     const empresa=$(prefix+'Empresa')?.value,area=$(prefix+'Area')?.value;
@@ -42,5 +44,5 @@
     if(download)a.download=permission.archivo_sustento_nombre||'sustento';else{a.target='_blank';a.rel='noopener';}
     document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
-  window.AsistenciaUI={$,api,options,cell,table,button,toast,date,time,today,show,catalogs,cascade,filters,file,downloadPermission};
+  window.AsistenciaUI={$,api,options,cell,table,button,toast,date,time,today,show,setVisible,catalogs,cascade,filters,file,downloadPermission};
 })();

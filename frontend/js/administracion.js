@@ -50,6 +50,16 @@
     },4);
   }
   function renderCatalogs() {
+    table('documentTypesBody',catalogs.tiposDocumento||[],t=>{
+      const actions=cell();actions.append(action('Editar',()=>{
+        $('documentTypeId').value=t.id;$('documentTypeName').value=t.nombre;$('documentTypeDescription').value=t.descripcion||'';
+        $('documentTypeRequired').value=String(Number(t.es_obligatorio));$('documentTypeTitle').textContent='Editar tipo de documento';$('documentTypeName').focus();
+      }));return [cell(t.nombre),cell(Number(t.es_obligatorio)?'Obligatoria':'Opcional'),actions];
+    },3);
+    table('permissionTypesBody',catalogs.tiposPermiso||[],t=>{
+      const actions=cell();actions.append(action('Editar',()=>{$('permissionTypeId').value=t.id;$('permissionTypeName').value=t.nombre;$('permissionTypeTitle').textContent='Editar tipo de permiso';$('permissionTypeName').focus();}));
+      return [cell(t.nombre),actions];
+    },2);
     options('userRole',catalogs.roles,r=>r.nombre);
     options('areaCompany',catalogs.empresas,e=>`${e.razon_social}${e.estado==='inactivo'?' (inactiva)':''}`);
     options('positionArea',catalogs.areas,a=>`${a.nombre} · ${a.empresa}`);
@@ -66,9 +76,18 @@
   async function load() {
     const [data,accounts]=await Promise.all([api('/catalogos'),api('/usuarios')]);catalogs=data.data;users=accounts.data;
     renderCatalogs();renderUsers();resetUser();
-    for(const id of ['userFields','areaFields','positionFields'])$(id).disabled=false;
+    for(const id of ['userFields','areaFields','positionFields','documentTypeFields','permissionTypeFields'])$(id).disabled=false;
   }
-  function submit(formId,work) {$(formId).addEventListener('submit',async event=>{event.preventDefault();const button=event.submitter;button.disabled=true;try{await work();}catch(e){message(e.message,true);}finally{button.disabled=false;}});}
+  function submit(formId,work) {$(formId).addEventListener('submit',async event=>{event.preventDefault();const button=event.submitter||$(formId).querySelector('button[type="submit"]');button.disabled=true;try{await work();}catch(e){message(e.message,true);}finally{button.disabled=false;}});}
+  for(const [prefix,resource,label] of [['documentType','tipos-documento','documento'],['permissionType','tipos-permiso','permiso']]) {
+    const reset=()=>{$(prefix+'Form').reset();$(prefix+'Id').value='';$(prefix+'Title').textContent='Crear tipo de '+label;};
+    $(prefix==='documentType'?'cancelDocumentType':'cancelPermissionType').onclick=reset;
+    submit(prefix+'Form',async()=>{
+      const id=$(prefix+'Id').value,body={nombre:$(prefix+'Name').value};
+      if(prefix==='documentType'){body.descripcion=$('documentTypeDescription').value;body.es_obligatorio=$('documentTypeRequired').value;}
+      const result=await save('/'+resource+(id?'/'+id:''),body,id?'PUT':'POST');reset();await load();message(result.mensaje);
+    });
+  }
   submit('userForm',async()=>{
     const id=$('userId').value;const data={empleado_id:$('userEmployee').value,email:$('userEmail').value,rol_id:$('userRole').value,activo:$('userActive').value};
     if(!id)data.password=$('userPassword').value;
@@ -86,9 +105,9 @@
     $('positionForm').reset();$('positionId').value='';$('positionTitle').textContent='Crear cargo';await load();message(result.mensaje);
   });
   $('passwordForm').addEventListener('submit',async event=>{
-    event.preventDefault();event.submitter.disabled=true;
+    event.preventDefault();const button=event.submitter||$('passwordForm').querySelector('button[type="submit"]');button.disabled=true;
     try{const id=$('passwordUserId').value;const result=await save(`/usuarios/${id}/clave`,{password:$('resetPassword').value});$('resetPassword').value='';$('passwordDialog').close();message(result.mensaje);if(Number(id)===Number(current.usuario.id))window.SBSSSession.logout();}
-    catch(e){$('passwordError').textContent=e.message;}finally{event.submitter.disabled=false;}
+    catch(e){$('passwordError').textContent=e.message;}finally{button.disabled=false;}
   });
   $('cancelUser').onclick=resetUser;$('closePassword').onclick=()=>{$('resetPassword').value='';$('passwordDialog').close();};
   $('cancelArea').onclick=()=>{$('areaForm').reset();$('areaId').value='';$('areaTitle').textContent='Crear área';};

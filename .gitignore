@@ -6,3 +6,11 @@ uploads/
 backend/uploads/
 *.log
 .DS_Store
+backend/backups/
+artifacts/validacion/
+tmp_documentos/
+Documentos/
+*.env
+.env.*
+!.env.example
+!backend/.env.example

@@ -48,7 +48,7 @@ function construirReporte(empleados,marcaciones,totales,permisos) {
   for(const p of permisos){const e=porEmpleado.get(Number(p.empleado_id));if(e){e.total_permisos+=Number(p.cantidad);if(p.estado==='Aprobado')e.permisos_aprobados+=Number(p.cantidad);}}
   const detalles=[...porEmpleado.values()].map(e=>({...e,total_horas_laboradas:Math.round(e.total_horas_laboradas*100)/100,
     horas_pendientes:e.horas_meta>0?Math.round(Math.max(0,e.horas_meta-e.horas_acumuladas)*100)/100:0,
-    porcentaje_avance:e.horas_meta>0?Math.min(100,Math.round(e.horas_acumuladas/e.horas_meta*1000)/10):null,
+    porcentaje_avance:e.horas_meta>0?Math.min(e.horas_acumuladas>=e.horas_meta?100:99.9,Math.round(e.horas_acumuladas/e.horas_meta*1000)/10):null,
     porcentaje_asistencia:e.dias_evaluables?Math.round(e.dias_asistencia/e.dias_evaluables*1000)/10:null}));
   const sumar=key=>Math.round(detalles.reduce((n,e)=>n+Number(e[key]||0),0)*100)/100;
   const evaluables=sumar('dias_evaluables');

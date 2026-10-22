@@ -3,7 +3,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const { options, databaseName } = require('./db-options');
-async function respaldo({destino, database=process.env.DB_NAME, codigo=true}={}) {
+async function respaldo({destino, database=process.env.DB_NAME, codigo=true, configuracion=false}={}) {
   databaseName(database);
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
   const folder=path.resolve(destino || path.join(__dirname,'../backups',stamp));
@@ -25,7 +25,7 @@ async function respaldo({destino, database=process.env.DB_NAME, codigo=true}={})
   async function copiarCodigo(origen,destinoCodigo) {
     await fs.mkdir(destinoCodigo,{recursive:true});
     for(const item of await fs.readdir(origen,{withFileTypes:true})) {
-      if(['node_modules','.git','backups','uploads','.env'].includes(item.name)||item.isSymbolicLink())continue;
+      if(['node_modules','.git','backups','uploads','tmp_documentos'].includes(item.name)||/\.env(?:\.|$)/i.test(item.name)&&!item.name.endsWith('.example')||item.isSymbolicLink())continue;
       const entrada=path.join(origen,item.name), salida=path.join(destinoCodigo,item.name);
       const relativoDestino=path.relative(folder,entrada);
       if(relativoDestino===''||(!relativoDestino.startsWith('..')&&!path.isAbsolute(relativoDestino)))continue;
@@ -39,12 +39,12 @@ async function respaldo({destino, database=process.env.DB_NAME, codigo=true}={})
   if(documentos!==path.join(uploads,'documentos')) {
     try { await fs.cp(documentos,path.join(folder,'uploads/documentos'),{recursive:true}); } catch(e) {if(e.code!=='ENOENT')throw e;}
   }
-  try { await fs.copyFile(path.resolve(__dirname,'../.env'),path.join(folder,'configuracion.env')); } catch(e) {if(e.code!=='ENOENT')throw e;}
+  if(configuracion)try { await fs.copyFile(path.resolve(__dirname,'../.env'),path.join(folder,'configuracion.env')); } catch(e) {if(e.code!=='ENOENT')throw e;}
   const hash=createHash('sha256').update(await fs.readFile(archivo)).digest('hex');
   const manifest={formato:1,fecha:new Date().toISOString(),base:database,sql:'base-datos.sql',sha256:hash,
-    contiene:{codigo,uploads:true,documentos:'uploads/documentos',configuracion:'configuracion.env (privada)'},restaurar:'Consultar docs/INSTALACION.md; restaurar primero en una base nueva.'};
+    contiene:{codigo,uploads:true,documentos:'uploads/documentos',configuracion:configuracion?'configuracion.env (privada)':false},restaurar:'Consultar docs/INSTALACION.md; restaurar primero en una base nueva.'};
   await fs.writeFile(path.join(folder,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{mode:0o600});
   return folder;
 }
-if(require.main===module)respaldo().then(folder=>console.log(`Respaldo creado: ${folder}`)).catch(e=>{console.error('No se creó el respaldo:',e.message);process.exitCode=1;});
+if(require.main===module)respaldo({configuracion:process.argv.includes('--incluir-configuracion')}).then(folder=>console.log(`Respaldo creado: ${folder}`)).catch(e=>{console.error('No se creó el respaldo:',e.message);process.exitCode=1;});
 module.exports={respaldo};

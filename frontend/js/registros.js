@@ -39,7 +39,7 @@
   function faltaProgramacion(item){return Boolean(item?.asistencia_id&&(item.tolerancia_minutos==null||!item.hora_programada_entrada||!item.hora_programada_salida));}
   function toggleHistorical(){
     const enabled=faltaProgramacion(asistenciaEditada)&&$('aConfirmarHistorico').checked;
-    $('aDetalleHistorico').classList.toggle('hidden',!enabled);
+    u.setVisible('aDetalleHistorico',enabled);
     for(const id of ['aOriginalEntrada','aOriginalSalida','aOriginalTolerancia','aOriginalMotivo','aOriginalNocturno']){$(id).disabled=!enabled;$(id).required=enabled&&id!=='aOriginalNocturno';}
   }
   function openAttendance(item){
@@ -48,7 +48,7 @@
     $('aTrabajador').disabled=Boolean(item);if(item)$('aTrabajador').value=item.empleado_id;
     $('aFecha').value=item?date(item.fecha):$('fFecha').value;$('aFecha').disabled=Boolean(item);$('aFecha').max=u.today();
     $('aIngreso').value=item?.hora_ingreso?.slice(0,5)||'';$('aSalida').value=item?.hora_salida?.slice(0,5)||'';$('aEstado').value=item?.estado||'presente';$('aObs').value=item?.observacion||'';
-    const incompleta=faltaProgramacion(item);$('aAvisoHistorico').classList.toggle('hidden',!incompleta);$('aProgramacionHistorica').classList.toggle('hidden',!incompleta);$('aConfirmarHistorico').disabled=!incompleta;
+    const incompleta=faltaProgramacion(item);u.setVisible('aAvisoHistorico',incompleta);u.setVisible('aProgramacionHistorica',incompleta);$('aConfirmarHistorico').disabled=!incompleta;
     $('aOriginalEntrada').value=item?.hora_programada_entrada?.slice(0,5)||'';$('aOriginalEntrada').readOnly=Boolean(item?.hora_programada_entrada);
     $('aOriginalSalida').value=item?.hora_programada_salida?.slice(0,5)||'';$('aOriginalSalida').readOnly=Boolean(item?.hora_programada_salida);
     $('aOriginalTolerancia').value=item?.tolerancia_minutos??'';$('aOriginalTolerancia').readOnly=item?.tolerancia_minutos!=null;
@@ -80,6 +80,7 @@
   $('btnVerReporte').onclick=loadT;
   try{
     data=await u.catalogs();
+    if(data.tiposPermiso?.length)$('pTipo').replaceChildren(...data.tiposPermiso.map(t=>new Option(t.nombre,t.nombre)));
     for(const id of ['empresaGlobal','fEmpresa','tEmpresa','pEmpresa'])options(id,data.empresas,'razon_social','Todas las empresas');
     for(const [prefix,load]of [['f',loadA],['t',loadT],['p',loadP]]){
       // pTrabajador belongs to the creation dialog; filters use pEmpleado.

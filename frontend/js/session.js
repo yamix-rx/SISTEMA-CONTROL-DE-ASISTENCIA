@@ -38,7 +38,17 @@
     location.replace(destination);
   }
 
-  function logout() {
+  async function logout(revoke = true) {
+    const token = localStorage.getItem('sbss_token');
+    if (token && revoke !== false) {
+      try {
+        const response = await nativeFetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+        if (!response.ok && response.status !== 401) throw new Error('Cierre no confirmado');
+      } catch (_) {
+        await showStatus('No pudimos cerrar la sesión en el servidor. Revisa la conexión y vuelve a pulsar Cerrar sesión.', true);
+        return false;
+      }
+    }
     verifiedSession = null;
     localStorage.removeItem('sbss_token');
     localStorage.removeItem('sbss_usuario');
@@ -124,13 +134,13 @@
   async function verifySession() {
     showStatus('Verificando tu acceso…');
     const token = localStorage.getItem('sbss_token');
-    if (!token) { logout(); return null; }
+    if (!token) { logout(false); return null; }
     try {
       const response = await nativeFetch(`${API_BASE}/auth/perfil`, {
         headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
         signal: AbortSignal.timeout(12000)
       });
-      if (response.status === 401 || response.status === 403) { logout(); return null; }
+      if (response.status === 401 || response.status === 403) { logout(false); return null; }
       if (!response.ok) throw new Error('No se pudo verificar tu sesión.');
       const data = await response.json();
       if (!data.ok || !data.usuario || !data.acceso || !Array.isArray(data.acceso.modulos)
@@ -169,7 +179,7 @@
     new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     headers.set('Authorization', `Bearer ${localStorage.getItem('sbss_token')}`);
     const response = await nativeFetch(input, { ...init, headers });
-    if (response.status === 401) logout();
+    if (response.status === 401) logout(false);
     return response;
   };
   session.fetch = (...args) => window.fetch(...args);

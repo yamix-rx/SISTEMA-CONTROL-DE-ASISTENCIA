@@ -1,0 +1,237 @@
+erDiagram
+    roles {
+        int id PK
+        varchar nombre UK
+        varchar descripcion
+        timestamp created_at
+    }
+    empresas {
+        int id PK
+        varchar razon_social
+        varchar ruc
+        varchar direccion
+        varchar logo_url
+        mediumblob logo_data
+        varbinary logo_iv
+        varbinary logo_tag
+        varchar logo_mime
+        enum estado
+        timestamp created_at
+    }
+    areas {
+        int id PK
+        varchar nombre
+        int empresa_id FK
+    }
+    cargos {
+        int id PK
+        varchar nombre
+        int area_id FK
+    }
+    empleados {
+        int id PK
+        enum tipo_documento
+        varchar numero_documento UK
+        varchar nombres
+        varchar apellidos
+        varchar foto_perfil
+        date fecha_nacimiento
+        varchar telefono
+        varchar correo_personal
+        varchar direccion
+        varchar carrera
+        varchar institucion_educativa
+        int empresa_id FK
+        int area_id FK
+        int cargo_id FK
+        varchar puesto
+        varchar tipo_vinculo
+        decimal horas_totales_asignadas
+        decimal horas_completadas
+        enum estado
+        date fecha_ingreso
+        date fecha_finalizacion
+        text observaciones_rrhh
+        timestamp created_at
+        timestamp updated_at
+    }
+    usuarios {
+        int id PK
+        int empleado_id FK
+        int rol_id FK
+        varchar email UK
+        varchar password
+        int sesion_version
+        boolean activo
+        timestamp created_at
+    }
+    practicante_detalles {
+        int id PK
+        int empleado_id FK
+        decimal horas_meta
+        date fecha_vencimiento_convenio
+        boolean estado_completado
+        date fecha_completado
+    }
+    horarios {
+        int id PK
+        int empleado_id FK
+        tinyint dia_semana
+        enum turno
+        time hora_entrada
+        time hora_salida
+        int tolerancia_minutos
+        boolean activo
+    }
+    asistencias {
+        int id PK
+        int empleado_id FK
+        date fecha
+        time hora_programada_entrada
+        time hora_programada_salida
+        int tolerancia_minutos
+        time hora_ingreso
+        time hora_salida
+        int minutos_tardanza
+        decimal horas_trabajadas
+        enum estado
+        varchar observacion
+        int registrado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    tipo_permisos {
+        int id PK
+        varchar nombre UK
+    }
+    permisos {
+        int id PK
+        int empleado_id FK
+        varchar tipo_permiso
+        date fecha_inicio
+        date fecha_fin
+        time hora_desde
+        time hora_hasta
+        text motivo
+        text observaciones
+        enum estado
+        varchar archivo_sustento
+        varchar archivo_sustento_nombre
+        timestamp created_at
+    }
+    tipo_documentos {
+        int id PK
+        varchar nombre UK
+        text descripcion
+        boolean es_obligatorio
+    }
+    documentos_empleado {
+        int id PK
+        int empleado_id FK
+        int tipo_documento_id FK
+        varchar nombre_archivo
+        varchar ruta_archivo
+        varchar mime_type
+        text observacion
+        int revisado_por
+        datetime fecha_revision
+        enum estado
+        timestamp fecha_subida
+    }
+    plantillas_documentos {
+        int id PK
+        varchar codigo UK
+        varchar titulo
+        longtext cuerpo_html
+        timestamp updated_at
+    }
+    contratos {
+        int id PK
+        int empleado_id FK
+        varchar codigo UK
+        varchar tipo_contrato
+        varchar modalidad
+        date fecha_inicio
+        date fecha_fin
+        decimal remuneracion
+        char moneda
+        decimal horas_semanales
+        enum estado
+        text observaciones
+        int documento_empleado_id FK
+        int creado_por_usuario_id FK
+        int actualizado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    capacitaciones {
+        int id PK
+        varchar titulo
+        varchar categoria
+        text descripcion
+        enum modalidad
+        varchar proveedor
+        int empresa_id FK
+        date fecha_inicio
+        date fecha_fin
+        time hora_inicio
+        time hora_fin
+        decimal horas
+        varchar lugar
+        varchar enlace
+        int cupo
+        boolean obligatorio
+        enum estado
+        int creado_por_usuario_id FK
+        int actualizado_por_usuario_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    capacitacion_participantes {
+        int id PK
+        int capacitacion_id FK
+        int empleado_id FK
+        enum estado
+        decimal asistencia_porcentaje
+        decimal nota
+        timestamp fecha_inscripcion
+        datetime fecha_completado
+        text observaciones
+        int certificado_documento_id FK
+    }
+    historial_cambios {
+        bigint id PK
+        int usuario_id FK
+        varchar tabla_afectada
+        int registro_id
+        enum accion
+        json datos_anteriores
+        json datos_nuevos
+        varchar ip_origen
+        timestamp created_at
+    }
+    empresas ||--o{ areas : "empresa_id"
+    areas ||--o{ cargos : "area_id"
+    empresas ||--o{ empleados : "empresa_id"
+    areas ||--o{ empleados : "area_id"
+    cargos ||--o{ empleados : "cargo_id"
+    empleados ||--o{ usuarios : "empleado_id"
+    roles ||--o{ usuarios : "rol_id"
+    empleados ||--o{ practicante_detalles : "empleado_id"
+    empleados ||--o{ horarios : "empleado_id"
+    empleados ||--o{ asistencias : "empleado_id"
+    usuarios ||--o{ asistencias : "registrado_por_usuario_id"
+    empleados ||--o{ permisos : "empleado_id"
+    empleados ||--o{ documentos_empleado : "empleado_id"
+    tipo_documentos ||--o{ documentos_empleado : "tipo_documento_id"
+    empleados ||--o{ contratos : "empleado_id"
+    documentos_empleado ||--o{ contratos : "documento_empleado_id"
+    usuarios ||--o{ contratos : "creado_por_usuario_id"
+    usuarios ||--o{ contratos : "actualizado_por_usuario_id"
+    empresas ||--o{ capacitaciones : "empresa_id"
+    usuarios ||--o{ capacitaciones : "creado_por_usuario_id"
+    usuarios ||--o{ capacitaciones : "actualizado_por_usuario_id"
+    capacitaciones ||--o{ capacitacion_participantes : "capacitacion_id"
+    empleados ||--o{ capacitacion_participantes : "empleado_id"
+    documentos_empleado ||--o{ capacitacion_participantes : "certificado_documento_id"
+    usuarios ||--o{ historial_cambios : "usuario_id"

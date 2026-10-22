@@ -43,7 +43,7 @@ async function main(){
   log('inicio de sesión con MySQL real');
   const fechaRelativa=dias=>new Date(new Date(require('../services/asistenciaReglas').hoy()+'T12:00:00Z').getTime()+dias*86400000).toISOString().slice(0,10);
   const vencimiento=fechaRelativa(15);
-  const payload={numero_documento:(BigInt(stamp)+1n).toString(),nombres:'Persona María',apellidos:'Prueba Álvarez',empresa_id:ids.empresaId,area_id:ids.areaId,cargo_id:ids.cargoId,puesto:'Asistente de gestión',fecha_vencimiento_convenio:vencimiento,fecha_ingreso:'2026-01-01',tipo_vinculo:'practicante preprofesional',estado:'activo',horas_totales_asignadas:16,observaciones_rrhh:'NOTA INTERNA: solo Recursos Humanos'};
+  const payload={tipo_documento:'CE',numero_documento:(BigInt(stamp)+1n).toString(),nombres:'Persona María',apellidos:'Prueba Álvarez',empresa_id:ids.empresaId,area_id:ids.areaId,cargo_id:ids.cargoId,puesto:'Asistente de gestión',fecha_vencimiento_convenio:vencimiento,fecha_ingreso:'2026-01-01',tipo_vinculo:'practicante preprofesional',estado:'activo',horas_totales_asignadas:16,observaciones_rrhh:'NOTA INTERNA: solo Recursos Humanos'};
   const empleadoId=(await request('/personal',{body:payload,status:201})).id;
   const rolColaborador=ids.roles.find(r=>r.nombre==='Trabajador/Practicante').id;
   const correoPersona=`persona-${stamp}@sbss.invalid`;

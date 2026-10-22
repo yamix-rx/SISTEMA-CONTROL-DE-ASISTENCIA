@@ -93,7 +93,7 @@
     $('progress').hidden = !p.esPracticante; $('progress').value = parseFloat(p.porcentajeAvance) || 0;
     text('progressText', p.esPracticante ? number(p.horasRealizadas) + ' / ' + number(p.horasMeta) + ' horas · ' + p.porcentajeAvance : 'Horas acumuladas de asistencia.');
     text('estadoProgreso', p.esPracticante ? p.estado : 'Jornada laboral ordinaria');
-    const pendientes = (data.legajoDigital || []).filter(d => Number(d.es_obligatorio) === 1 && d.estado_documento !== 'validado').length;
+    const pendientes = (data.legajoDigital || []).filter(d => Number(d.es_obligatorio) === 1 && (d.estado_documento !== 'validado' || d.archivo_disponible===false)).length;
     const alerts = [];
     if (p.esPracticante && p.horasCompletadas) alerts.push('HORAS DE PRÁCTICAS COMPLETADAS');
     else if (p.esPracticante && parseFloat(p.porcentajeAvance) >= 80) alerts.push('Practicante próximo a completar sus horas: faltan ' + number(p.horasPendientes) + ' horas.');
@@ -109,7 +109,7 @@
     $('alertasFicha').replaceChildren(...(alerts.length ? alerts : ['Sin alertas del expediente.']).map(value => node('li', value)));
     $('abrirDocumentos').href = 'Documentos.html?empleado_id=' + e.id;
     $('abrirReportes').href = 'Reportes.html?empleado_id=' + e.id;
-    table('documentosRows', data.legajoDigital || [], 5, d => [d.tipo_documento, Number(d.es_obligatorio) === 1 ? 'Obligatorio' : 'Opcional', d.nombre_archivo || 'Sin entregar', date(d.fecha_subida), d.estado_documento === 'sin_entregar' ? 'Sin entregar' : d.estado_documento]);
+    table('documentosRows', data.legajoDigital || [], 5, d => [d.tipo_documento, Number(d.es_obligatorio) === 1 ? 'Obligatorio' : 'Opcional', d.nombre_archivo || 'Sin entregar', date(d.fecha_subida), d.documento_id && d.archivo_disponible===false ? 'Archivo no disponible: volver a cargar' : d.estado_documento === 'sin_entregar' ? 'Sin entregar' : d.estado_documento]);
     $('docsGenerated').replaceChildren(...[['aceptacion', 'Carta de aceptación'], ['constancia_practicas', 'Constancia de prácticas'], ['culminacion', 'Carta de culminación']].map(([tipo, label]) => { const a = node('a', label, 'button'); a.href = 'Documentos.html?empleado_id=' + e.id + '&generar=' + tipo; return a; }));
     metrics('resumenHistorial', [['Asistencias', number(resumen.asistencias)], ['Faltas', number(resumen.faltas)], ['Tardanzas', number(resumen.tardanzas)], ['Minutos de tardanza', number(resumen.minutos_tardanza)], ['Permisos', number(resumen.permisos)]]);
     table('asistenciasRows', data.asistencias || [], 8, a => [date(a.fecha), time(a.hora_programada), time(a.hora_ingreso), time(a.hora_salida), number(a.horas_trabajadas), number(a.minutos_tardanza) + ' min', a.estado, a.observacion]);
@@ -139,11 +139,13 @@
     $('formPersonal').reset(); $('pId').value = edit ? state.ficha.empleado.id : '';
     $('errorPersonal').hidden = true; text('modalTitulo', onlyInterns ? (edit ? 'Editar ficha del practicante' : 'Registrar practicante') : (edit ? 'Editar ficha del personal' : 'Registrar personal'));
     const e = edit ? state.ficha.empleado : {};
+    const legacy = $('pVinculo').querySelector('option[value="practicante"]');
+    legacy.hidden = legacy.disabled = e.tipo_vinculo !== 'practicante';
     $('pEmpresa').value = e.empresa_id || ''; selectAreas('p', String(e.area_id || '')); selectCargos('p', String(e.cargo_id || ''));
     if (edit) for (const [id, key] of Object.entries(fields)) $(id).value = key.startsWith('fecha_') ? String(e[key] || '').slice(0, 10) : e[key] ?? '';
     else if (onlyInterns) $('pVinculo').value = 'practicante preprofesional';
     $('pHorasPracticas').value = e.horas_totales_asignadas || 320;
-    practiceFields(); $('modalPersonal').showModal();
+    practiceFields(); documentPattern(); $('modalPersonal').showModal();
   }
   $('formPersonal').addEventListener('submit', async event => {
     event.preventDefault(); const b = $('btnGuardarPersonal'); b.disabled = true; $('errorPersonal').hidden = true;
@@ -175,6 +177,12 @@
   ['btnCerrarModal', 'btnCancelarModal'].forEach(id => $(id).addEventListener('click', () => $('modalPersonal').close()));
   $('pEmpresa').addEventListener('change', () => { selectAreas('p'); selectCargos('p'); });
   $('pArea').addEventListener('change', () => selectCargos('p')); $('pVinculo').addEventListener('change', practiceFields);
+  function documentPattern() {
+    const dni=$('pTipoDocumento').value==='DNI';$('pDocumento').pattern=dni?'[0-9]{8}':'[A-Za-z0-9]{6,15}';
+    $('pDocumento').maxLength=dni?8:15;$('pDocumento').inputMode=dni?'numeric':'text';
+    $('pDocumento').title=dni?'DNI de 8 dígitos':'Entre 6 y 15 letras o dígitos';
+  }
+  $('pTipoDocumento').addEventListener('change',documentPattern);
   $('filtroEmpresa').addEventListener('change', () => { selectAreas('f'); selectCargos('f'); loadList(); });
   $('filtroArea').addEventListener('change', () => { selectCargos('f'); loadList(); });
   ['filtroCargo', 'filtroEstado'].forEach(id => $(id).addEventListener('change', () => loadList()));

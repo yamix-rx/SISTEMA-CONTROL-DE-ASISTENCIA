@@ -11,7 +11,8 @@ async function instalar(){
   const adminApellidos=process.env.ADMIN_APELLIDOS?.trim();
   const documento=process.env.ADMIN_DOCUMENTO?.trim();
   if(!email||!password||!adminNombre||!adminApellidos||!documento)throw new Error('Configure ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NOMBRES, ADMIN_APELLIDOS y ADMIN_DOCUMENTO para la instalación inicial.');
-  if(adminNombre.length>100||adminApellidos.length>100||documento.length>15)throw new Error('Nombres y apellidos admiten hasta 100 caracteres; el documento, hasta 15.');
+  if(adminNombre.length>100||adminApellidos.length>100||!/^\d{8}$/.test(documento))throw new Error('Nombres y apellidos admiten hasta 100 caracteres; ADMIN_DOCUMENTO debe ser un DNI de 8 dígitos.');
+  if(!process.env.JWT_SECRET || !/^[a-f0-9]{64}$/i.test(process.env.LOGO_ENCRYPTION_KEY||''))throw new Error('Ejecute npm run configurar para generar las claves antes de instalar.');
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>120||password.length<10||Buffer.byteLength(password)>72)throw new Error('Correo o contraseña inicial no válidos (mínimo 10 caracteres).');
   const connection=await mysql.createConnection(options(null));
   try{

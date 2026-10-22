@@ -106,6 +106,18 @@ exports.obtenerDatosDashboard = async (req, res) => {
           td.nombre AS documento_faltante
         ${faltantesBase} ORDER BY e.apellidos, e.id, td.id LIMIT 10`, paramsEmpresa)
     ]);
+    const [registradosObligatorios] = await pool.query(`SELECT e.id AS empleado_id,
+        CONCAT(e.nombres,' ',e.apellidos) AS colaborador,emp.razon_social AS empresa,
+        td.id AS tipo_documento_id,td.nombre AS documento_faltante,de.ruta_archivo
+      FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id
+      JOIN documentos_empleado de ON de.empleado_id=e.id
+      JOIN tipo_documentos td ON td.id=de.tipo_documento_id AND td.es_obligatorio=TRUE
+      WHERE e.estado='activo' ${filtroEmpresaHorario}
+        AND de.id=(SELECT MAX(ultimo.id) FROM documentos_empleado ultimo WHERE ultimo.empleado_id=e.id AND ultimo.tipo_documento_id=td.id)`, paramsEmpresa);
+    const disponibilidad = await Promise.all(registradosObligatorios.map(async ({ruta_archivo,...doc}) => ({...doc,
+      disponible: await require('../services/documentoArchivoService').disponible(ruta_archivo)})));
+    const inaccesibles = disponibilidad.filter(doc => !doc.disponible).map(({disponible,...doc}) => ({...doc,
+      documento_faltante: doc.documento_faltante + ' (archivo no disponible: volver a cargar)'}));
 
     const [[contratosPorVencer], [tardanzasAcumuladas], [personalActivo], [conveniosPorVencer]] = await Promise.all([
       pool.query(`SELECT c.id, c.empleado_id, c.tipo_contrato, c.fecha_fin,
@@ -154,10 +166,10 @@ exports.obtenerDatosDashboard = async (req, res) => {
         practicantesActivos: Number(personalActivo[0]?.practicantes || 0),
         faltasHoy: Number(asistenciasHoy.find(item => item.estado === 'falta')?.total || 0),
         permisosHoy: Number(asistenciasHoy.find(item => item.estado === 'permiso')?.total || 0),
-        documentosPendientes: Number(totalFaltantes[0]?.total || 0)
+        documentosPendientes: Number(totalFaltantes[0]?.total || 0) + inaccesibles.length
       },
       personalEnTurno: filasEnTurno,
-      alertasDocumentos: documentosPendientes,
+      alertasDocumentos: [...inaccesibles,...documentosPendientes].slice(0,10),
       practicantesProximos,
       practicantesCompletados,
       seguimientoPracticas,

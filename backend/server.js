@@ -68,8 +68,13 @@ app.use((req, res) => {
   res.status(404).json({ ok: false, mensaje: 'Ruta no encontrada' });
 });
 
-if (require.main === module) app.listen(PORT, () => {
-  console.log(`✓ Servidor corriendo en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32 || !/^[a-f0-9]{64}$/i.test(process.env.LOGO_ENCRYPTION_KEY || '')) {
+    console.error('Faltan claves de seguridad válidas. Ejecute npm run configurar y reinicie.');
+    require('./config/database').end().finally(() => { process.exitCode = 1; });
+  } else app.listen(PORT, () => {
+    console.log(`✓ Servidor corriendo en http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;

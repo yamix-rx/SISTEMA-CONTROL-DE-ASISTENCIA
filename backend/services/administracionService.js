@@ -30,15 +30,17 @@ function activo(value) {
 }
 
 async function catalogos() {
-  const [[roles], [empleados], [empresas], [areas], [cargos]] = await Promise.all([
+  const [[roles], [empleados], [empresas], [areas], [cargos], [tiposDocumento], [tiposPermiso]] = await Promise.all([
     pool.query('SELECT id, nombre FROM roles ORDER BY id'),
     pool.query(`SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos) AS nombre, e.numero_documento,
       e.estado, u.id AS usuario_id FROM empleados e LEFT JOIN usuarios u ON u.empleado_id=e.id ORDER BY e.apellidos, e.nombres`),
     pool.query('SELECT id, razon_social, estado FROM empresas ORDER BY razon_social'),
     pool.query('SELECT a.id, a.nombre, a.empresa_id, e.razon_social AS empresa FROM areas a JOIN empresas e ON e.id=a.empresa_id ORDER BY e.razon_social, a.nombre'),
-    pool.query('SELECT c.id, c.nombre, c.area_id, a.nombre AS area, a.empresa_id FROM cargos c JOIN areas a ON a.id=c.area_id ORDER BY a.nombre, c.nombre')
+    pool.query('SELECT c.id, c.nombre, c.area_id, a.nombre AS area, a.empresa_id FROM cargos c JOIN areas a ON a.id=c.area_id ORDER BY a.nombre, c.nombre'),
+    pool.query('SELECT id, nombre, descripcion, es_obligatorio FROM tipo_documentos ORDER BY es_obligatorio DESC, nombre'),
+    pool.query('SELECT id, nombre FROM tipo_permisos ORDER BY nombre')
   ]);
-  return { roles: roles.filter(r => Object.values(ROLES).includes(r.nombre)), empleados, empresas, areas, cargos };
+  return { roles: roles.filter(r => Object.values(ROLES).includes(r.nombre)), empleados, empresas, areas, cargos, tiposDocumento, tiposPermiso };
 }
 async function listarUsuarios() {
   const [rows] = await pool.query(`SELECT u.id, u.empleado_id, u.rol_id, u.email, u.activo,
@@ -130,4 +132,32 @@ async function guardarCargo(cargoId, body) {
   const [result] = await pool.query('INSERT INTO cargos (nombre,area_id) VALUES (?,?)', [text, area]);
   return result.insertId;
 }
-module.exports = { catalogos, listarUsuarios, crearUsuario, actualizarUsuario, restablecerClave, guardarArea, guardarCargo, validarClave, correo };
+async function guardarTipoDocumento(tipoId, body) {
+  const tipo = tipoId ? id(tipoId) : null;
+  const text = nombre(body.nombre);
+  const obligatorio = activo(body.es_obligatorio ?? 0);
+  if (body.descripcion != null && (typeof body.descripcion !== 'string' || body.descripcion.length > 4000)) throw error('La descripción admite hasta 4000 caracteres.');
+  const descripcion = body.descripcion?.trim() || null;
+  if (tipo) {
+    const [rows] = await pool.query('SELECT id FROM tipo_documentos WHERE id=?', [tipo]);
+    if (!rows.length) throw error('El tipo de documento no existe.', 404);
+    await pool.query('UPDATE tipo_documentos SET nombre=?,descripcion=?,es_obligatorio=? WHERE id=?', [text, descripcion, obligatorio, tipo]);
+    return tipo;
+  }
+  const [result] = await pool.query('INSERT INTO tipo_documentos (nombre,descripcion,es_obligatorio) VALUES (?,?,?)', [text, descripcion, obligatorio]);
+  return result.insertId;
+}
+async function guardarTipoPermiso(tipoId, body) {
+  const tipo = tipoId ? id(tipoId) : null;
+  const text = nombre(body.nombre, 50);
+  if (tipo) {
+    const [rows] = await pool.query('SELECT id FROM tipo_permisos WHERE id=?', [tipo]);
+    if (!rows.length) throw error('El tipo de permiso no existe.', 404);
+    // El nombre histórico de los permisos ya emitidos se conserva.
+    await pool.query('UPDATE tipo_permisos SET nombre=? WHERE id=?', [text, tipo]);
+    return tipo;
+  }
+  const [result] = await pool.query('INSERT INTO tipo_permisos (nombre) VALUES (?)', [text]);
+  return result.insertId;
+}
+module.exports = { catalogos, listarUsuarios, crearUsuario, actualizarUsuario, restablecerClave, guardarArea, guardarCargo, guardarTipoDocumento, guardarTipoPermiso, validarClave, correo };

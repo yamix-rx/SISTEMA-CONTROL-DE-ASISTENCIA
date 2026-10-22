@@ -28,4 +28,4 @@ pool.getConnection()
     console.error('✗ Error al conectar a la base de datos:', err.message);
   });
 
-module.exports = pool;
+module.exports = require('./transactionPool')(pool);

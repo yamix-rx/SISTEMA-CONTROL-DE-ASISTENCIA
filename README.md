@@ -54,47 +54,29 @@ SISTEMA-CONTROL-DE-ASISTENCIA/
 └── Diagramas/
 ```
 
-## 🚀 Ejecución local
+## Instalación y uso
 
-**Requisitos:** Node.js, npm y una instancia de MySQL con el esquema de base de datos correspondiente.
+Requiere **Node.js 24 o superior** y **MySQL 8**. Interfaz y API se sirven desde el mismo origen.
 
-1. Clona este repositorio e ingresa a la carpeta `backend`:
+1. En `backend`, ejecutar `npm ci` y `npm run configurar`.
+2. Completar privadamente `backend/.env` siguiendo [`.env.example`](backend/.env.example). Para una instalación nueva, completar `ADMIN_*` y ejecutar `npm run instalar` sobre una base vacía. Para una existente, seguir el manual de actualización y usar `npm run migrar`.
+3. En `frontend`, ejecutar `npm ci`, `npm run build` y `npm test`.
+4. En `backend`, ejecutar `npm test` y `npm start`. Abrir **http://localhost:3000**.
 
-   ```bash
-   git clone https://github.com/yamix-rx/SISTEMA-CONTROL-DE-ASISTENCIA.git
-   cd SISTEMA-CONTROL-DE-ASISTENCIA/backend
-   npm install
-   ```
+Las claves JWT y de cifrado se generan localmente y nunca deben publicarse. `base-actualizada.sql` incluye datos de demostración; para una instalación real se utiliza el instalador.
 
-2. Crea `backend/.env` con los valores de **tu propia instalación**:
+- [Manual de instalación, actualización, respaldo y recuperación](docs/INSTALACION.md)
+- [Manual de usuario](docs/MANUAL_USUARIO.md)
+- [Diagrama de base de datos](Diagramas/DiagramaBD.mmd)
 
-   ```dotenv
-   PORT=3000
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=tu_usuario
-   DB_PASSWORD=tu_contrasena
-   DB_NAME=tu_base_de_datos
-   DB_TIMEZONE=-05:00
-   ```
+## Comprobaciones y mantenimiento
 
-3. Prepara la base de datos siguiendo el esquema de tu entorno. El repositorio contiene archivos SQL y scripts de migración que debes revisar antes de ejecutar sobre una base existente.
+Desde `backend`: `npm test`, `npm run revisar:documentos`, `npm run diagrama`, `npm run backup`.
+Desde `frontend`: `npm run build`, `npm run verify:assets`, `npm test`.
 
-4. Inicia el servidor:
+La revisión identifica archivos ausentes y permite recuperar copias exactas desde respaldos con `npm run revisar:documentos -- --recuperar`. Conserva el historial: si no existe una copia, RR. HH. debe volver a cargar el original desde Documentos.
 
-   ```bash
-   npm start
-   ```
-
-5. Abre **http://localhost:3000**. El backend también sirve las pantallas y recursos del frontend.
-
-Para ejecutar las pruebas del backend:
-
-```bash
-npm test
-```
-
-> **Importante:** no publiques archivos `.env`, credenciales, datos personales ni respaldos de una base de datos real. Si reconstruyes los recursos del frontend, revisa el requisito de Node.js 24 o superior indicado en `frontend/package.json`.
+Respaldos, archivos subidos, sesiones de prueba y referencias de la carpeta `Documentos/` son privados y están excluidos de Git. El respaldo omite `.env` salvo que se añada `--incluir-configuracion`. Los responsables deben coordinar aparte la limpieza de secretos que ya existan en el historial remoto.
 
 ## 👨‍💻 Autor
 

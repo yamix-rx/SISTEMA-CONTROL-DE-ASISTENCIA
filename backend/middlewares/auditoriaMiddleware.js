@@ -3,6 +3,8 @@ const pool = require('../config/database');
 const { ROLES } = require('../config/accessPolicy');
 
 const MODULOS = [
+  ['/auth/logout', 'usuarios'],
+  ['/administracion/tipos-documento', 'tipo_documentos'], ['/administracion/tipos-permiso', 'tipo_permisos'],
   ['/administracion/usuarios', 'usuarios'], ['/administracion/areas', 'areas'],
   ['/administracion/cargos', 'cargos'], ['/documentos/plantillas', 'plantillas_documentos'],
   ['/asistencias/permisos', 'permisos'], ['/personal', 'empleados'],
@@ -18,7 +20,7 @@ async function leerRegistro(tabla, id) {
   return rows[0] || null;
 }
 
-module.exports = async function auditoriaMiddleware(req, res, next) {
+async function auditoriaMiddleware(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const ruta = `${req.baseUrl}${req.path}`.replace(/^\/api(?=\/)/, '');
   if (ruta.startsWith('/documentos/generar/')) return next();
@@ -29,7 +31,7 @@ module.exports = async function auditoriaMiddleware(req, res, next) {
   let operacion = req.method === 'DELETE' ? 'DELETE' : req.method === 'POST' && !registroId ? 'INSERT' : 'UPDATE';
   const endpoint = `${req.baseUrl}${req.path}`;
   try {
-    const soloAdministrador = ['usuarios', 'areas', 'cargos', 'empresas'].includes(tabla);
+    const soloAdministrador = ['usuarios', 'areas', 'cargos', 'empresas', 'tipo_documentos', 'tipo_permisos'].includes(tabla);
     if (req.usuario && (!soloAdministrador || req.usuario.rol === ROLES.ADMIN)) {
       if (ruta === '/asistencias/marcar' && req.body?.empleado_id && req.body?.fecha) {
         const [rows] = await pool.query('SELECT * FROM asistencias WHERE empleado_id = ? AND fecha = ? LIMIT 1', [req.body.empleado_id, req.body.fecha]);
@@ -78,7 +80,7 @@ module.exports = async function auditoriaMiddleware(req, res, next) {
     }
     const accion = exito ? (['INSERT', 'UPDATE', 'DELETE'].includes(contexto.accion) ? contexto.accion : operacion)
       : [401, 403].includes(res.statusCode) ? 'DENEGADO' : 'ERROR';
-    await registrarAuditoria({
+    const evento = {
       usuario_id: req.usuario?.id || req.usuario?.usuario_id || null,
       tabla_afectada: tablaFinal, registro_id: id, accion,
       datos_anteriores: Object.hasOwn(contexto, 'anterior') ? contexto.anterior : anterior,
@@ -87,7 +89,12 @@ module.exports = async function auditoriaMiddleware(req, res, next) {
         solicitud: sanitizar(req.body || {}),
         registro: Object.hasOwn(contexto, 'nuevos') ? contexto.nuevos : despues
       }, ip_origen: req.ip
-    });
+    };
+    if (!exito && pool.withoutRequestTransaction) {
+      await pool.rollbackRequestTransaction();
+      await pool.withoutRequestTransaction(() => registrarAuditoria(evento));
+    }
+    else await registrarAuditoria(evento);
   }
   const json = res.json.bind(res);
   res.json = function (body) {
@@ -97,4 +104,34 @@ module.exports = async function auditoriaMiddleware(req, res, next) {
   };
   res.once('finish', () => { guardar().catch(error => console.error('Auditoría:', error.code || error.name)); });
   next();
+}
+
+module.exports = async (req, res, next) => {
+  const ruta = `${req.baseUrl}${req.path}`.replace(/^\/api(?=\/)/, '');
+  const escritura = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  if (!escritura || ruta.startsWith('/documentos/generar/') || !pool.beginRequestTransaction ||
+      !MODULOS.some(([prefix]) => ruta === prefix || ruta.startsWith(prefix + '/'))) {
+    return auditoriaMiddleware(req, res, next);
+  }
+  let transaction;
+  const originalJson = res.json.bind(res);
+  try {
+    transaction = await pool.beginRequestTransaction();
+    const fail = async error => {
+      await transaction.complete(false).catch(() => {});
+      res.json = originalJson;
+      next(error);
+    };
+    res.json = function (body) {
+      transaction.complete(res.statusCode >= 200 && res.statusCode < 300)
+        .then(() => originalJson(body)).catch(fail);
+      return res;
+    };
+    res.once('close', () => { transaction.complete(false).catch(() => {}); });
+    return await transaction.run(() => auditoriaMiddleware(req, res, error => error ? fail(error) : next()));
+  } catch (error) {
+    if (transaction) await transaction.complete(false).catch(() => {});
+    res.json = originalJson;
+    return next(error);
+  }
 };

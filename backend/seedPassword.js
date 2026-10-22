@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
 
 async function generarHash(password) {
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(password, salt);
-  console.log(`Hash para '${password}':`, hash);
+  if (typeof password !== 'string' || password.length < 10 || Buffer.byteLength(password, 'utf8') > 72) throw new Error('Configure HASH_PASSWORD de forma privada (entre 10 caracteres y 72 bytes).');
+  return bcrypt.hash(password, 12);
 }
 
-generarHash('123456');
+if (require.main === module) generarHash(process.env.HASH_PASSWORD).then(hash => console.log(hash)).catch(error => { console.error(error.message); process.exitCode = 1; });
+module.exports = { generarHash };
