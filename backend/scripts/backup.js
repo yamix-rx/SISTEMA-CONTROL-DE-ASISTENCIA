@@ -6,7 +6,7 @@ const { options, databaseName } = require('./db-options');
 async function respaldo({destino, database=process.env.DB_NAME, codigo=true, configuracion=false}={}) {
   databaseName(database);
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-  const folder=path.resolve(destino || path.join(__dirname,'../backups',stamp));
+  const folder=path.resolve(destino || path.join(process.env.BACKUPS_DIR || path.resolve(__dirname,'../backups'),stamp));
   await fs.mkdir(folder,{recursive:true,mode:0o700});
   const archivo=path.join(folder,'base-datos.sql');
   const config=options(database);

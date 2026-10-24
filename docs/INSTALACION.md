@@ -11,7 +11,7 @@
 1. En `backend`, ejecutar `npm ci` y `npm run configurar`. Se crea `.env` con claves aleatorias; no se imprimen ni se sobrescriben claves existentes.
 2. Editar **privadamente** `backend/.env`: completar `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`. Conservar `DB_TIMEZONE=-05:00` para Perú.
 3. Completar `ADMIN_EMAIL`, `ADMIN_PASSWORD` (al menos 10 caracteres, máximo 72 bytes), `ADMIN_NOMBRES`, `ADMIN_APELLIDOS` y `ADMIN_DOCUMENTO` (DNI de 8 dígitos). No usar credenciales de demostración.
-4. Ejecutar `npm run instalar`. La base debe estar vacía. El instalador crea el esquema, siete organizaciones, los tres perfiles, los tipos documentales y de permiso, y la cuenta administradora.
+4. Ejecutar `npm run instalar`. La base debe estar vacía. El instalador crea el esquema, solo la organización SBSS Outsourcing, los tres perfiles, los tipos documentales y de permiso, y la única cuenta administradora inicial. No carga trabajadores ni asistencias de demostración.
 5. Entregar las credenciales al responsable de SBSS por un canal privado. Retirar `ADMIN_PASSWORD` de `.env` después de guardarla de forma segura.
 6. En `frontend`, ejecutar `npm ci`, `npm run build` y `npm test`.
 7. En `backend`, ejecutar `npm test` y `npm start`. Abrir `http://localhost:3000`. No utilizar Live Server para operar el sistema.

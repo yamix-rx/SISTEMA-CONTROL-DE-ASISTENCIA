@@ -66,6 +66,7 @@ Requiere **Node.js 24 o superior** y **MySQL 8**. Interfaz y API se sirven desde
 Las claves JWT y de cifrado se generan localmente y nunca deben publicarse. `base-actualizada.sql` incluye datos de demostración; para una instalación real se utiliza el instalador.
 
 - [Manual de instalación, actualización, respaldo y recuperación](docs/INSTALACION.md)
+- [Preparación para Vercel + Railway + MySQL](docs/DESPLIEGUE_VERCEL_RAILWAY.md)
 - [Manual de usuario](docs/MANUAL_USUARIO.md)
 - [Diagrama de base de datos](Diagramas/DiagramaBD.mmd)
 

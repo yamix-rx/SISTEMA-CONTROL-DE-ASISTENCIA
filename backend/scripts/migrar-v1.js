@@ -3,7 +3,7 @@ const path=require('node:path');
 const mysql=require('mysql2/promise');
 const {options}=require('./db-options');
 
-async function migrar(connection, informar=()=>{}) {
+async function migrar(connection, informar=()=>{}, { incluirOrganizaciones = false } = {}) {
   // Solo crea tablas ausentes; nunca elimina datos ni ejecuta los datos de demostración.
   const base=await fs.readFile(path.resolve(__dirname,'../base-actualizada.sql'),'utf8');
   for(const match of base.matchAll(/CREATE TABLE\s+(\w+)\s*\([\s\S]*?\);/g)) {
@@ -54,14 +54,18 @@ async function migrar(connection, informar=()=>{}) {
   for(const rol of ['Administrador General','Recursos Humanos','Trabajador/Practicante']) {
     await connection.query('INSERT IGNORE INTO roles (nombre) VALUES (?)',[rol]);
   }
-  const organizaciones = await require('./organizaciones-sbss').completar(connection);
-  if (organizaciones.length) informar(`Organizaciones agregadas: ${organizaciones.join(', ')}`);
+  // La instalación limpia no carga empresas predeterminadas, salvo la organización del administrador.
+  // En instalaciones que requieren el catálogo histórico, usar --incluir-organizaciones.
+  if (incluirOrganizaciones) {
+    const organizaciones = await require('./organizaciones-sbss').completar(connection);
+    if (organizaciones.length) informar(`Organizaciones agregadas: ${organizaciones.join(', ')}`);
+  }
   informar('Esquema V1 actualizado. Se conservaron usuarios y registros.');
 }
 async function main(){
   if(!process.argv.includes('--sin-respaldo'))console.log(`Respaldo previo: ${await require('./backup').respaldo()}`);
   const connection=await mysql.createConnection(options());
-  try{await migrar(connection,console.log);}finally{await connection.end();}
+  try{await migrar(connection,console.log,{incluirOrganizaciones:process.argv.includes('--incluir-organizaciones')});}finally{await connection.end();}
 }
 if(require.main===module)main().catch(e=>{console.error('Migración no completada:',e.code||e.message);process.exitCode=1;});
 module.exports={migrar};
