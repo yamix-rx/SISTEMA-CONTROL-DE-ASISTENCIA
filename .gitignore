@@ -14,3 +14,4 @@ Documentos/
 .env.*
 !.env.example
 !backend/.env.example
+frontend/dist/

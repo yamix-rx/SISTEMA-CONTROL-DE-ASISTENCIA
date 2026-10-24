@@ -22,7 +22,7 @@ async function verificar() {
       const [[roles]] = await connection.query('SELECT COUNT(*) total FROM roles');
       const [[tipos]] = await connection.query('SELECT COUNT(*) total FROM tipo_permisos');
       const [[admin]] = await connection.query('SELECT COUNT(*) total FROM usuarios WHERE activo=1');
-      require('node:assert/strict').deepEqual([tables.length,empresas.total,roles.total,tipos.total,admin.total],[18,7,3,5,1]);
+      require('node:assert/strict').deepEqual([tables.length,empresas.total,roles.total,tipos.total,admin.total],[18,1,3,5,1]);
     } finally { await connection.end(); }
     const folder = await require('./backup').respaldo({ database, codigo: false });
     const restored = await require('./restaurar').restaurar(folder, target);

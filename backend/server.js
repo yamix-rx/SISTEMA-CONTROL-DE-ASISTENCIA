@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('node:path');
+const fs = require('node:fs');
 require('dotenv').config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
 const authRoutes = require('./routes/authRoutes');
@@ -47,13 +48,16 @@ app.use('/api/contratos', contratoRoutes);
 app.use('/api/capacitaciones', capacitacionRoutes);
 
 // Abrir http://localhost:3000: el mismo servidor entrega el frontend.
-app.get('/favicon.ico', (req, res) => res.sendFile(path.resolve(__dirname, '../frontend/favicon.svg')));
 const frontendDir = path.resolve(__dirname, '../frontend');
-// Publicar solo las pantallas y los recursos preparados; las herramientas de compilación quedan fuera.
-for (const carpeta of ['assets', 'css', 'js', 'vendor']) {
-  app.use(`/${carpeta}`, express.static(path.join(frontendDir, carpeta)));
+// Instalación local: Express sirve las pantallas. En Railway se despliega solo backend/;
+// Vercel sirve los recursos estáticos y reenvía las peticiones /api.
+if (fs.existsSync(path.join(frontendDir, 'index.html'))) {
+  app.get('/favicon.ico', (req, res) => res.sendFile(path.join(frontendDir, 'favicon.svg')));
+  for (const carpeta of ['assets', 'css', 'js', 'vendor']) {
+    app.use(`/${carpeta}`, express.static(path.join(frontendDir, carpeta)));
+  }
+  app.get(['/', /^\/[A-Za-z0-9_-]+\.html$/, '/favicon.svg'], express.static(frontendDir));
 }
-app.get(['/', /^\/[A-Za-z0-9_-]+\.html$/, '/favicon.svg'], express.static(frontendDir));
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);

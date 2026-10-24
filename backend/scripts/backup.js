@@ -6,7 +6,7 @@ const { options, databaseName } = require('./db-options');
 async function respaldo({destino, database=process.env.DB_NAME, codigo=true, configuracion=false}={}) {
   databaseName(database);
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-  const folder=path.resolve(destino || path.join(__dirname,'../backups',stamp));
+  const folder=path.resolve(destino || path.join(process.env.BACKUPS_DIR || path.resolve(__dirname,'../backups'),stamp));
   await fs.mkdir(folder,{recursive:true,mode:0o700});
   const archivo=path.join(folder,'base-datos.sql');
   const config=options(database);
@@ -21,7 +21,12 @@ async function respaldo({destino, database=process.env.DB_NAME, codigo=true, con
     if(!['EPERM','ENOENT','EACCES'].includes(e.code))throw e;
     await require('./respaldo-sql').volcar(database,archivo);
   }
-  const source=path.resolve(__dirname,'../..');
+  // Si Railway construye solo backend/, su directorio padre puede ser /app o incluso /.
+  // Nunca recorrer el sistema de archivos del contenedor al crear respaldos.
+  const backendRoot=path.resolve(__dirname,'..');
+  const repositoryRoot=path.resolve(backendRoot,'..');
+  const source=await fs.access(path.join(repositoryRoot,'backend/package.json'))
+    .then(()=>repositoryRoot).catch(()=>backendRoot);
   async function copiarCodigo(origen,destinoCodigo) {
     await fs.mkdir(destinoCodigo,{recursive:true});
     for(const item of await fs.readdir(origen,{withFileTypes:true})) {

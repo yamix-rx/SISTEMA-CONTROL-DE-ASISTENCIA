@@ -22,10 +22,9 @@ async function instalar(){
     if(tables.length)throw new Error('La base ya contiene tablas. Use npm run migrar; no se sobrescribió ningún registro.');
     await migrar(connection,console.log);
     await connection.beginTransaction();
-    // La migración compartida ya configura las siete organizaciones.
-    const [[organizacion]]=await connection.query("SELECT id FROM empresas WHERE razon_social='SBSS Outsourcing' ORDER BY id LIMIT 1");
-    if(!organizacion)throw new Error('No se configuró la organización inicial.');
-    const empresa=organizacion.id;
+    // Solo la empresa necesaria para relacionar la ficha del primer administrador.
+    const [organizacion]=await connection.query('INSERT INTO empresas (razon_social) VALUES (?)',['SBSS Outsourcing']);
+    const empresa=organizacion.insertId;
     const [area]=await connection.query('INSERT INTO areas (nombre,empresa_id) VALUES (?,?)',['Administración',empresa]);
     const [cargo]=await connection.query('INSERT INTO cargos (nombre,area_id) VALUES (?,?)',['Administrador del sistema',area.insertId]);
     const [empleado]=await connection.query(`INSERT INTO empleados (numero_documento,nombres,apellidos,empresa_id,area_id,cargo_id,fecha_ingreso,tipo_vinculo) VALUES (?,?,?,?,?,?,CURDATE(),'trabajador')`,[documento,adminNombre,adminApellidos,empresa,area.insertId,cargo.insertId]);
@@ -33,7 +32,7 @@ async function instalar(){
     await connection.query('INSERT INTO usuarios (empleado_id,rol_id,email,password,activo) VALUES (?,?,?,?,1)',[empleado.insertId,roles[0].id,email.trim().toLowerCase(),await bcrypt.hash(password,12)]);
     for(const [tipo,obligatorio]of [['DNI',true],['Currículum Vitae',true],['Carta de presentación',false],['Carta de aceptación',false],['Convenio de prácticas',false],['Certificados',false],['Constancia de prácticas',false],['Carta de culminación',false],['Otros documentos',false]])await connection.query('INSERT INTO tipo_documentos (nombre,es_obligatorio) VALUES (?,?)',[tipo,obligatorio]);
     await connection.commit();
-    console.log('Instalación completada con siete organizaciones y la cuenta administradora configurada. Retire ADMIN_PASSWORD de su entorno después de guardar las credenciales.');
+    console.log('Instalación limpia completada con SBSS Outsourcing, catálogos internos y una cuenta administradora. Retire ADMIN_PASSWORD de su entorno después de guardar las credenciales.');
   }catch(e){await connection.rollback();throw e;}finally{await connection.end();}
 }
 if(require.main===module)instalar().catch(e=>{console.error('Instalación no completada:',e.code||e.message);process.exitCode=1;});

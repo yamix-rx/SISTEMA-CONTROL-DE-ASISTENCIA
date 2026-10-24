@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "Compilación reproducible de recursos estáticos locales del sistema SBSS",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "node scripts/build-assets.js",
     "verify:assets": "node scripts/verify-assets.js",
-    "test": "node --test --test-isolation=none tests/*.test.js"
+    "test": "node --test --test-isolation=none tests/*.test.js",
+    "build:vercel": "npm run build && node scripts/build-vercel.js"
   },
   "devDependencies": {
     "bootstrap": "5.3.8",
