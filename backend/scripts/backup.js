@@ -21,7 +21,12 @@ async function respaldo({destino, database=process.env.DB_NAME, codigo=true, con
     if(!['EPERM','ENOENT','EACCES'].includes(e.code))throw e;
     await require('./respaldo-sql').volcar(database,archivo);
   }
-  const source=path.resolve(__dirname,'../..');
+  // Si Railway construye solo backend/, su directorio padre puede ser /app o incluso /.
+  // Nunca recorrer el sistema de archivos del contenedor al crear respaldos.
+  const backendRoot=path.resolve(__dirname,'..');
+  const repositoryRoot=path.resolve(backendRoot,'..');
+  const source=await fs.access(path.join(repositoryRoot,'backend/package.json'))
+    .then(()=>repositoryRoot).catch(()=>backendRoot);
   async function copiarCodigo(origen,destinoCodigo) {
     await fs.mkdir(destinoCodigo,{recursive:true});
     for(const item of await fs.readdir(origen,{withFileTypes:true})) {
