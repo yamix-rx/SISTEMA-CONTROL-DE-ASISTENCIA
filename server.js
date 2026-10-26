@@ -7,7 +7,7 @@ if (process.env.VERCEL) {
   if (!(url.startsWith('postgres://') || url.startsWith('postgresql://'))
       || !process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32
       || !/^[a-f0-9]{64}$/i.test(process.env.LOGO_ENCRYPTION_KEY || '')
-      || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      || !process.env.SUPABASE_URL || !(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     throw new Error('Faltan variables de producción privadas para SBSS.');
   }
 }
