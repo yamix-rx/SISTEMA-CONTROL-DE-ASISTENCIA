@@ -1,0 +1,30 @@
+name: Migracion SBSS Supabase
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'scripts/**'
+      - 'server.js'
+      - 'package*.json'
+      - '.github/workflows/migracion-supabase.yml'
+  workflow_dispatch:
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Comprobar adaptador y Storage
+        run: npm run test:postgres
+      - name: Compilar sitio Vercel
+        run: npm run build
+      - name: Pruebas del backend existente
+        run: npm --prefix backend test
+      - name: Pruebas del frontend
+        run: npm --prefix frontend test
