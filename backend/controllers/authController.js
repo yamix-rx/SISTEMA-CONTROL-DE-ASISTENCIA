@@ -41,6 +41,15 @@ exports.login = async (req, res) => {
       return res.status(403).json({ ok: false, mensaje: 'Su rol no tiene un panel habilitado. Contacte al administrador.' });
     }
 
+    if (Boolean(usuario.debe_cambiar_clave)) {
+      const token = jwt.sign({ usuario_id: usuario.usuario_id, sv: Number(usuario.sesion_version || 0), provisional: true },
+        process.env.JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
+      await registrarAuditoria({ usuario_id: usuario.usuario_id, tabla_afectada: 'sesiones',
+        registro_id: usuario.usuario_id, accion: 'LOGIN',
+        datos_nuevos: { email: usuario.email, cambio_clave_obligatorio: true }, ip_origen: req.ip });
+      return res.json({ ok: true, requiere_cambio_clave: true, token,
+        mensaje: 'Debes cambiar tu contraseña temporal para activar el acceso.' });
+    }
     // El token identifica la cuenta. Rol y empleado se consultan en cada petición.
     const token = jwt.sign({ usuario_id: usuario.usuario_id, sv: Number(usuario.sesion_version || 0) }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || '8h', algorithm: 'HS256'
@@ -79,4 +88,32 @@ exports.logout = async (req, res) => {
   } catch (error) {
     return res.status(503).json({ ok: false, mensaje: 'No se pudo cerrar la sesión. Vuelva a intentar.' });
   }
+};
+
+
+exports.cambiarClaveInicial = async (req,res) => {
+  const actual = req.body?.password_actual;
+  const nueva = req.body?.password_nueva;
+  if (typeof actual !== 'string' || typeof nueva !== 'string'
+      || nueva.length < 12 || Buffer.byteLength(nueva,'utf8') > 72 || actual === nueva) {
+    return res.status(400).json({ ok:false, mensaje:'La nueva contraseña debe ser distinta, tener al menos 12 caracteres y máximo 72 bytes.' });
+  }
+  const pool = require('../config/database');
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query('SELECT password, debe_cambiar_clave FROM usuarios WHERE id=? FOR UPDATE', [req.usuario.id]);
+    if (!rows.length || !rows[0].debe_cambiar_clave || !(await bcrypt.compare(actual,rows[0].password))) {
+      await connection.rollback();
+      return res.status(401).json({ok:false,mensaje:'La contraseña temporal no coincide o ya se utilizó.'});
+    }
+    await connection.query('UPDATE usuarios SET password=?, debe_cambiar_clave=FALSE, sesion_version=sesion_version+1 WHERE id=?',
+      [await bcrypt.hash(nueva,12),req.usuario.id]);
+    await connection.commit();
+    return res.json({ok:true,mensaje:'Contraseña renovada. Inicia sesión nuevamente con tu clave nueva.'});
+  } catch(error) {
+    await connection.rollback().catch(()=>{});
+    console.error('Error al cambiar contraseña inicial:',error.code||error.name);
+    return res.status(500).json({ok:false,mensaje:'No se pudo actualizar la contraseña.'});
+  } finally { connection.release(); }
 };
