@@ -10,7 +10,7 @@ async function obtenerFicha(id) {
              ELSE COALESCE(e.horas_totales_asignadas, 0) END AS horas_totales_asignadas,
            e.fecha_nacimiento, e.telefono, e.correo_personal, e.direccion, e.carrera, e.institucion_educativa,
            e.fecha_ingreso, e.fecha_finalizacion, e.estado, e.observaciones_rrhh, e.puesto,
-           TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD') AS fecha_vencimiento_convenio,
+           ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio,'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d')`} AS fecha_vencimiento_convenio,
            emp.id AS empresa_id, emp.razon_social AS empresa,
            ar.id AS area_id, ar.nombre AS area, c.id AS cargo_id, c.nombre AS cargo
     FROM empleados e
