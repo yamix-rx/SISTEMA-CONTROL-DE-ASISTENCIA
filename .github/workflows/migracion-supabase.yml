@@ -24,6 +24,8 @@ jobs:
         run: npm run test:postgres
       - name: Compilar sitio Vercel
         run: npm run build
+      - name: Smoke de Express y archivos compilados para Vercel
+        run: node scripts/smoke-vercel.js
       - name: Pruebas del backend existente
         run: npm --prefix backend test
       - name: Pruebas del frontend
