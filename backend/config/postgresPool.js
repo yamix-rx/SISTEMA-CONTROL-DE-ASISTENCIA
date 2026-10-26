@@ -1,6 +1,38 @@
 'use strict';
 /* Adaptador temporal PostgreSQL compatible con mysql2. Nunca traduce SQL MySQL complejo silenciosamente. */
 const { AsyncLocalStorage } = require('node:async_hooks');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
+const { X509Certificate } = require('node:crypto');
+
+// Supabase Root 2021 CA (certificado público, nunca la clave privada).
+// Se verifica su huella para no aceptar una CA inesperada.
+const SUPABASE_ROOT_SHA256 = '807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF607D07B72E6CAFA';
+function pgTlsOptions(connectionString) {
+  const url = new URL(connectionString);
+  if (!/^postgres(?:ql)?:$/.test(url.protocol)) throw new Error('Protocolo PostgreSQL inválido.');
+  if (!/^(?:[a-z0-9-]+\\.)*pooler\\.supabase\\.com$/i.test(url.hostname)) {
+    throw new Error('La conexión debe utilizar el pooler verificado de Supabase.');
+  }
+  if (['disable','allow','prefer'].includes((url.searchParams.get('sslmode') || '').toLowerCase())) {
+    throw new Error('No se permite desactivar ni debilitar TLS para PostgreSQL.');
+  }
+  for (const option of ['sslcert','sslkey','sslrootcert']) {
+    if (url.searchParams.has(option)) throw new Error('Los certificados TLS deben proceder de la configuración de la aplicación.');
+  }
+  // node-postgres reemplaza la opción ssl si sslmode está en connectionString.
+  // Retirarlo permite TLS con autoridad validada y nombre de servidor verificado.
+  url.searchParams.delete('sslmode');
+  const ca = readFileSync(join(__dirname,'../certs/supabase-root-2021.crt'),'utf8');
+  const certificate = new X509Certificate(ca);
+  if (certificate.fingerprint256.replace(/:/g,'') !== SUPABASE_ROOT_SHA256) {
+    throw new Error('La huella digital del certificado raíz Supabase no coincide.');
+  }
+  return {
+    connectionString:url.toString(),
+    ssl:{ca,rejectUnauthorized:true,servername:url.hostname}
+  };
+}
 
 function placeholders(statement, params = []) {
   if (typeof statement !== 'string') throw new TypeError('SQL inválido');
@@ -46,7 +78,7 @@ function mysqlResult(result) {
 function createPostgresPool({connectionString=process.env.DATABASE_URL,pgModule}={}) {
   if(!/^postgres(?:ql)?:\/\//.test(connectionString||'')) throw new Error('DATABASE_URL debe ser PostgreSQL.');
   const pg=pgModule || require('pg');
-  const pool=new pg.Pool({connectionString,max:3,connectionTimeoutMillis:12000,idleTimeoutMillis:15000});
+  const pool=new pg.Pool({...pgTlsOptions(connectionString),max:3,connectionTimeoutMillis:12000,idleTimeoutMillis:15000});
   if(pg.types?.setTypeParser) pg.types.setTypeParser(1082,value=>value);
   const storage=new AsyncLocalStorage();
   const wrap=(client,release)=>({
@@ -99,4 +131,4 @@ function createPostgresPool({connectionString=process.env.DATABASE_URL,pgModule}
     end:()=>pool.end()
   };
 }
-module.exports={placeholders,prepare,mysqlResult,createPostgresPool};
+module.exports={placeholders,prepare,mysqlResult,createPostgresPool,pgTlsOptions};
