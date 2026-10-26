@@ -1,6 +1,6 @@
 # Migración SBSS a Supabase + Vercel (rama de trabajo)
 
-**Estado: FASE 1 PREPARADA; NO LISTO PARA PRODUCCIÓN.** No fusionar con `main` ni conectar datos reales hasta portar y probar las consultas MySQL, la API Express y el almacenamiento de archivos. La rama se creó desde `main` del 2026-10-26 y conserva los nuevos documentos y módulos.
+**Estado: FASE 2 EN PROGRESO; NO LISTO PARA PRODUCCIÓN.** No fusionar con `main` ni conectar datos reales hasta portar y probar las consultas MySQL, la API Express y el almacenamiento de archivos. La rama se creó desde `main` del 2026-10-26 y conserva los nuevos documentos y módulos.
 
 ## Objetivo
 
@@ -11,10 +11,10 @@
 
 ## 1. Crear un proyecto Supabase nuevo
 
-1. Entrar a https://supabase.com/dashboard y crear un proyecto de SBSS en la región más próxima disponible, con contraseña fuerte almacenada en gestor de contraseñas.
-2. Abrir **SQL Editor** del proyecto nuevo. Revisar `supabase/schema.sql` y ejecutar su contenido: crea las 18 tablas, restricciones, índices, triggers de `updated_at` y habilita RLS sin políticas. **No ejecutar `backend/base-actualizada.sql`**: es MySQL y contiene datos ficticios.
+1. **Ya realizado en este proyecto:** https://supabase.com/dashboard/project/roddgujtsdudromjufux (us-east-1). Para otra instalación, crear un proyecto nuevo y usar una contraseña fuerte almacenada en gestor privado.
+2. **Ya ejecutado en sbss-asistencia.** Para reproducirlo en otro proyecto, abrir **SQL Editor** del proyecto nuevo. Revisar `supabase/schema.sql` y ejecutar su contenido: crea las 18 tablas, restricciones, índices, triggers de `updated_at` y habilita RLS sin políticas. **No ejecutar `backend/base-actualizada.sql`**: es MySQL y contiene datos ficticios.
 3. Nunca desactivar RLS para facilitar el acceso. Las rutas web deben llamar al backend; el navegador **no** debe conectarse directamente a tablas de personal o asistencia. Las claves de servicio y `DATABASE_URL` son solo del servidor.
-4. En **Storage**, crear bucket `sbss-documentos` y verificar que sea **Private**. No dar acceso público ni políticas de subida sin autenticar. La integración de este bucket con la API aún está pendiente.
+4. **Ya creado y verificado:** bucket privado `sbss-documentos`, 5 MB y formatos admitidos mediante `supabase/storage.sql`. No tiene políticas abiertas de acceso a objetos. La integración con la API y el frontend continúa pendiente.
 
 ## 2. Crear el único administrador inicial (en equipo local seguro)
 
@@ -41,10 +41,10 @@
 
 | Pieza | Estado |
 |---|---|
-| DDL PostgreSQL de 18 tablas (sin datos de demostración) | Preparado para probar en Supabase nuevo |
+| DDL PostgreSQL de 18 tablas (sin datos de demostración) | Aplicado y validado en sbss-asistencia; RLS activado |
 | Instalación inicial con un solo administrador | Script preparado; ejecución pendiente |
-| Storage privado | Requiere crear bucket, código aún no adaptado |
-| Backend PostgreSQL y tests de integración | Pendiente |
+| Storage privado | Bucket creado y verificado; API y frontend aún no adaptados |
+| Backend PostgreSQL y tests de integración | Adaptador PostgreSQL y módulos principales migrados; consultas SELECT validadas con EXPLAIN; pruebas completas y escrituras pendientes |
 | Despliegue de Vercel | Pendiente, no liberar |
 
 ## Referencias oficiales
@@ -53,3 +53,17 @@
 - https://supabase.com/docs/guides/database/connecting-to-postgres
 - https://supabase.com/docs/guides/storage/security/access-control
 - https://vercel.com/docs/frameworks/backend/express
+
+
+## Fase 2: trabajos ya realizados sobre la rama (2026-10-26)
+
+- El backend incorpora `backend/config/postgresPool.js` (driver `pg`), con marcadores `$1`, semántica temporal mysql2 y transacciones HTTP mediante `AsyncLocalStorage`. Una consulta que use funciones MySQL no portadas genera `SBSS_SQL_NOT_MIGRATED` en vez de ejecutarse incorrectamente.
+- `backend/config/database.js` usa PostgreSQL cuando existe `DATABASE_URL`; sin ella sigue usando MySQL, preservando la ejecución local. Para Vercel, la URL de Supabase se configura solo en **Environment Variables**, nunca en archivos web.
+- Se portaron consultas de dashboard, contratos, capacitaciones, asistencia diaria, horario, personal, fichas, empresa, revisión documental y plantillas. Los estados booleanos, `ON CONFLICT`, `EXTRACT(ISODOW)`, funciones de tiempo Perú y `GROUP BY` se probaron mediante `EXPLAIN` en la base vacía. **EXPLAIN no verifica las operaciones de escritura ni los resultados con datos reales.**
+- El bucket privado `sbss-documentos` ya se creó y se comprobó que `public = false`, su límite es 5 MB y no existen políticas de acceso directo a `storage.objects`. La autorización y transferencias desde el backend y el navegador **no están implementadas**.
+- La función de actualización `sbss_touch_updated_at` tiene search_path fijo y EXECUTE revocado a roles de cliente; se añadió también al esquema reproducible.
+- La base real sigue sin usuarios ni asistencias de prueba. **No se ha creado el administrador** porque faltan credenciales iniciales seguras introducidas por canal privado. El email planeado es el que indicó el responsable; no guardarlo en scripts.
+- No se desplegó en Vercel; todavía requieren implementación el flujo seguro de carga de documentos de hasta 5 MB, las pruebas funcionales de escritura (login, personal, asistencia, capacitaciones, contratos, reportes y auditoría), y la configuración del hosting empresarial.
+
+**Seguridad:** El bucket privado no es equivalente a un flujo completo de gestión de documentos. No habilitar reglas genéricas para `anon` o `authenticated`. La futura subida directa deberá generar un permiso de carga por un backend que valide el token, rol, empleado y tipo de documento; no exponer claves privilegiadas al navegador.
+
