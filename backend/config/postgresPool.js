@@ -11,7 +11,7 @@ const SUPABASE_ROOT_SHA256 = '807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF6
 function pgTlsOptions(connectionString) {
   const url = new URL(connectionString);
   if (!/^postgres(?:ql)?:$/.test(url.protocol)) throw new Error('Protocolo PostgreSQL inválido.');
-  if (!/^(?:[a-z0-9-]+\\.)*pooler\\.supabase\\.com$/i.test(url.hostname)) {
+  if (!/^(?:[a-z0-9-]+\.)*pooler\.supabase\.com$/i.test(url.hostname)) {
     throw new Error('La conexión debe utilizar el pooler verificado de Supabase.');
   }
   if (['disable','allow','prefer'].includes((url.searchParams.get('sslmode') || '').toLowerCase())) {
