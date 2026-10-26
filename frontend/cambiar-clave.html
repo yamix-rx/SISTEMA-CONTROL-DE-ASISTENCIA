@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>SBSS · Cambiar contraseña inicial</title>
+<style>
+:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:1rem;background:linear-gradient(140deg,#e2eff7,#f3f7fb);color:#203447}
+main{max-width:440px;width:100%;padding:clamp(1.5rem,5vw,2.5rem);border-radius:24px;box-shadow:0 18px 50px #16487522;background:white}
+h1{font-size:1.5rem;margin:.2rem 0 .5rem;color:#174675}
+p{line-height:1.55;color:#455c6e}
+label{display:block;margin:1rem 0 .4rem;font-weight:600;font-size:.94rem}
+input{width:100%;padding:.85rem;border:1px solid #9db4c4;border-radius:10px;font:inherit}
+input:focus-visible{outline:2px solid #075d91}
+button{width:100%;margin-top:1.5rem;padding:.95rem;color:white;background:#075d91;border:0;border-radius:12px;font:600 1rem system-ui;cursor:pointer}
+button:disabled{opacity:.6}
+#estado{min-height:1.5rem;margin-top:1rem}
+a{color:#075d91}
+</style></head>
+<body>
+<main>
+  <h1>Configura tu contraseña</h1>
+  <p>Para proteger la información de SBSS, debes cambiar la clave inicial antes de entrar. Utiliza una clave nueva de al menos 12 caracteres.</p>
+  <form id="cambio">
+    <label for="actual">Contraseña temporal</label><input id="actual" type="password" autocomplete="current-password" required>
+    <label for="nueva">Contraseña nueva</label><input id="nueva" type="password" minlength="12" maxlength="72" autocomplete="new-password" required>
+    <label for="confirmar">Repetir contraseña nueva</label><input id="confirmar" type="password" minlength="12" maxlength="72" autocomplete="new-password" required>
+    <button id="guardar" type="submit">Actualizar contraseña</button>
+  </form>
+  <div id="estado" role="status" aria-live="polite"></div>
+  <p><a href="/login.html">Volver al inicio de sesión</a></p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id), token=sessionStorage.getItem('sbss_token_cambio');
+  if(!token){$('cambio').hidden=true;$('estado').textContent='Inicia sesión con tu contraseña temporal para continuar.';return;}
+  $('cambio').addEventListener('submit',async event=>{
+    event.preventDefault();
+    const nueva=$('nueva').value, actual=$('actual').value;
+    if(nueva!==$('confirmar').value){$('estado').textContent='La confirmación no coincide.';return;}
+    if(nueva===actual){$('estado').textContent='No puedes reutilizar la contraseña temporal.';return;}
+    $('guardar').disabled=true;$('estado').textContent='Guardando nueva contraseña…';
+    try {
+      const resp=await fetch('/api/auth/cambiar-clave-inicial',{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({password_actual:actual,password_nueva:nueva}),cache:'no-store',redirect:'error',
+        signal:AbortSignal.timeout(15000)});
+      const data=await resp.json();
+      if(!resp.ok||!data.ok)throw new Error(data.mensaje||'No se pudo actualizar la clave.');
+      sessionStorage.removeItem('sbss_token_cambio');
+      $('cambio').hidden=true;$('estado').textContent='Contraseña actualizada. Vuelve a iniciar sesión con tu nueva clave.';
+    }catch(e){$('estado').textContent=e.message||'Error de conexión.'}
+    finally{$('guardar').disabled=false;$('actual').value='';$('nueva').value='';$('confirmar').value='';}
+  });
+})();
+</script>
+</body></html>
