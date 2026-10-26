@@ -74,7 +74,7 @@ async function actualizarUsuario(usuarioId, body, actorId) {
     await connection.beginTransaction();
     // Serializa cambios de administradores para impedir eliminar el último acceso.
     const [admins] = await connection.query(`SELECT u.id FROM usuarios u JOIN roles r ON r.id=u.rol_id
-      WHERE u.activo=TRUE AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
+      WHERE u.activo=${process.env.DATABASE_URL ? 'TRUE' : '1'} AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
     const [rows] = await connection.query('SELECT id, rol_id, activo FROM usuarios WHERE id = ? FOR UPDATE', [usuario]);
     if (!rows.length) throw error('La cuenta no existe.', 404);
     const perfil = await validarRol(connection, rol);
