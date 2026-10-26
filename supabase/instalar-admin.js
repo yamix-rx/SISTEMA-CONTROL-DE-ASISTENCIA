@@ -10,9 +10,9 @@ async function main() {
   if (!url || !/^postgres(?:ql)?:\/\//i.test(url)) throw Error('Falta DATABASE_URL PostgreSQL en supabase/.env.');
   const { ADMIN_EMAIL: email, ADMIN_PASSWORD: pass, ADMIN_NOMBRES: nombres,
     ADMIN_APELLIDOS: apellidos, ADMIN_DOCUMENTO: dni } = process.env;
-  if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 120) throw Error('ADMIN_EMAIL inválido.');
+  if (!email || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email) || email.length > 120) throw Error('ADMIN_EMAIL inválido.');
   if (!pass || pass.length < 10 || Buffer.byteLength(pass) > 72) throw Error('ADMIN_PASSWORD debe tener de 10 caracteres a 72 bytes.');
-  if (!nombres?.trim() || nombres.length > 100 || !apellidos?.trim() || apellidos.length > 100 || !/^\\d{8}$/.test(dni || '')) throw Error('Complete nombres, apellidos y DNI de 8 dígitos.');
+  if (!nombres?.trim() || nombres.length > 100 || !apellidos?.trim() || apellidos.length > 100 || !/^\d{8}$/.test(dni || '')) throw Error('Complete nombres, apellidos y DNI de 8 dígitos.');
   if (!new URL(url).searchParams.has('sslmode')) throw Error('DATABASE_URL debe incluir sslmode=require o verify-full para cifrar la conexión.');
   const client = new Client({ connectionString: url });
   await client.connect();
