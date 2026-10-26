@@ -81,8 +81,12 @@ async function catalogos() {
 async function guardarPlantilla(codigo, body) {
   if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
   const plantilla = validarPlantilla(body);
-  const [result] = await pool.query(`INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
-    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`,
+  const pgSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
+    VALUES (?, ?, ?) ON CONFLICT (codigo) DO UPDATE
+    SET titulo = EXCLUDED.titulo, cuerpo_html = EXCLUDED.cuerpo_html RETURNING id`;
+  const mysqlSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
+    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`;
+  const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
   [codigo, plantilla.titulo, plantilla.cuerpo]);
   return { id: Number(result.insertId) || null, codigo, ...plantilla, personalizada: true, revision: revision(plantilla) };
 }
