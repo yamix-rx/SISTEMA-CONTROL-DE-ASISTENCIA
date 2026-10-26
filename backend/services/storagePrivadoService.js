@@ -3,7 +3,7 @@
 const BUCKET='sbss-documentos';
 const PATTERN=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(pdf|png|jpe?g|docx|doc)$/i;
 function config(){
-  const origin=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const origin=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(origin||'')||!key)
     throw Object.assign(new Error('Falta configurar Storage privado SBSS.'),{code:'SBSS_STORAGE_NOT_CONFIGURED'});
   return {base:origin.replace(/\/$/,'')+'/storage/v1',key};
@@ -15,7 +15,8 @@ function objectPath(name){
 }
 async function request(method,path,{body,headers={},expect='json'}={}){
   const {base,key}=config();
-  const h={apikey:key,Authorization:'Bearer '+key,...headers};
+  // Las claves sb_secret_ se envían en apikey (no son JWT Bearer).
+  const h={apikey:key,...(key.startsWith('sb_secret_')?{}:{Authorization:'Bearer '+key}),...headers};
   const opts={method,headers:h,redirect:'error',signal:AbortSignal.timeout(30000)};
   if(body!==undefined) {
     opts.body=typeof body==='string'||body instanceof Uint8Array?body:JSON.stringify(body);
