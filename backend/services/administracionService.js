@@ -61,7 +61,7 @@ async function crearUsuario(body) {
   await validarRol(pool, rol);
   const [personas] = await pool.query('SELECT id FROM empleados WHERE id = ?', [empleado]);
   if (!personas.length) throw error('El colaborador no existe.');
-  const [result] = await pool.query('INSERT INTO usuarios (empleado_id,rol_id,email,password,activo) VALUES (?,?,?,?,1)', [empleado, rol, email, password]);
+  const [result] = await pool.query('INSERT INTO usuarios (empleado_id,rol_id,email,password,activo) VALUES (?,?,?,?,TRUE)', [empleado, rol, email, password]);
   return result.insertId;
 }
 async function actualizarUsuario(usuarioId, body, actorId) {
@@ -74,7 +74,7 @@ async function actualizarUsuario(usuarioId, body, actorId) {
     await connection.beginTransaction();
     // Serializa cambios de administradores para impedir eliminar el último acceso.
     const [admins] = await connection.query(`SELECT u.id FROM usuarios u JOIN roles r ON r.id=u.rol_id
-      WHERE u.activo=1 AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
+      WHERE u.activo=TRUE AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
     const [rows] = await connection.query('SELECT id, rol_id, activo FROM usuarios WHERE id = ? FOR UPDATE', [usuario]);
     if (!rows.length) throw error('La cuenta no existe.', 404);
     const perfil = await validarRol(connection, rol);
