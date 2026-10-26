@@ -9,7 +9,7 @@ exports.listarColaboradores = async (req, res) => {
       SELECT 
         e.id,
         e.empresa_id, e.area_id, e.cargo_id, e.puesto,
-        TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD') AS fecha_vencimiento_convenio,
+        ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d')`} AS fecha_vencimiento_convenio,
         CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
         e.numero_documento,
         e.tipo_vinculo,
@@ -257,15 +257,15 @@ exports.actualizarColaborador = async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      const [rows] = await connection.query(`SELECT e.*, TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD') AS fecha_vencimiento_convenio
-        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? FOR UPDATE`, [id]);
+      const [rows] = await connection.query(`SELECT e.*, ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d')`} AS fecha_vencimiento_convenio
+        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? ${process.env.DATABASE_URL ? 'FOR UPDATE OF e' : 'FOR UPDATE'}`, [id]);
       if (!rows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
       Object.assign(p, normalizarPuestoConvenio(req.body || {}, p.fecha_ingreso, rows[0]));
       await connection.query(
         'UPDATE empleados SET tipo_documento=?, numero_documento=?, nombres=?, apellidos=?, fecha_nacimiento=?, telefono=?, correo_personal=?, direccion=?, carrera=?, institucion_educativa=?, empresa_id=?, area_id=?, cargo_id=?, tipo_vinculo=?, horas_totales_asignadas=?, estado=?, fecha_ingreso=?, fecha_finalizacion=?, observaciones_rrhh=?, puesto=? WHERE id=?',
         [p.tipo_documento, p.numero_documento, p.nombres, p.apellidos, p.fecha_nacimiento, p.telefono, p.correo_personal, p.direccion, p.carrera, p.institucion_educativa, p.empresa_id, p.area_id, p.cargo_id, p.tipo_vinculo, p.horas_totales_asignadas, p.estado, p.fecha_ingreso, p.fecha_finalizacion, p.observaciones_rrhh, p.puesto, id]);
       if (p.tipo_vinculo.startsWith('practicante')) {
-        await connection.query('INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta, fecha_vencimiento_convenio = EXCLUDED.fecha_vencimiento_convenio',
+        await connection.query((process.env.DATABASE_URL ? 'INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta, fecha_vencimiento_convenio = EXCLUDED.fecha_vencimiento_convenio' : 'INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta), fecha_vencimiento_convenio = VALUES(fecha_vencimiento_convenio)'),
           [id, p.horas_totales_asignadas > 0 ? p.horas_totales_asignadas : 320, p.fecha_vencimiento_convenio]);
       } else if (Object.prototype.hasOwnProperty.call(req.body, 'fecha_vencimiento_convenio')) {
         await connection.query('UPDATE practicante_detalles SET fecha_vencimiento_convenio = ? WHERE empleado_id = ?', [p.fecha_vencimiento_convenio, id]);
@@ -311,7 +311,7 @@ exports.actualizarHorasPracticas = async (req, res) => {
     await connection.query(`
       INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
       VALUES (?, ?, FALSE)
-      ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta
+      ${process.env.DATABASE_URL ? 'ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta' : 'ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)'}
     `, [empleadoId, horasMeta]);
     await connection.query(`UPDATE empleados SET horas_totales_asignadas = ? WHERE id = ?`, [horasMeta, empleadoId]);
     await connection.commit();
