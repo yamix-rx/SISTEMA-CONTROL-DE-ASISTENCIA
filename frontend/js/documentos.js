@@ -452,10 +452,25 @@
     setDialogBusy('modalSubir', true);
     $('btnGuardarArchivo').textContent = 'Guardando…';
     try {
-      const contenido = await readFileBase64(file);
-      const data = await request('/documentos', {
+      const mimeByExtension = {
+        pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      };
+      const extension = file.name.split('.').pop().toLowerCase();
+      const mime = mimeByExtension[extension];
+      const autorizacion = await request('/documentos/preparar-subida', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empleado_id: empleadoId, tipo_documento_id: tipoId, nombre_archivo: file.name, contenido_base64: contenido })
+        body: JSON.stringify({empleado_id:empleadoId,tipo_documento_id:tipoId,
+          nombre_archivo:file.name,mime_type:mime,tamano:file.size})
+      });
+      // El archivo viaja directamente a Supabase: no atraviesa el límite de 4.5 MB de Vercel.
+      const subida = await fetch(autorizacion.url, {
+        method:'PUT', headers:{'Content-Type':mime}, body:file, redirect:'error'
+      });
+      if(!subida.ok)throw new Error('No se pudo transferir el archivo al almacenamiento privado.');
+      const data = await request('/documentos/confirmar-subida', {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ticket:autorizacion.ticket})
       });
       $('modalSubir').close();
       notify(data.mensaje || 'Documento guardado. Quedó pendiente de revisión.');
