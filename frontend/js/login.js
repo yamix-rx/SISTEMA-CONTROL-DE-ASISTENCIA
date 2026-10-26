@@ -4,11 +4,11 @@
   const form = $('formLogin'), fields = $('camposLogin'), button = $('btnIngresar');
   const connection = $('estadoConexion'), message = $('mensajeConexion'), link = $('enlaceServidor'), retry = $('btnReintentarConexion');
   const current = new URL(location.href);
-  const canonical = new URL('http://localhost:3000/login.html');
-  if (current.protocol === 'http:' || current.protocol === 'https:') {
-    canonical.protocol = current.protocol;
-    canonical.hostname = current.hostname;
-  }
+  // En Vercel se utiliza el mismo origen HTTPS, sin arrastrar el puerto
+  // 3000 reservado al servidor local de desarrollo.
+  const canonical = ['http:', 'https:'].includes(current.protocol)
+    ? new URL('/login.html', current.origin)
+    : new URL('http://localhost:3000/login.html');
   let serverReady = false, checking = false, submitting = false;
   link.href = canonical.href;
   link.textContent = 'Abrir SBSS: ' + canonical.host;
@@ -17,7 +17,7 @@
   async function identifiesServer(origin) {
     try {
       const response = await fetch(origin + '/api/auth/disponibilidad', {
-        method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(8000)
+        method: 'GET', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(8000)
       });
       if (!response.ok || !(response.headers.get('content-type') || '').includes('application/json')) return false;
       const data = await response.json();
