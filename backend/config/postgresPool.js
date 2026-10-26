@@ -58,8 +58,9 @@ function createPostgresPool({connectionString=process.env.DATABASE_URL,pgModule}
     release
   });
   async function acquire(){
+    // No modificar el estado de sesión: Supabase Transaction Pooler (6543)
+    // no garantiza la misma sesión entre transacciones.
     const client=await pool.connect();
-    try{await client.query("SET TIME ZONE 'America/Lima'");}catch(e){client.release();throw e;}
     return wrap(client,()=>client.release());
   }
   async function standalone(method,args){
