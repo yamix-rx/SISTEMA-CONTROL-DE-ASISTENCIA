@@ -39,7 +39,7 @@ function fakePg(){
   return {pgModule:{Pool,types:{setTypeParser(){}}},calls};
 }
 test('Una transacción de solicitud comparte conexión y termina en COMMIT',async()=>{
-  const mock=fakePg(),pool=createPostgresPool({connectionString:'postgresql://a:b@localhost:5432/db',pgModule:mock.pgModule});
+  const mock=fakePg(),pool=createPostgresPool({connectionString:'postgresql://a:b@aws-0-us-east-1.pooler.supabase.com:6543/db?sslmode=require',pgModule:mock.pgModule});
   const tx=await pool.beginRequestTransaction();
   await tx.run(async()=>{
     const [r]=await pool.query('INSERT INTO empresas(razon_social) VALUES(?)',['SBSS']);
@@ -54,7 +54,7 @@ test('Una transacción de solicitud comparte conexión y termina en COMMIT',asyn
   await pool.end();
 });
 test('Una solicitud de ROLLBACK impide COMMIT',async()=>{
-  const mock=fakePg(),pool=createPostgresPool({connectionString:'postgresql://a:b@localhost:5432/db',pgModule:mock.pgModule});
+  const mock=fakePg(),pool=createPostgresPool({connectionString:'postgresql://a:b@aws-0-us-east-1.pooler.supabase.com:6543/db?sslmode=require',pgModule:mock.pgModule});
   const tx=await pool.beginRequestTransaction();
   await tx.run(async()=>{const cx=await pool.getConnection();await cx.rollback();cx.release();});
   await tx.complete(true);
