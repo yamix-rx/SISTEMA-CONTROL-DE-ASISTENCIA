@@ -19,6 +19,8 @@ router.post('/generar/vista-previa', controller.vistaGenerada);
 router.post('/generar/pdf', controller.pdfGenerado);
 router.get('/catalogos', controller.catalogos);
 router.get('/', controller.listar);
+router.post('/preparar-subida',controller.prepararSubida);
+router.post('/confirmar-subida',controller.confirmarSubida);
 router.post('/', controller.subir);
 router.get('/:id/archivo', controller.archivo);
 router.get('/:id/descargar', controller.descargar);
