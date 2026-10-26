@@ -10,6 +10,10 @@ backend/backups/
 artifacts/validacion/
 tmp_documentos/
 Documentos/
+!backend/assets/documentos/
+!backend/assets/documentos/certificados/
+!backend/assets/documentos/certificados/*.png
+!backend/assets/documentos/certificados/README.md
 *.env
 .env.*
 !.env.example

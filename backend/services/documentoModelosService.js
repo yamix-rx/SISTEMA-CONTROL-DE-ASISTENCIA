@@ -21,6 +21,8 @@ const CAMPOS_MODELO = Object.freeze([
   { clave: 'destinatario_cargo', etiqueta: 'Cargo del destinatario', tipo: 'text', maximo: 180 },
   { clave: 'ciudad', etiqueta: 'Ciudad de suscripción', tipo: 'text', maximo: 120 },
   { clave: 'duracion', etiqueta: 'Plazo de duración', tipo: 'text', maximo: 180 },
+  { clave: 'actividades', etiqueta: 'Actividades realizadas (una por línea)', tipo: 'textarea', maximo: 10000 },
+  { clave: 'lema_anual', etiqueta: 'Lema institucional o del año (opcional)', tipo: 'text', maximo: 300 },
   { clave: 'horario', etiqueta: 'Horario de la pasantía (días y horas)', tipo: 'textarea', maximo: 1200 },
   { clave: 'institucion_ruc', etiqueta: 'RUC del centro de formación', tipo: 'text', maximo: 11 },
   { clave: 'institucion_direccion', etiqueta: 'Domicilio del centro de formación', tipo: 'text', maximo: 350 },
@@ -283,6 +285,7 @@ function modelosCarrera(carrera) {
     duracion: 'Aproximadamente (03) tres meses'
   };
   return [
+    { codigo: 'constancia_practicas', prefijo: 'constancia', etiqueta: 'Constancia de prácticas · Convenio y plan UPN', titulo: 'CONVENIO DE PASANTÍA EN LA EMPRESA', cuerpo: `${CONVENIO}\fMODELO DE PLAN DE CAPACITACIÓN\n\n${plan}` },
     { codigo: 'convenio_pasantia', prefijo: 'convenio', etiqueta: 'Convenio y plan de capacitación', titulo: 'CONVENIO DE PASANTÍA EN LA EMPRESA', cuerpo: `${CONVENIO}\fMODELO DE PLAN DE CAPACITACIÓN\n\n${plan}` },
     { codigo: 'plan_capacitacion', prefijo: 'plan', etiqueta: 'Plan de capacitación', titulo: 'MODELO DE PLAN DE CAPACITACIÓN', cuerpo: plan }
   ].map(tipo => ({
@@ -291,10 +294,11 @@ function modelosCarrera(carrera) {
     codigo: tipo.codigo,
     carrera: carrera.nombre,
     carrera_aliases: [...carrera.aliases],
+    actividades_sugeridas: carrera.actividades.map(actividad => '- ' + actividad).join('\n'),
     titulo: tipo.titulo,
     cuerpo: tipo.cuerpo,
     fuente: carrera.fuente,
-    incluye_plan: tipo.codigo === 'convenio_pasantia',
+    incluye_plan: tipo.codigo !== 'plan_capacitacion',
     datos_predeterminados: { ...predeterminados },
     campos_requeridos: camposRequeridos(tipo.cuerpo),
     estilo: 'formal'
@@ -302,16 +306,28 @@ function modelosCarrera(carrera) {
 }
 
 function modelosPracticas(empresa) {
-  return Object.entries(plantillasPracticas).map(([codigo, plantilla]) => ({
-    id: `${codigo}_${empresa.clave}`,
+  const plantilla = plantillasPracticas.culminacion;
+  const fuentes = {
+    sbss: 'MODELO CERTIFICADO - SBSS.pdf', ong: 'MODELO CERTIFICADO ONG.pdf',
+    nanas: 'MODELO CERTIFICADO - NANAS Y AMAS.pdf', silsan: 'MODELO DE CERTIFICADO - SILSAN.pdf',
+    camara: 'MODELO DE CERTIFICADO - SBSS CAMARA DE CONCILIACION Y ARBITRAJE.pdf'
+  };
+  const cuerpo = empresa.clave === 'nanas'
+    ? plantilla.cuerpo.replace('Se le otorga a:', 'Se hace constar que:')
+      .replace('dentro de nuestra empresa {{empresa}}, con RUC {{ruc}},', 'dentro de nuestra empresa {{empresa}}, con RUC {{ruc}}, ubicada en {{empresa_direccion}},')
+      + '\n{{representante_cargo}}\nContacto: {{supervisor_telefono}}'
+    : plantilla.cuerpo;
+  return [{
+    id: `culminacion_${empresa.clave}`,
     nombre: `${plantilla.nombre} · ${empresa.nombre}`,
-    codigo, empresa_clave: empresa.clave, empresa_ruc: empresa.ruc,
+    codigo: 'culminacion', empresa_clave: empresa.clave, empresa_ruc: empresa.ruc,
     empresa_aliases: [...empresa.aliases],
-    titulo: plantilla.titulo, cuerpo: plantilla.cuerpo,
+    titulo: empresa.clave === 'nanas' ? 'CONSTANCIA DE PASANTÍA' : plantilla.titulo, cuerpo,
+    fuente: fuentes[empresa.clave],
     datos_predeterminados: { ...datosEmpresa(empresa), ciudad: 'Trujillo' },
-    campos_requeridos: camposRequeridos(plantilla.cuerpo).filter(campo => campo !== 'lugar_fecha'),
+    campos_requeridos: camposRequeridos(cuerpo).filter(campo => !['lugar_fecha', 'lema_anual'].includes(campo)),
     estilo: 'formal', logo: empresa.clave
-  }));
+  }];
 }
 
 const MODELOS = [...datos.empresas.map(modeloCarta), ...datos.empresas.flatMap(modelosPracticas), ...datos.carreras.flatMap(modelosCarrera)];
@@ -370,9 +386,9 @@ function resolverModelo({ codigo, empresa, ruc, carrera, modelo_id } = {}) {
     if (modelo.carrera && normalizar(carrera) && modelo.carrera !== carreraEncontrada?.nombre) {
       throw incompatible('El modelo seleccionado no corresponde a la carrera del estudiante.');
     }
-  } else if (['aceptacion', 'constancia_practicas', 'culminacion'].includes(codigo) && empresaEncontrada) {
+  } else if (['aceptacion', 'culminacion'].includes(codigo) && empresaEncontrada) {
     modelo = MODELOS.find(item => item.codigo === codigo && item.empresa_clave === empresaEncontrada.clave);
-  } else if (['convenio_pasantia', 'plan_capacitacion'].includes(codigo) && carreraEncontrada) {
+  } else if (['constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) && carreraEncontrada) {
     modelo = MODELOS.find(item => item.codigo === codigo && item.carrera === carreraEncontrada.nombre);
   }
   if (!modelo) return null;
@@ -380,6 +396,7 @@ function resolverModelo({ codigo, empresa, ruc, carrera, modelo_id } = {}) {
   // Se ofrecen únicamente datos corporativos del modelo de la empresa resuelta.
   // La razón social y el RUC siempre proceden del registro seleccionado en la BD.
   if (empresaEncontrada) Object.assign(resultado.datos_predeterminados, datosEmpresa(empresaEncontrada));
+  if (codigo === 'culminacion' && carreraEncontrada) resultado.datos_predeterminados.actividades = carreraEncontrada.actividades.map(actividad => '- ' + actividad).join('\n');
   return resultado;
 }
 

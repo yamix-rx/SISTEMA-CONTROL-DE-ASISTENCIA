@@ -44,6 +44,11 @@ Si aparece **Archivo no disponible: volver a cargar**, el registro histórico ex
 
 En **Generar documentos**, elegir aceptación, constancia o culminación, persona, empresa, área, cargo, fecha y horas. Revisar la vista previa y descargar PDF. Las plantillas son editables. Si cambian después de la vista previa, se exige regenerarla. Para incorporar el PDF generado al expediente, cargarlo en Documentos con el tipo correspondiente.
 
+- **Constancia de prácticas:** genera el convenio de pasantía UPN con su plan de capacitación. El modelo se selecciona por carrera; están disponibles Sistemas, Industrial, Administración de Empresas, Administración y Marketing, Comunicación Audiovisual, Comunicación y Periodismo, Derecho y Administración y Negocios Internacionales. Completar horario, representantes y condiciones que falten. Utiliza la fecha de vencimiento del convenio registrada en la ficha, si existe.
+- **Carta de culminación:** genera el certificado de la empresa (SBSS, ONG, Nanas y Amas, Silsan o Cámara). Completa fechas de inicio y finalización, horas realizadas, carrera e institución. Revisar las actividades sugeridas y ajustarlas a las efectivamente realizadas. El lema institucional es opcional. ONG conserva el formato A4 horizontal del modelo.
+
+Los ajustes realizados antes de generar se aplican únicamente al documento. **Editar datos** permite volver al formulario; **Descargar PDF** e **Imprimir** usan el mismo archivo de la vista previa.
+
 ## Dashboard y reportes
 
 El inicio de RR. HH. muestra personal, asistencia y seguimiento de prácticas. Las alertas incluyen metas desde el 80 %, prácticas completadas, convenios próximos a vencer en 30 días, acumulación de al menos tres tardanzas mensuales y documentación pendiente. Los umbrales son reglas de seguimiento del sistema.

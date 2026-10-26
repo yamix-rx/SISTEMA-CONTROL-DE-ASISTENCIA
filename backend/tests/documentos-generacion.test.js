@@ -16,7 +16,9 @@ const cuentas = new Map([
 const empleado = {
   id: 101, nombres: 'María José', apellidos: 'Núñez Agüero', tipo_documento: 'DNI',
   numero_documento: '99999991', tipo_vinculo: 'practicante_preprofesional', empresa_id: 10,
-  fecha_ingreso: '2026-06-01', fecha_finalizacion: '2026-09-19', horas_meta: 320
+  fecha_ingreso: '2026-06-01', fecha_finalizacion: '2026-09-19', horas_meta: 320,
+  carrera: 'Ingeniería de Sistemas', institucion_educativa: 'Universidad Privada del Norte',
+  direccion: 'Domicilio de prueba 123', fecha_nacimiento: '2002-01-10'
 };
 const pool = { async query(sql, params = []) {
   consultas.push({ sql, params });
@@ -58,7 +60,11 @@ async function request(path, { usuario = 1, method = 'GET', body } = {}) {
   return { status: response.status, headers: response.headers, body: response.headers.get('content-type')?.includes('application/json') ? JSON.parse(buffer.toString()) : buffer };
 }
 function payload(extra = {}) {
-  return { codigo: 'aceptacion', empleado_id: 101, empresa_id: 10, area_id: 20, cargo_id: 30, fecha: '2026-09-19', horas: 245.5, ...extra };
+  return { codigo: 'aceptacion', empleado_id: 101, empresa_id: 10, area_id: 20, cargo_id: 30, fecha: '2026-09-19', horas: 245.5,
+    datos_documento: { empresa_direccion: 'Empresa de prueba 456', actividad_economica: 'Servicios de prueba',
+      representante: 'Representante de Prueba', representante_documento: '99990002', representante_cargo: 'Gerente',
+      supervisor: 'Supervisor de Prueba', supervisor_telefono: '900 000 000', horario: 'Lunes a viernes, 09:00 a 13:00',
+      actividades: '- Soporte a usuarios.\n- Mantenimiento de equipos.' }, ...extra };
 }
 function comprobarPdf(buffer) {
   const text = buffer.toString('ascii');
@@ -100,7 +106,10 @@ test('genera aceptación, constancia y culminación con datos seleccionados y PD
     const preview = await request('/generar/vista-previa', { usuario: 2, method: 'POST', body });
     assert.equal(preview.status, 200);
     assert.match(preview.body.documento.cuerpo, /María José Núñez Agüero/);
-    assert.match(preview.body.documento.cuerpo, /245[.,]5/);
+    if (codigo === 'constancia_practicas') {
+      assert.equal(preview.body.documento.diseno, 'convenio');
+      assert.match(preview.body.documento.cuerpo, /NOVENO:|MODELO DE PLAN DE CAPACITACIÓN/);
+    } else assert.match(preview.body.documento.cuerpo, /245[.,]5/);
     assert.match(preview.body.documento.cuerpo, /19 de se(?:p)?tiembre de 2026/);
     assert.ok(!preview.body.documento.cuerpo.includes('{{'));
     const result = await request('/generar/pdf', { usuario: 2, method: 'POST', body: { ...body, revision_plantilla: preview.body.documento.revision_plantilla } });

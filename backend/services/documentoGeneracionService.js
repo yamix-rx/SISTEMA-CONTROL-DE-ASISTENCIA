@@ -5,7 +5,7 @@ const { catalogoModelos, resolverModelo, resolverEmpresa, CAMPOS_MODELO } = requ
 const plantillasPracticas = require('./documentoPlantillasPracticas');
 
 const CAMPOS = Object.freeze([...new Set(['trabajador', 'documento', 'empresa', 'ruc', 'fecha', 'fecha_ingreso', 'fecha_finalizacion', 'cargo', 'area', 'horas', 'horas_meta', 'formacion_academica', 'lugar_fecha', ...CAMPOS_MODELO.map(campo => campo.clave)])]);
-const CAMPOS_CALCULADOS_OPCIONALES = new Set(['formacion_academica', 'lugar_fecha']);
+const CAMPOS_CALCULADOS_OPCIONALES = new Set(['formacion_academica', 'lugar_fecha', 'lema_anual']);
 const NOMBRES_DOCUMENTOS = Object.freeze({ aceptacion: 'Carta de aceptación', constancia_practicas: 'Constancia de prácticas',
   culminacion: 'Carta de culminación de prácticas', carta: 'Carta de presentación', horas: 'Constancia de horas', trabajo: 'Certificado de trabajo',
   convenio_pasantia: 'Convenio de pasantía', plan_capacitacion: 'Plan de capacitación' });
@@ -130,7 +130,7 @@ function comprobarDatosModelo(modelo, datos) {
   if (faltantes.length) throw error('Completa los datos del documento: ' + faltantes.map(clave => CAMPOS_MODELO.find(campo => campo.clave === clave)?.etiqueta || clave).join(', ') + '.');
   if (datos.fecha_ingreso && datos.fecha_finalizacion && fechaIso(datos.fecha_finalizacion) < fechaIso(datos.fecha_ingreso)) throw error('La fecha de finalización no puede ser anterior a la fecha de inicio.');
   if (datos.fecha_nacimiento && datos.fecha_ingreso && fechaIso(datos.fecha_nacimiento) >= fechaIso(datos.fecha_ingreso)) throw error('La fecha de nacimiento debe ser anterior al inicio de las prácticas.');
-  if (['convenio_pasantia', 'plan_capacitacion'].includes(modelo.codigo)) {
+  if (['constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(modelo.codigo)) {
     const institucion = String(datos.institucion_educativa || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     if (!/(?:\bupn\b|universidad privada del norte)/.test(institucion)) throw error('Este modelo corresponde a la Universidad Privada del Norte (UPN). Revisa la institución educativa del colaborador.');
   }
@@ -165,11 +165,11 @@ async function preparar(body = {}) {
   if (Number(empleado.empresa_id) !== empresaId) throw error('La empresa del documento debe corresponder a la empresa registrada del colaborador.');
   const identidad = resolverEmpresa({ empresa: estructura[0].empresa, ruc: estructura[0].ruc });
   if (codigo === 'trabajo' && empleado.tipo_vinculo !== 'trabajador') throw error('El certificado de trabajo corresponde a colaboradores con vínculo de trabajador.');
-  if (['convenio_pasantia', 'plan_capacitacion'].includes(codigo) && !String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante')) throw error('Este documento corresponde a colaboradores con vínculo de practicante.');
+  if (['constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) && !String(empleado.tipo_vinculo || '').toLowerCase().startsWith('practicante')) throw error('Este documento corresponde a colaboradores con vínculo de practicante.');
   const modelo = ['aceptacion', 'constancia_practicas', 'culminacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo)
     ? resolverModelo({ codigo, empresa: estructura[0].empresa, ruc: estructura[0].ruc, carrera: adicionales.carrera ?? empleado.carrera, modelo_id: body.modelo_id }) : null;
   if (body.modelo_id && !modelo) throw error('El modelo seleccionado no corresponde al tipo de documento.');
-  if (!modelo && ['convenio_pasantia', 'plan_capacitacion'].includes(codigo)) throw error('No hay un modelo UPN disponible para la carrera seleccionada.');
+  if (!modelo && ['constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo)) throw error('No hay un modelo UPN disponible para la carrera seleccionada.');
   const plantilla = templates.find(item => item.codigo === (modelo?.id || codigo));
   if (body.revision_plantilla && body.revision_plantilla !== plantilla.revision) throw error('La plantilla cambió. Abre una nueva vista previa antes de descargar.', 409);
   // Aun las plantillas antiguas de la base se procesan como texto, nunca como HTML.
@@ -181,15 +181,15 @@ async function preparar(body = {}) {
     direccion: empleado.direccion, fecha_nacimiento: fechaIso(empleado.fecha_nacimiento),
     puesto: empleado.puesto || estructura[0].cargo,
     fecha, fecha_ingreso: fechaIso(empleado.fecha_ingreso),
-    fecha_finalizacion: fechaIso(['aceptacion', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) ? empleado.fecha_vencimiento_convenio || empleado.fecha_finalizacion : empleado.fecha_finalizacion),
+    fecha_finalizacion: fechaIso(['aceptacion', 'constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) ? empleado.fecha_vencimiento_convenio || empleado.fecha_finalizacion : empleado.fecha_finalizacion),
     horas, horas_meta: Number(empleado.horas_meta || 0)
   };
   // Los modelos aportan únicamente datos institucionales. Los datos registrados y
   // los ajustes explícitos prevalecen; las condiciones no se infieren de contratos.
   const datos = { ...(identidad?.datos_predeterminados || {}), ...(modelo?.datos_predeterminados || {}),
     ...Object.fromEntries(Object.entries(originales).filter(([, valor]) => valor !== null && valor !== undefined && valor !== '')), ...adicionales };
-  const requeridos = modelo || plantilla.personalizada ? [...new Set([
-    ...(modelo?.campos_requeridos || []),
+  const requeridos = modelo || plantilla.personalizada || codigo === 'culminacion' ? [...new Set([
+    ...(plantilla.personalizada ? [] : modelo?.campos_requeridos || []),
     ...[...`${plantilla.titulo}\n${plantilla.cuerpo}`.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1])
   ])].filter(campo => !CAMPOS_CALCULADOS_OPCIONALES.has(campo)) : [];
   comprobarDatosModelo({ ...(modelo || {}), campos_requeridos: requeridos }, datos);
@@ -204,7 +204,7 @@ async function preparar(body = {}) {
   campos.formacion_academica = [datos.carrera ? `Carrera: ${datos.carrera}.` : '',
     datos.institucion_educativa ? `Institución educativa: ${datos.institucion_educativa}.` : ''].filter(Boolean).join('\n');
   campos.lugar_fecha = `${datos.ciudad ? datos.ciudad + ', ' : ''}${formatoFecha(fecha)}`;
-  const diseno = ['convenio_pasantia', 'plan_capacitacion'].includes(codigo) ? 'convenio' : 'carta';
+  const diseno = ['constancia_practicas', 'convenio_pasantia', 'plan_capacitacion'].includes(codigo) ? 'convenio' : codigo === 'culminacion' ? 'certificado' : 'carta';
   const firmante = diseno === 'convenio' ? datos.representante || datos.supervisor : datos.supervisor || datos.representante;
   const normalizarNombre = valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   const firmantesFuente = [identidad?.datos_predeterminados?.supervisor, identidad?.datos_predeterminados?.representante].filter(Boolean);
@@ -214,9 +214,10 @@ async function preparar(body = {}) {
     codigo, titulo: completar(plantilla.titulo), cuerpo: completar(plantilla.cuerpo),
     empresa: campos.empresa, trabajador: campos.trabajador, fecha,
     carrera: datos.carrera || '', institucion_educativa: datos.institucion_educativa || '', tipo_documento_nombre: NOMBRES_DOCUMENTOS[codigo],
-    modelo_id: modelo?.id || null, modelo_nombre: diseno === 'carta'
-      ? `${NOMBRES_DOCUMENTOS[codigo]} · ${campos.empresa}` : modelo.nombre,
+    modelo_id: modelo?.id || null, modelo_nombre: diseno === 'convenio' ? modelo.nombre : `${NOMBRES_DOCUMENTOS[codigo]} · ${campos.empresa}`,
     estilo: 'formal', diseno, logo: identidad?.logo || modelo?.logo || null,
+    lema_anual: datos.lema_anual || '',
+    papel: codigo === 'culminacion' && identidad?.clave === 'ong' ? 'A4 horizontal · 297 × 210 mm' : 'A4 · 210 × 297 mm',
     firma, firmante_empresa: firmante || '',
     revision_plantilla: plantilla.revision,
     nombre_archivo: `${codigo}-${empleado.numero_documento}-${fecha}.pdf`.replace(/[\\/\r\n]/g, '_')

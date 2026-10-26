@@ -578,13 +578,18 @@
     ['carrera', 'institucion_educativa', 'direccion', 'fecha_nacimiento', 'fecha_ingreso'].forEach(key => {
       if (employee[key]) defaults[key] = employee[key];
     });
-    const endDate = $('generarTipo').value === 'aceptacion' ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
+    const endDate = ['aceptacion', 'constancia_practicas'].includes($('generarTipo').value) ? employee.fecha_vencimiento_convenio || employee.fecha_finalizacion : employee.fecha_finalizacion;
     if (endDate) defaults.fecha_finalizacion = endDate;
     if (company.direccion) defaults.empresa_direccion = company.direccion;
     if (model?.carrera) defaults.carrera = model.carrera;
-    const required = new Set(model?.campos_requeridos || []);
+    if ($('generarTipo').value === 'culminacion') {
+      const careerModel = matchingCareerModel((state.generationCatalogs.modelos || []).filter(item => item.codigo === 'constancia_practicas'));
+      defaults.actividades = careerModel?.actividades_sugeridas || '';
+    }
+    const required = new Set(template.personalizada ? [] : model?.campos_requeridos || []);
     const placeholders = new Set([...`${template.titulo || ''}\n${template.cuerpo || ''}`.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
-    if (model || template.personalizada) placeholders.forEach(key => required.add(key));
+    if (model || template.personalizada || $('generarTipo').value === 'culminacion') placeholders.forEach(key => required.add(key));
+    required.delete('lema_anual');
     if (placeholders.has('formacion_academica')) { placeholders.add('carrera'); placeholders.add('institucion_educativa'); }
     if (placeholders.has('lugar_fecha')) placeholders.add('ciudad');
     const groups = new Map();
@@ -611,20 +616,30 @@
       input.value = input.type === 'date' ? dateInputValue(defaults[field.clave]) : String(defaults[field.clave] ?? '');
       label.htmlFor = input.id;
       label.appendChild(input);
+      if (field.clave === 'actividades') label.appendChild(node('span', 'field-help', 'Revisa las actividades sugeridas según la carrera y conserva las que realizó el colaborador.'));
       groups.get(groupName).appendChild(label);
     });
   }
 
+  function matchingCareerModel(models) {
+    const career = normalizedName(state.generationFicha?.empleado?.carrera);
+    return career ? models.find(model => (model.carrera_aliases || [model.carrera]).some(alias => normalizedName(alias) === career)) || null : null;
+  }
+
   function fillGenerationModels() {
+    const convention = $('generarTipo').value === 'constancia_practicas';
     const available = (state.generationCatalogs?.modelos || []).filter(item => item.codigo === $('generarTipo').value);
-    const selected = state.generationFicha?.empleado ? matchingCompanyModel(available) : null;
-    const models = selected ? [selected] : [];
+    const selected = state.generationFicha?.empleado ? (convention ? matchingCareerModel(available) : matchingCompanyModel(available)) : null;
+    const models = convention && state.generationFicha?.empleado ? available : selected ? [selected] : [];
     $('generarModeloSelector').hidden = !models.length;
-    fillSelect('generarModelo', models, 'nombre', 'Plantilla general del documento');
-    $('generarModelo').required = Boolean(selected);
-    $('generarModelo').options[0].disabled = Boolean(selected);
+    fillSelect('generarModelo', models, 'nombre', convention ? 'Selecciona la carrera del convenio UPN' : 'Plantilla general del documento');
+    $('generarModelo').required = convention || Boolean(selected);
+    $('generarModelo').options[0].disabled = convention || Boolean(selected);
     $('generarModelo').value = selected?.id || '';
-    $('generarModeloAyuda').textContent = selected
+    $('generarModeloAyuda').textContent = convention
+      ? selected ? 'Convenio UPN y plan de capacitación seleccionados según la carrera del colaborador. Revisa las condiciones antes de emitir.'
+        : 'Selecciona una de las carreras disponibles para generar el convenio UPN y su plan de capacitación.'
+      : selected
       ? 'Plantilla seleccionada automáticamente según la empresa del colaborador. Revisa los datos antes de emitir.'
       : state.generationFicha?.empleado ? 'No hay una plantilla específica para esta empresa. Se usará la plantilla general del documento.'
         : 'Selecciona un colaborador para cargar la plantilla de su empresa.';
@@ -644,7 +659,7 @@
   function fillGenerationHours() {
     const progress = state.generationFicha?.progresoHoras;
     if (!progress) return;
-    $('generarHoras').value = Number($('generarTipo').value === 'aceptacion' ? progress.horasMeta : progress.horasRealizadas) || 0;
+    $('generarHoras').value = Number(['aceptacion', 'constancia_practicas'].includes($('generarTipo').value) ? progress.horasMeta : progress.horasRealizadas) || 0;
     $('generarHorasAyuda').textContent = 'Expediente: ' + (Number(progress.horasRealizadas) || 0) + ' horas registradas de ' + (Number(progress.horasMeta) || 0) + ' previstas. Puedes ajustar las horas de este documento antes de emitirlo.';
   }
 
@@ -734,7 +749,7 @@
       openPdfViewer(blob, {
         ...documento, carrera: career, editable: true,
         tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
-        papel: 'A4 · 210 × 297 mm'
+        papel: documento.papel || 'A4 · 210 × 297 mm'
       });
     } catch (error) { formError('errorGenerar', friendlyError(error)); }
     finally {
