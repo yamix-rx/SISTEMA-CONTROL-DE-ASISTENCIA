@@ -71,6 +71,11 @@
       }
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.mensaje || 'No se pudo iniciar sesión. Vuelve a intentar.');
+      if (data.requiere_cambio_clave === true && typeof data.token === 'string') {
+        sessionStorage.setItem('sbss_token_cambio', data.token);
+        location.replace(new URL('cambiar-clave.html', current.origin + '/').href);
+        return;
+      }
       const panels = ['Dashboard.html', 'RecursosHumanos.html', 'MiPanel.html'];
       if (!data.acceso || !panels.includes(data.acceso.panel) || data.redirectUrl !== data.acceso.panel || typeof data.token !== 'string' || !data.token || !data.usuario) {
         throw new Error('Tu cuenta no tiene un panel habilitado. Contacta al administrador.');
