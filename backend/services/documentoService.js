@@ -23,7 +23,7 @@ function idPositivo(valor, nombre = 'identificador') {
 }
 
 function construirFiltros(query) {
-  const condiciones = ['(td.es_obligatorio = 1 OR de.id IS NOT NULL)'];
+  const condiciones = ['(td.es_obligatorio = TRUE OR de.id IS NOT NULL)'];
   const params = [];
   if (query.q !== undefined && query.q !== '') {
     if (typeof query.q !== 'string' || query.q.length > 150) throw errorSolicitud('La búsqueda admite un máximo de 150 caracteres.');
