@@ -1,18 +1,19 @@
 const pool = require('../config/database');
 
+const POSTGRES = Boolean(process.env.DATABASE_URL);
 const ESTADOS = new Set(['borrador', 'programada', 'en_curso', 'finalizada', 'cancelada']);
 const MODALIDADES = new Set(['presencial', 'virtual', 'hibrida']);
 const ESTADOS_PARTICIPANTE = new Set(['inscrito', 'en_curso', 'aprobado', 'desaprobado', 'no_asistio', 'cancelado']);
 
 // Las fechas y horas de la programación se interpretan en Perú (UTC-05).
 // Sin hora, el inicio es a medianoche y el fin incluye todo el último día.
-const AHORA_PERU_SQL = "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
+const AHORA_PERU_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')" : "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
 const ESTADO_HORARIO_SQL = `CASE
   WHEN cap.estado NOT IN ('programada', 'en_curso') THEN cap.estado
   WHEN ${AHORA_PERU_SQL} >= CASE WHEN cap.hora_fin IS NULL
-    THEN TIMESTAMP(DATE_ADD(cap.fecha_fin, INTERVAL 1 DAY), '00:00:00')
-    ELSE TIMESTAMP(cap.fecha_fin, cap.hora_fin) END THEN 'finalizada'
-  WHEN ${AHORA_PERU_SQL} >= TIMESTAMP(cap.fecha_inicio, COALESCE(cap.hora_inicio, '00:00:00')) THEN 'en_curso'
+    THEN ${POSTGRES ? "(cap.fecha_fin + INTERVAL '1 day')" : "TIMESTAMP(DATE_ADD(cap.fecha_fin, INTERVAL 1 DAY), '00:00:00')"}
+    ELSE ${POSTGRES ? "(cap.fecha_fin + cap.hora_fin)" : "TIMESTAMP(cap.fecha_fin, cap.hora_fin)"} END THEN 'finalizada'
+  WHEN ${AHORA_PERU_SQL} >= ${POSTGRES ? "(cap.fecha_inicio + COALESCE(cap.hora_inicio,TIME '00:00:00'))" : "TIMESTAMP(cap.fecha_inicio, COALESCE(cap.hora_inicio, '00:00:00'))"} THEN 'en_curso'
   ELSE cap.estado END`;
 
 function errorHttp(status, message) {
@@ -188,7 +189,7 @@ async function listar(filtros = {}) {
            SUM(CASE WHEN cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
            SUM(CASE WHEN cp.estado = 'no_asistio' THEN 1 ELSE 0 END) AS no_asistieron
     ${from}
-    GROUP BY cap.id
+    GROUP BY cap.id ${POSTGRES ? ', emp.razon_social' : ''}
     ORDER BY cap.fecha_inicio DESC, cap.id DESC
     LIMIT ? OFFSET ?
   `, [...params, limite, offset]);
@@ -364,7 +365,7 @@ async function agregarParticipantes(id, body) {
     if (['finalizada', 'cancelada'].includes(cap.estado)) throw errorHttp(409, 'No se pueden agregar participantes a una capacitación finalizada o cancelada.');
 
     const [empleados] = await connection.query(`
-      SELECT id, empresa_id, estado FROM empleados WHERE id IN (?)
+      SELECT id, empresa_id, estado FROM empleados WHERE id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'}
     `, [ids]);
     const encontrados = new Set(empleados.map(e => Number(e.id)));
     const faltantes = ids.filter(x => !encontrados.has(x));
@@ -376,7 +377,7 @@ async function agregarParticipantes(id, body) {
 
     const [existentes] = await connection.query(`
       SELECT empleado_id, estado FROM capacitacion_participantes
-      WHERE capacitacion_id = ? AND empleado_id IN (?)
+      WHERE capacitacion_id = ? AND empleado_id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'}
     `, [capacitacionId, ids]);
     const activos = new Set(existentes.filter(e => e.estado !== 'cancelado').map(e => Number(e.empleado_id)));
     const cancelados = new Set(existentes.filter(e => e.estado === 'cancelado').map(e => Number(e.empleado_id)));
