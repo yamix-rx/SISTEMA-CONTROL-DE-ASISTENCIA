@@ -14,7 +14,7 @@ const http=app.listen(0,'127.0.0.1',async()=>{
   try{
     let r=await fetch(url+'/api/auth/disponibilidad');
     assert.equal(r.status,200);
-    assert.match(r.headers.get('content-type'),'application/json');
+    assert.ok(r.headers.get('content-type')?.includes('application/json'));
     const body=await r.json();
     assert.deepEqual(body,{ok:true,servicio:'sbss-auth'});
     assert.equal(r.headers.get('x-content-type-options'),'nosniff');
