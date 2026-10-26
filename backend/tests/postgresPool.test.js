@@ -62,3 +62,16 @@ test('Una solicitud de ROLLBACK impide COMMIT',async()=>{
   assert.equal(mock.calls.filter(x=>x.text==='COMMIT').length,0);
   await pool.end();
 });
+
+test('Supabase TLS exige certificado raíz auténtico y validación del hostname',()=>{
+  const {pgTlsOptions}=require('../config/postgresPool');
+  const input='postgresql://postgres.test:ejemplo@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require';
+  const cfg=pgTlsOptions(input);
+  assert.equal(cfg.ssl.rejectUnauthorized,true);
+  assert.equal(cfg.ssl.servername,'aws-0-us-east-1.pooler.supabase.com');
+  assert.match(cfg.ssl.ca,/-----BEGIN CERTIFICATE-----/);
+  assert.ok(!cfg.connectionString.includes('sslmode='));
+  assert.ok(!cfg.connectionString.includes('ejemplo@') === false);
+  assert.throws(()=>pgTlsOptions(input.replace('sslmode=require','sslmode=disable')),/TLS/);
+  assert.throws(()=>pgTlsOptions(input.replace('pooler.supabase.com','example.net')),/Supabase/);
+});
