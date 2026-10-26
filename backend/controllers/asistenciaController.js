@@ -33,7 +33,8 @@ exports.registrarMarcacion = async (req,res) => {
     if (!anterior && empleado.estado!=='activo') throw r.error('Solo puede agregar asistencia a un trabajador activo.');
     let horario=null;
     if (!anterior) {
-      const [horarios]=await connection.query('SELECT hora_entrada,hora_salida,tolerancia_minutos FROM horarios WHERE empleado_id=? AND dia_semana=WEEKDAY(?)+1 AND activo=TRUE',[empleadoId,fecha]);
+      const diaSemana = process.env.DATABASE_URL ? 'EXTRACT(ISODOW FROM CAST(? AS DATE))' : 'WEEKDAY(?)+1';
+      const [horarios]=await connection.query(`SELECT hora_entrada,hora_salida,tolerancia_minutos FROM horarios WHERE empleado_id=? AND dia_semana=${diaSemana} AND activo=TRUE`,[empleadoId,fecha]);
       horario=horarios[0]||null;
     }
     const confirmacion = req.body.programacion_historica === undefined ? null : r.confirmarProgramacionHistorica(req.body.programacion_historica, anterior);
