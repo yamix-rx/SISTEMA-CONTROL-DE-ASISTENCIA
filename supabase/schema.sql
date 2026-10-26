@@ -278,6 +278,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- Asegurar search_path y restringir EXECUTE: evita avisos del auditor de seguridad.
+ALTER FUNCTION public.sbss_touch_updated_at() SET search_path = '';
+REVOKE EXECUTE ON FUNCTION public.sbss_touch_updated_at() FROM PUBLIC, anon, authenticated;
+
 CREATE TRIGGER trg_empleados_updated_at BEFORE UPDATE ON public.empleados
 FOR EACH ROW EXECUTE FUNCTION public.sbss_touch_updated_at();
 CREATE TRIGGER trg_asistencias_updated_at BEFORE UPDATE ON public.asistencias
