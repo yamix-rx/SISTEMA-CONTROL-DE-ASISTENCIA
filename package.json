@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "npm --prefix frontend ci && npm --prefix frontend run build && node scripts/build-vercel.js",
-    "test:postgres": "node --test backend/tests/postgresPool.test.js"
+    "test:postgres": "node --test backend/tests/postgresPool.test.js backend/tests/storagePrivadoService.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
