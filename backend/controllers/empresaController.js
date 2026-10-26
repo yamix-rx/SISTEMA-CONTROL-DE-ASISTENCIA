@@ -29,7 +29,7 @@ exports.listarEmpresas = async (req, res) => {
         e.razon_social,
         e.ruc,
         e.direccion,
-        CASE WHEN MAX(e.logo_data IS NOT NULL) = 1 THEN CONCAT('/api/empresas/', e.id, '/logo') ELSE NULL END AS logo_url,
+        CASE WHEN ${process.env.DATABASE_URL ? 'BOOL_OR(e.logo_data IS NOT NULL)' : 'MAX(e.logo_data IS NOT NULL) = 1'} THEN CONCAT('/api/empresas/', e.id, '/logo') ELSE NULL END AS logo_url,
         NULL AS telefono,
         NULL AS email_contacto,
         e.estado,
