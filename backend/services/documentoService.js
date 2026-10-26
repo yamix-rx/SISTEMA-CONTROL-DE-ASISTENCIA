@@ -121,13 +121,20 @@ async function revisar(id, body, usuarioId) {
   if (body.estado === 'rechazado' && !observacion) throw errorSolicitud('Indique el motivo de la observación para que se pueda corregir.');
   // La revisión sólo modifica la versión vigente en el momento de actualizar.
   // GROUP BY materializa la derivada y permite consultar la misma tabla en MySQL.
-  const [result] = await pool.query(`UPDATE documentos_empleado de
+  const pgSql = `UPDATE documentos_empleado de
+    SET estado = ?, observacion = ?, revisado_por = ?, fecha_revision = CURRENT_TIMESTAMP
+    WHERE de.id = ? AND de.id = (
+      SELECT MAX(actual.id) FROM documentos_empleado actual
+      WHERE actual.empleado_id = de.empleado_id AND actual.tipo_documento_id = de.tipo_documento_id
+    )`;
+  const mysqlSql = `UPDATE documentos_empleado de
     INNER JOIN (
       SELECT empleado_id, tipo_documento_id, MAX(id) AS ultimo_id
       FROM documentos_empleado GROUP BY empleado_id, tipo_documento_id
     ) ultima ON ultima.ultimo_id = de.id
     SET de.estado = ?, de.observacion = ?, de.revisado_por = ?, de.fecha_revision = CURRENT_TIMESTAMP
-    WHERE de.id = ?`,
+    WHERE de.id = ?`;
+  const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
     [body.estado, observacion || null, reviewerId, documentoId]);
   if (!result.affectedRows) {
     const [existentes] = await pool.query('SELECT id FROM documentos_empleado WHERE id = ? LIMIT 1', [documentoId]);
