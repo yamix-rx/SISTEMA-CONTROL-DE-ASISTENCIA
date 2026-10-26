@@ -9,6 +9,11 @@
   const canonical = ['http:', 'https:'].includes(current.protocol)
     ? new URL('/login.html', current.origin)
     : new URL('http://localhost:3000/login.html');
+  // Live Server suele ejecutarse en un puerto local distinto: mantener la
+  // redirección de desarrollo a Express:3000, nunca en HTTPS de Vercel.
+  if (current.protocol === 'http:' && current.port && current.port !== '3000') {
+    canonical.port = '3000';
+  }
   let serverReady = false, checking = false, submitting = false;
   link.href = canonical.href;
   link.textContent = 'Abrir SBSS: ' + canonical.host;
