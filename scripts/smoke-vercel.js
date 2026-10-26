@@ -18,6 +18,15 @@ const http=app.listen(0,'127.0.0.1',async()=>{
     const body=await r.json();
     assert.deepEqual(body,{ok:true,servicio:'sbss-auth'});
     assert.equal(r.headers.get('x-content-type-options'),'nosniff');
+    // Sin token no es posible leer perfiles ni preparar archivos privados.
+    for(const protectedPath of ['/api/auth/perfil','/api/documentos/preparar-subida',
+      '/api/asistencias/permisos/preparar-subida']) {
+      const options=protectedPath.includes('preparar-subida')
+        ? {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}
+        : {};
+      const denied=await fetch(url+protectedPath,options);
+      assert.equal(denied.status,401,'No se protegió '+protectedPath);
+    }
     r=await fetch(url+'/ruta-inexistente');
     assert.equal(r.status,404);
     r=await fetch(url+'/login.html');
