@@ -4,13 +4,13 @@ const r = require('./asistenciaReglas');
 const ESTADOS_LISTADO = [...r.ESTADOS, 'pendiente'];
 const POSTGRES = Boolean(process.env.DATABASE_URL);
 const AHORA_PERU_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')" : "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
-const INICIO_TURNO_SQL = POSTGRES ? '(d.fecha::timestamp + h.hora_entrada)' : 'TIMESTAMP(d.fecha,h.hora_entrada)';
-const FIN_TURNO_SQL = POSTGRES ? "(d.fecha::timestamp + h.hora_salida + CASE WHEN h.hora_salida<h.hora_entrada THEN INTERVAL '1 day' ELSE INTERVAL '0 days' END)" : 'DATE_ADD(TIMESTAMP(d.fecha,h.hora_salida), INTERVAL (h.hora_salida<h.hora_entrada) DAY)';
+const INICIO_TURNO_SQL = POSTGRES ? '(d.fecha + h.hora_entrada)' : 'TIMESTAMP(d.fecha,h.hora_entrada)';
+const FIN_TURNO_SQL = POSTGRES ? "(d.fecha + h.hora_salida + CASE WHEN h.hora_salida<h.hora_entrada THEN INTERVAL '1 day' ELSE INTERVAL '0 days' END)" : 'DATE_ADD(TIMESTAMP(d.fecha,h.hora_salida), INTERVAL (h.hora_salida<h.hora_entrada) DAY)';
 const PERMISO_TURNO_SQL = POSTGRES ? `EXISTS (
   SELECT 1 FROM permisos p WHERE p.empleado_id=e.id AND p.estado='Aprobado'
-    AND (p.fecha_inicio::timestamp + COALESCE(p.hora_desde,TIME '00:00:00')) <= ${INICIO_TURNO_SQL}
+    AND (p.fecha_inicio + COALESCE(p.hora_desde,TIME '00:00:00')) <= ${INICIO_TURNO_SQL}
     AND (CASE WHEN p.hora_hasta IS NULL THEN p.fecha_fin::timestamp + INTERVAL '1 day'
-      ELSE p.fecha_fin::timestamp + p.hora_hasta END) >= ${FIN_TURNO_SQL}
+      ELSE p.fecha_fin + p.hora_hasta END) >= ${FIN_TURNO_SQL}
 )` : `EXISTS (
   SELECT 1 FROM permisos p WHERE p.empleado_id=e.id AND p.estado='Aprobado'
     AND TIMESTAMP(p.fecha_inicio,COALESCE(p.hora_desde,'00:00:00'))<=${INICIO_TURNO_SQL}
