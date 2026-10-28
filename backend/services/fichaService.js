@@ -110,8 +110,17 @@ async function obtenerHistorial(empleadoId, filtros = {}) {
     [empleadoId, (permisosMeta.pagina - 1) * 20])
   ]);
   return { asistencias, permisos, paginacion: { asistencias: asistenciasMeta, permisos: permisosMeta },
-    resumenHistorial: { ...(resumenAsistencias[0] || {}), permisos: permisosTotal,
-      permisosSolicitados: Number(resumenPermisos[0]?.solicitados || 0), permisosAprobados: Number(resumenPermisos[0]?.aprobados || 0) } };
+    resumenHistorial: { ...(resumenAsistencias[0] || {}),
+      // COUNT devuelve bigint de tipo string en node-postgres; mantener números en la API.
+      total: asistenciasTotal,
+      asistencias: Number(resumenAsistencias[0]?.asistencias || 0),
+      faltas: Number(resumenAsistencias[0]?.faltas || 0),
+      tardanzas: Number(resumenAsistencias[0]?.tardanzas || 0),
+      minutos_tardanza: Number(resumenAsistencias[0]?.minutos_tardanza || 0),
+      horas: Number(resumenAsistencias[0]?.horas || 0),
+      permisos: permisosTotal,
+      permisosSolicitados: Number(resumenPermisos[0]?.solicitados || 0),
+      permisosAprobados: Number(resumenPermisos[0]?.aprobados || 0) } };
 }
 
 function fichaPublica(ficha) {
