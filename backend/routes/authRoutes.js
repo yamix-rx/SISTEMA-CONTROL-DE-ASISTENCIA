@@ -4,6 +4,28 @@ const authController = require('../controllers/authController');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
 // Permite identificar el servidor antes de habilitar el envío de credenciales.
+// Diagnóstico transitorio: PDF ficticio, sin datos personales ni cambios de BD.
+// Retirar inmediatamente después de comprobar Storage privado.
+router.get('/diagnostico-storage-temporal',async (_req,res)=>{
+  if(process.env.VERCEL_ENV!=='preview')return res.status(404).end();
+  const storage=require('../services/storagePrivadoService');
+  const id=require('node:crypto').randomUUID()+'.pdf';
+  let uploaded=false;
+  try {
+    const pdf=Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF','ascii');
+    await storage.subirObjeto(id,pdf,'application/pdf');
+    uploaded=true;
+    const checked=await storage.verificarContenido(id);
+    const link=await storage.urlDescarga(id,{download:true,filename:'prueba.pdf'});
+    return res.status(checked.equals(pdf)&&link.startsWith('https://')?200:503)
+      .json({ok:checked.equals(pdf)&&link.startsWith('https://')});
+  }catch(err){
+    console.error('Storage test:',err.code||err.storageStatus||err.name);
+    return res.status(503).json({ok:false,storageStatus:err.storageStatus||null});
+  }finally{
+    if(uploaded)await storage.eliminarObjeto(id).catch(()=>{});
+  }
+});
 router.get('/disponibilidad', (req, res) => res.json({ ok: true, servicio: 'sbss-auth' }));
 
 // Comprobación técnica read-only, limitada a Preview; no expone datos, credenciales ni detalles SQL.
