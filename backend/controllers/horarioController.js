@@ -32,7 +32,7 @@ exports.guardarHorarioSemanal=async(req,res)=>{
     connection=await pool.getConnection();await connection.beginTransaction();
     const [[empleado]]=await connection.query("SELECT id FROM empleados WHERE id=? AND estado='activo' FOR UPDATE",[id]);
     if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
-    const [anteriores]=await connection.query('SELECT * FROM horarios WHERE empleado_id=? AND dia_semana IN (?) FOR UPDATE',[id,dias]);
+    const [anteriores]=await connection.query((process.env.DATABASE_URL ? 'SELECT * FROM horarios WHERE empleado_id=? AND dia_semana = ANY(CAST(? AS integer[])) FOR UPDATE' : 'SELECT * FROM horarios WHERE empleado_id=? AND dia_semana IN (?) FOR UPDATE'),[id,dias]);
     if(editId){
       const [[original]]=await connection.query('SELECT * FROM horarios WHERE id=? FOR UPDATE',[editId]);
       if(!original)throw Object.assign(r.error('Horario no encontrado.'),{status:404});

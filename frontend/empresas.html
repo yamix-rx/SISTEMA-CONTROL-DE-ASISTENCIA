@@ -127,8 +127,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       </div>
       <div class="d-grid sbss-grid-cols-2 gap-2">
         <div>
-          <label class="fw-bold d-block mb-1">Teléfono</label>
-          <input id="mTelefono" class="control" disabled placeholder="No disponible">
+          <label class="fw-bold d-block mb-1" for="mTelefono">Teléfono (opcional)</label>
+          <input id="mTelefono" type="tel" class="control" maxlength="20" autocomplete="off" placeholder="Ej. +51 987 654 321">
         </div>
         <div>
           <label class="fw-bold d-block mb-1">Estado</label>
@@ -139,8 +139,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         </div>
       </div>
       <div>
-        <label class="fw-bold d-block mb-1">Correo de Contacto</label>
-        <input id="mEmail" type="email" class="control" disabled placeholder="No disponible">
+        <label class="fw-bold d-block mb-1" for="mEmail">Correo de contacto (opcional)</label>
+        <input id="mEmail" type="email" class="control" maxlength="120" autocomplete="off" placeholder="contacto@empresa.com">
       </div>
     </div>
     <div class="sbss-px-5 sbss-pb-5 d-flex justify-content-end gap-2">
@@ -176,7 +176,7 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
       renderEmpresas(listaEmpresas);
     } catch (e) {
       console.error(e);
-      tbodyEmpresas.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Error al conectar con la base de datos</td></tr>`;
+      tbodyEmpresas.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Error al conectar con la base de datos</td></tr>`;
     }
   }
 
@@ -192,7 +192,11 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         <td><strong class="text-info">${escapeHtml(e.razon_social)}</strong></td>
         <td>${escapeHtml(e.ruc || '-')}</td>
         <td>${escapeHtml(e.direccion || '-')}</td>
-        <td>${escapeHtml(e.email_contacto || e.telefono || '-')}</td>
+        <td>${e.telefono || e.email_contacto
+          ? [e.telefono ? 'Tel: ' + escapeHtml(e.telefono) : '',
+             e.email_contacto ? 'Correo: ' + escapeHtml(e.email_contacto) : '']
+              .filter(Boolean).join('<br>')
+          : '<span class="text-body-secondary">Sin contacto</span>'}</td>
         <td class="text-center fw-bold">${Number(e.total_empleados) || 0} colaboradores</td>
         <td class="text-center">
           <span class="pill ${e.estado === 'activo' ? 'ok' : 'no'}">● ${e.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>

@@ -2,6 +2,7 @@
 const r = require('../services/asistenciaReglas');
 const diaria = require('../services/asistenciaDiariaService');
 const archivos = require('../services/documentoArchivoService');
+const subidas = require('../services/subidaDirectaService');
 const { sanitizar } = require('../services/auditoriaService');
 const { ROLES } = require('../config/accessPolicy');
 function fallo(res, error) {
@@ -33,7 +34,8 @@ exports.registrarMarcacion = async (req,res) => {
     if (!anterior && empleado.estado!=='activo') throw r.error('Solo puede agregar asistencia a un trabajador activo.');
     let horario=null;
     if (!anterior) {
-      const [horarios]=await connection.query('SELECT hora_entrada,hora_salida,tolerancia_minutos FROM horarios WHERE empleado_id=? AND dia_semana=WEEKDAY(?)+1 AND activo=TRUE',[empleadoId,fecha]);
+      const diaSemana = process.env.DATABASE_URL ? 'EXTRACT(ISODOW FROM CAST(? AS DATE))' : 'WEEKDAY(?)+1';
+      const [horarios]=await connection.query(`SELECT hora_entrada,hora_salida,tolerancia_minutos FROM horarios WHERE empleado_id=? AND dia_semana=${diaSemana} AND activo=TRUE`,[empleadoId,fecha]);
       horario=horarios[0]||null;
     }
     const confirmacion = req.body.programacion_historica === undefined ? null : r.confirmarProgramacionHistorica(req.body.programacion_historica, anterior);
@@ -100,7 +102,14 @@ exports.crearPermiso=async(req,res)=>{
     const [[empleado]]=await pool.query("SELECT id FROM empleados WHERE id=? AND estado='activo'",[empleadoId]);
     if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
     let nombre=null;
-    if(b.sustento){const archivo=archivos.validarArchivo(b.sustento.nombre,b.sustento.base64);nombre=archivo.nombre_archivo;privado=await archivos.guardarArchivo(archivo);}
+    if(b.sustento_ticket) {
+      const item=await subidas.consumir(b.sustento_ticket,req.usuario.id,'permiso');
+      if(Number(item.empleado_id)!==empleadoId)throw r.error('El sustento no corresponde al colaborador.');
+      privado=item.ruta_archivo;nombre=item.nombre_archivo;
+    } else if(b.sustento){
+      const archivo=archivos.validarArchivo(b.sustento.nombre,b.sustento.base64);
+      nombre=archivo.nombre_archivo;privado=await archivos.guardarArchivo(archivo);
+    }
     if(b.archivo_sustento&&!b.sustento)throw r.error('Adjunte el archivo sustentatorio; un nombre por sí solo no carga el documento.');
     const [result]=await pool.query(`INSERT INTO permisos (empleado_id,tipo_permiso,fecha_inicio,fecha_fin,hora_desde,hora_hasta,motivo,observaciones,estado,archivo_sustento,archivo_sustento_nombre) VALUES (?,?,?,?,?,?,?,?,'Solicitado',?,?)`,[empleadoId,tipo,inicio,fin,desde,hasta,motivo,observaciones,privado||null,nombre]);
     auditar(res,'permisos',result.insertId,'INSERT',null,{empleado_id:empleadoId,tipo_permiso:tipo,fecha_inicio:inicio,fecha_fin:fin,estado:'Solicitado',archivo_sustento_nombre:nombre});
@@ -123,8 +132,16 @@ exports.sustentoPermiso=async(req,res)=>{
     const id=r.entero(req.params.id,'Permiso'),propio=req.usuario.rol===ROLES.COLABORADOR;
     const [[permiso]]=await pool.query(`SELECT empleado_id,archivo_sustento,archivo_sustento_nombre FROM permisos WHERE id=? ${propio?'AND empleado_id=?':''}`,propio?[id,req.usuario.empleado_id]:[id]);
     if(!permiso||!permiso.archivo_sustento_nombre)throw Object.assign(r.error('No existe un archivo adjunto disponible para este permiso.'),{status:404});
-    const archivo=await archivos.obtenerArchivo(permiso.archivo_sustento);
+    const archivo=await archivos.obtenerArchivo(permiso.archivo_sustento,{descargar:req.query.descargar==='1',nombre:permiso.archivo_sustento_nombre});
     res.set({'Content-Type':archivo.mime_type,'Content-Disposition':archivos.disposicionArchivo(permiso.archivo_sustento_nombre,req.query.descargar==='1'),'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Content-Security-Policy':"default-src 'none'; sandbox"});
+    if(archivo.url)return res.redirect(302,archivo.url);
     return res.sendFile(archivo.ruta);
+  }catch(error){return fallo(res,error);}
+};
+
+exports.prepararSustento=async(req,res)=>{
+  try{
+    const result=await subidas.preparar(req.body||{},req.usuario.id,'permiso');
+    return res.json({ok:true,...result});
   }catch(error){return fallo(res,error);}
 };

@@ -2,6 +2,7 @@ const pool = require('../config/database');
 
 const SELECT_USUARIO = `
   SELECT u.id AS usuario_id, u.email, u.activo, u.sesion_version,
+         ${process.env.DATABASE_URL ? 'u.debe_cambiar_clave' : 'FALSE'} AS debe_cambiar_clave,
          r.nombre AS rol_nombre, e.id AS empleado_id,
          e.nombres, e.apellidos, e.foto_perfil, e.tipo_vinculo,
          emp.razon_social AS empresa_nombre

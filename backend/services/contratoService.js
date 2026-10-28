@@ -1,5 +1,7 @@
 const pool = require('../config/database');
 
+const POSTGRES = Boolean(process.env.DATABASE_URL);
+const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 const ESTADOS = new Set(['borrador', 'vigente', 'finalizado', 'cancelado']);
 const ESTADOS_FILTRO = new Set([...ESTADOS, 'por_vencer', 'vencido']);
 const TIPOS_CONTRATO = [
@@ -17,8 +19,8 @@ const ESTADO_VIGENCIA_SQL = `
     WHEN c.estado = 'borrador' THEN 'borrador'
     WHEN c.estado = 'cancelado' THEN 'cancelado'
     WHEN c.estado = 'finalizado' THEN 'finalizado'
-    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin < CURDATE() THEN 'vencido'
-    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'por_vencer'
+    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin < ${HOY_SQL} THEN 'vencido'
+    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'} THEN 'por_vencer'
     ELSE 'vigente'
   END
 `;
@@ -199,7 +201,7 @@ async function listar(filtros = {}) {
   if (filtros.vence_en_dias !== undefined && filtros.vence_en_dias !== '') {
     const dias = Number(filtros.vence_en_dias);
     if (!Number.isInteger(dias) || dias < 0 || dias > 3650) throw errorHttp(400, 'vence_en_dias no es válido.');
-    where.push(`c.estado = 'vigente' AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`);
+    where.push(`c.estado = 'vigente' AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + CAST(? AS integer))` : 'DATE_ADD(CURDATE(), INTERVAL ? DAY)'}`);
     params.push(dias);
   }
 
@@ -300,7 +302,7 @@ async function crear(body, usuarioId) {
     return obtenerPorId(result.insertId);
   } catch (error) {
     await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') throw errorHttp(409, 'Ya existe un contrato con ese código.');
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) throw errorHttp(409, 'Ya existe un contrato con ese código.');
     throw error;
   } finally {
     connection.release();
@@ -332,7 +334,7 @@ async function actualizar(id, body, usuarioId) {
     return obtenerPorId(contratoId);
   } catch (error) {
     await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') throw errorHttp(409, 'Ya existe un contrato con ese código.');
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) throw errorHttp(409, 'Ya existe un contrato con ese código.');
     throw error;
   } finally {
     connection.release();
