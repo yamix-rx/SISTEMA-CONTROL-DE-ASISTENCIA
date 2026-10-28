@@ -3,6 +3,7 @@ const subidas = require('../services/subidaDirectaService');
 const archivos = require('../services/documentoArchivoService');
 const generacion = require('../services/documentoGeneracionService');
 const { generarPdf } = require('../services/documentoPdfService');
+const generados = require('../services/documentosGeneradosService');
 
 function responderError(res, error) {
   if (res.headersSent) return;
@@ -91,11 +92,22 @@ exports.vistaGenerada = async (req, res) => {
 exports.pdfGenerado = async (req, res) => {
   try {
     const documento = await generacion.preparar(req.body || {});
+    const pdf=await generarPdf(documento);
+    // Se archiva al abrir la vista previa, aunque el usuario cierre el navegador
+    // sin pulsar Descargar. Jamás depende de localStorage ni de /tmp de Vercel.
+    const archivo=process.env.DATABASE_URL
+      ? await generados.guardar(documento,pdf,req.body,req.usuario.id)
+      : null;
+    if(archivo) {
+      res.locals.auditoria={tabla:'documentos_generados',registroId:archivo.id,
+        nuevos:{empleado_id:Number(req.body.empleado_id),tipo_codigo:documento.codigo}};
+      res.set('X-SBSS-Generated-Id',String(archivo.id));
+    }
     return res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': archivos.disposicionArchivo(documento.nombre_archivo, true),
       'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store'
-    }).send(await generarPdf(documento));
+    }).send(pdf);
   } catch (error) { return responderError(res, error); }
 };
 
@@ -117,4 +129,13 @@ exports.confirmarSubida = async (req,res)=>{
     return res.status(201).json({ok:true,documento_id:result.insertId,
       mensaje:'Documento guardado y pendiente de revisión.'});
   }catch(error){return responderError(res,error);}
+};
+
+exports.listarGenerados = async (_req,res) => {
+  try { return res.json({ok:true,documentos:await generados.recientes()}); }
+  catch(error){return responderError(res,error);}
+};
+exports.enlaceGenerado = async (req,res) => {
+  try {return res.json({ok:true,...await generados.obtenerEnlace(req.params.id)});}
+  catch(error){return responderError(res,error);}
 };
