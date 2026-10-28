@@ -81,3 +81,26 @@
   #modalDocumentoGenerado .generated-sheet { margin: 12px; padding: 24px; }
 }
 .generation-dialog{max-width:690px}.generation-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.generation-fields label>input,.generation-fields label>select{margin-top:5px}.generated-sheet{background:#fff;border:1px solid var(--line)}.generated-brand{padding-bottom:14px}.generated-sheet h3{margin:28px 0;text-align:center}.generated-sheet #generadoCuerpo{white-space:pre-wrap;overflow-wrap:anywhere}.template-fields{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.template-fields button{border:1px solid #bcd5e8;border-radius:4px;color:#15547f;background:#f2f8fc;padding:5px 7px;font-size:11px}#plantillaCuerpo{resize:vertical;font:13px/1.6 monospace}@media(max-width:580px){.generation-fields{grid-template-columns:1fr}}
+
+
+/* Historial de PDFs efectivamente generados: disponible también en la vista Generar. */
+.recent-generated-panel { margin-top: 14px; margin-bottom: 14px; }
+.recent-generated-panel .panel-heading { flex-wrap: wrap; gap: 12px; }
+.recent-generated-panel .panel-heading>div { min-width: 0; flex: 1; }
+.recent-generated-panel .panel-heading h2 { color: #174168; font-size: 15px; }
+.recent-generated-panel .panel-heading .muted { margin-top: 5px; text-align: left; line-height: 1.5; max-width: 760px; }
+.recent-generated-status { padding: 23px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.recent-generated-panel .table-container { overflow-x: auto; }
+.recent-generated-panel .recent-document { min-width: 170px; max-width: 360px; }
+.recent-generated-panel .recent-document strong { display: block; font-size: 12px; }
+.recent-generated-panel .recent-document small { display: block; margin-top: 3px; font-size: 10px; color: var(--muted); overflow-wrap: anywhere; }
+.recent-generated-panel .actions-cell .button { white-space: nowrap; min-height: 32px; padding: 7px 11px; }
+@media(max-width:580px){
+  .recent-generated-panel thead { display: none; }
+  .recent-generated-panel tbody,.recent-generated-panel table { display: block; }
+  .recent-generated-panel tbody tr { display: grid; grid-template-columns:minmax(0,1fr) auto; gap: 7px 12px; padding: 14px; }
+  .recent-generated-panel tbody td { display: block; padding: 0; border: 0; grid-column: 1; min-width: 0; }
+  .recent-generated-panel tbody td:first-child { grid-column: 1 / -1; }
+  .recent-generated-panel tbody td:last-child { grid-column: 2; grid-row: 2 / 5; align-self: center; }
+  .recent-generated-panel .date-cell:before { content: 'Generado: '; }
+}
