@@ -17,6 +17,8 @@ router.get('/generacion/catalogos', controller.catalogosGeneracion);
 router.put('/plantillas/:codigo', controller.guardarPlantilla);
 router.post('/generar/vista-previa', controller.vistaGenerada);
 router.post('/generar/pdf', controller.pdfGenerado);
+router.get('/generados/recientes',controller.listarGenerados);
+router.get('/generados/:id/descarga',controller.enlaceGenerado);
 router.get('/catalogos', controller.catalogos);
 router.get('/', controller.listar);
 router.post('/preparar-subida',controller.prepararSubida);
