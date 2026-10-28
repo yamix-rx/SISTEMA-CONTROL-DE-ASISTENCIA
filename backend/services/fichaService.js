@@ -83,13 +83,16 @@ async function obtenerHistorial(empleadoId, filtros = {}) {
   const paginaAsistencias = pagina(filtros.asistencias_pagina);
   const paginaPermisos = pagina(filtros.permisos_pagina);
   const [[resumenAsistencias], [resumenPermisos]] = await Promise.all([
-    pool.query(`SELECT COUNT(*) AS total, COALESCE(SUM(estado IN ('presente','tardanza')),0) AS asistencias,
-      COALESCE(SUM(estado='falta'),0) AS faltas, COALESCE(SUM(minutos_tardanza > 0),0) AS tardanzas,
+    pool.query(`SELECT COUNT(*) AS total,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE estado IN ('presente','tardanza'))" : "COALESCE(SUM(estado IN ('presente','tardanza')),0)"} AS asistencias,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE estado='falta')" : "COALESCE(SUM(estado='falta'),0)"} AS faltas,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE minutos_tardanza > 0)" : "COALESCE(SUM(minutos_tardanza > 0),0)"} AS tardanzas,
       COALESCE(SUM(minutos_tardanza),0) AS minutos_tardanza,
       ROUND(COALESCE(SUM(horas_trabajadas),0),2) AS horas
       FROM asistencias WHERE empleado_id = ?`, [empleadoId]),
-    pool.query(`SELECT COUNT(*) AS total, COALESCE(SUM(LOWER(estado)='solicitado'),0) AS solicitados,
-      COALESCE(SUM(LOWER(estado)='aprobado'),0) AS aprobados
+    pool.query(`SELECT COUNT(*) AS total,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE LOWER(estado)='solicitado')" : "COALESCE(SUM(LOWER(estado)='solicitado'),0)"} AS solicitados,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE LOWER(estado)='aprobado')" : "COALESCE(SUM(LOWER(estado)='aprobado'),0)"} AS aprobados
       FROM permisos WHERE empleado_id = ?`, [empleadoId])
   ]);
   const asistenciasTotal = Number(resumenAsistencias[0]?.total || 0);
