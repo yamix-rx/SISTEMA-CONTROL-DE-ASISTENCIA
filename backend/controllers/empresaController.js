@@ -29,14 +29,14 @@ exports.listarEmpresas = async (req, res) => {
         e.razon_social,
         e.ruc,
         e.direccion,
+        e.telefono,
+        e.email_contacto,
         CASE WHEN ${process.env.DATABASE_URL ? 'BOOL_OR(e.logo_data IS NOT NULL)' : 'MAX(e.logo_data IS NOT NULL) = 1'} THEN CONCAT('/api/empresas/', e.id, '/logo') ELSE NULL END AS logo_url,
-        NULL AS telefono,
-        NULL AS email_contacto,
         e.estado,
         COUNT(emp.id) AS total_empleados
       FROM empresas e
       LEFT JOIN empleados emp ON emp.empresa_id = e.id AND emp.estado = 'activo'
-      GROUP BY e.id, e.razon_social, e.ruc, e.direccion, e.estado
+      GROUP BY e.id, e.razon_social, e.ruc, e.direccion, e.telefono, e.email_contacto, e.estado
       ORDER BY e.razon_social ASC
     `;
 
@@ -85,10 +85,26 @@ exports.obtenerLogo = async (req, res) => {
 
 // 2. Registrar o Actualizar Empresa
 exports.guardarEmpresa = async (req, res) => {
-  const { id, razon_social, ruc, direccion, estado } = req.body;
+  const { id, razon_social, ruc, direccion, telefono, email_contacto, estado } = req.body || {};
+  const telefonoNormalizado = typeof telefono === 'string' ? telefono.trim() : null;
+  const emailNormalizado = typeof email_contacto === 'string' ? email_contacto.trim().toLowerCase() : null;
 
   if (typeof razon_social !== 'string' || !razon_social.trim() || razon_social.length > 150 || (ruc && !/^\d{11}$/.test(ruc))) {
     return res.status(400).json({ ok: false, mensaje: 'Ingrese la razón social y, si corresponde, un RUC de 11 dígitos.' });
+  }
+  if (telefono != null && typeof telefono !== 'string') {
+    return res.status(400).json({ ok:false, mensaje:'El teléfono debe ser un texto válido.' });
+  }
+  if (telefonoNormalizado && (!/^\+?[0-9() .-]{6,20}$/.test(telefonoNormalizado)
+      || (telefonoNormalizado.match(/\d/g) || []).length < 6)) {
+    return res.status(400).json({ ok:false, mensaje:'Ingrese un teléfono válido de hasta 20 caracteres.' });
+  }
+  if (email_contacto != null && typeof email_contacto !== 'string') {
+    return res.status(400).json({ ok:false, mensaje:'El correo de contacto debe ser un texto válido.' });
+  }
+  if (emailNormalizado && (emailNormalizado.length > 120
+      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado))) {
+    return res.status(400).json({ ok:false, mensaje:'Ingrese un correo de contacto válido de hasta 120 caracteres.' });
   }
   if (estado && !['activo','inactivo'].includes(estado)) return res.status(400).json({ ok:false, mensaje:'Estado de empresa no válido.' });
   if (id && (!Number.isInteger(Number(id)) || Number(id) <= 0)) return res.status(400).json({ ok:false, mensaje:'Empresa no válida.' });
@@ -98,18 +114,18 @@ exports.guardarEmpresa = async (req, res) => {
       // Actualizar
       const [result] = await pool.query(`
         UPDATE empresas 
-        SET razon_social = ?, ruc = ?, direccion = ?, estado = ?
+        SET razon_social = ?, ruc = ?, direccion = ?, telefono = ?, email_contacto = ?, estado = ?
         WHERE id = ?
-      `, [razon_social.trim(), ruc || null, direccion || null, estado || 'activo', id]);
+      `, [razon_social.trim(), ruc || null, direccion || null, telefonoNormalizado || null, emailNormalizado || null, estado || 'activo', id]);
       if (!result.affectedRows) return res.status(404).json({ok:false, mensaje:'Empresa no encontrada.'});
 
       return res.status(200).json({ ok: true, mensaje: 'Empresa actualizada correctamente.' });
     } else {
       // Insertar
       const [result] = await pool.query(`
-        INSERT INTO empresas (razon_social, ruc, direccion, estado)
-        VALUES (?, ?, ?, ?)
-      `, [razon_social.trim(), ruc || null, direccion || null, estado || 'activo']);
+        INSERT INTO empresas (razon_social, ruc, direccion, telefono, email_contacto, estado)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [razon_social.trim(), ruc || null, direccion || null, telefonoNormalizado || null, emailNormalizado || null, estado || 'activo']);
 
       return res.status(201).json({ ok: true, mensaje: 'Empresa registrada con éxito.', id: result.insertId });
     }
