@@ -116,6 +116,67 @@
     }
   }
 
+
+  // Historial servidor: no se almacena ninguna copia de los PDF en localStorage.
+  async function loadRecentGenerated() {
+    const status=$('estadoGenerados');
+    const table=$('tablaGenerados');
+    const update=$('btnActualizarGenerados');
+    update.disabled=true;
+    status.hidden=false;
+    status.textContent='Cargando los documentos guardados…';
+    table.hidden=true;
+    try {
+      const result=await request('/documentos/generados/recientes');
+      if(!Array.isArray(result.documentos))throw new Error('El historial tiene un formato inválido.');
+      const rows=result.documentos;
+      const fragment=document.createDocumentFragment();
+      rows.forEach(item=>{
+        const tr=node('tr');
+        const type=node('td','recent-document');
+        type.append(node('strong','',item.tipo_nombre),
+          node('small','',item.nombre_archivo));
+        const person=node('td','',item.colaborador);
+        const company=node('td','',item.empresa);
+        const date=node('td','date-cell',displayDate(item.created_at));
+        const actions=node('td','actions-cell');
+        const button=actionButton('Descargar de nuevo '+item.tipo_nombre,'download',
+          ()=>downloadRecentGenerated(item,button),'button button-outline');
+        button.append(node('span','',' Descargar'));
+        actions.append(button);
+        tr.append(type,person,company,date,actions);
+        fragment.append(tr);
+      });
+      $('filasGenerados').replaceChildren(fragment);
+      status.hidden=rows.length>0;
+      status.textContent=rows.length ? '' : 'Todavía no hay documentos generados. Cuando abras la vista previa de un PDF, se guardará aquí automáticamente.';
+      table.hidden=!rows.length;
+    }catch(error){
+      status.hidden=false;
+      status.textContent=friendlyError(error)+' Pulsa Actualizar para reintentar.';
+    }finally{update.disabled=false;}
+  }
+
+  async function downloadRecentGenerated(item,button) {
+    if(button.disabled)return;
+    button.disabled=true;
+    try {
+      // El servidor comprueba el rol y devuelve un enlace privado de 60 segundos.
+      const result=await request('/documentos/generados/'+encodeURIComponent(item.id)+'/descarga');
+      const signed=new URL(result.url);
+      if(signed.protocol!=='https:' || !signed.hostname.endsWith('.supabase.co')
+          || !signed.pathname.includes('/storage/v1/object/sign/sbss-documentos/'))
+        throw new Error('El enlace de descarga no es válido.');
+      const anchor=node('a');
+      anchor.href=signed.href;
+      anchor.rel='noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }catch(error){notify('No se pudo descargar el documento guardado: '+friendlyError(error),true);}
+    finally{button.disabled=false;}
+  }
+
   function setListStatus(message, error = false) {
     $('estadoLista').hidden = false;
     $('estadoLista').classList.toggle('is-error', error);
@@ -766,6 +827,8 @@
         tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
         papel: documento.papel || 'A4 · 210 × 297 mm'
       });
+      // La vista previa ya se archivó en Supabase. Refrescar sin cerrar el PDF.
+      loadRecentGenerated();
     } catch (error) { formError('errorGenerar', friendlyError(error)); }
     finally {
       state.generating = false;
@@ -944,6 +1007,7 @@
     $('btnSiguiente').addEventListener('click', () => { if (state.page * state.limit < state.total && !state.loading) { state.page++; loadDocuments({ preserveSelection: false }); } });
     $('btnReintentar').addEventListener('click', () => loadDocuments());
     $('btnActualizarLista').addEventListener('click', () => loadDocuments());
+    $('btnActualizarGenerados').addEventListener('click',loadRecentGenerated);
     $('btnCerrarVista').addEventListener('click', () => clearPreview());
     $('btnAbrirVistaCompleta').addEventListener('click', () => {
       if (!state.previewBlob || !state.selected) return;
@@ -1030,6 +1094,7 @@
     if (Object.hasOwn(STATES, initialState)) $('fEstado').value = initialState;
     setCatalogButtons();
     await loadDocuments();
+    await loadRecentGenerated();
     const initialTemplate = new URLSearchParams(location.search).get('generar');
     if ((initialTemplate || generationView) && state.catalogs) await openGenerate(initialTemplate || 'aceptacion');
   }
