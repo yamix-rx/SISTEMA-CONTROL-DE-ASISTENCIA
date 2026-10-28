@@ -3,7 +3,8 @@
   "buildCommand": "npm run build",
   "functions": {
     "server.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "{node_modules/pdfkit/js/standard-fonts/**,backend/assets/documentos/**}"
     }
   },
   "headers": [
