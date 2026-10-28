@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS public.empresas (
   razon_social VARCHAR(150) NOT NULL,
   ruc VARCHAR(11) NULL,
   direccion VARCHAR(255) NULL,
+  telefono VARCHAR(20) NULL,
+  email_contacto VARCHAR(120) NULL,
   logo_url VARCHAR(255) NULL,
   logo_data BYTEA NULL,
   logo_iv BYTEA NULL,
