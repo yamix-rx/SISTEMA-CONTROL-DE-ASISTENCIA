@@ -134,15 +134,23 @@
     sidebar.classList.toggle('sidebar-oculto', hidden);
     sidebar.inert = hidden;
     sidebar.setAttribute('aria-hidden', String(hidden));
-    const open = document.getElementById('btnAbrirSidebar');
-    if (open) {
-      open.replaceChildren(icon('abrir'));
-      open.classList.toggle('hidden', !hidden);
-      open.setAttribute('aria-controls', 'sidebarMenu');
-      open.setAttribute('aria-label', 'Mostrar menú lateral');
-      open.setAttribute('aria-expanded', String(!hidden));
-      open.type = 'button';
+    // En versiones anteriores algunas pantallas usan d-none (Bootstrap) y
+    // otras hidden. Eliminar ambas fuentes de conflicto y asegurar que siempre
+    // exista un control para recuperar la navegación.
+    let open = document.getElementById('btnAbrirSidebar');
+    if (!open) {
+      open = document.createElement('button');
+      open.id = 'btnAbrirSidebar';
+      open.className = 'sbss-sidebar-open hidden';
+      sidebar.before(open);
     }
+    open.replaceChildren(icon('abrir'));
+    open.classList.remove('d-none');
+    open.classList.toggle('hidden', !hidden);
+    open.setAttribute('aria-controls', 'sidebarMenu');
+    open.setAttribute('aria-label', 'Mostrar menú lateral');
+    open.setAttribute('aria-expanded', String(!hidden));
+    open.type = 'button';
     sidebar.dataset.sbssRendered = 'true';
   }
 
