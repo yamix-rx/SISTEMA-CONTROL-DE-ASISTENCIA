@@ -28,6 +28,9 @@
       sidebar.classList.toggle('sidebar-oculto', hidden);
       sidebar.setAttribute('aria-hidden', String(hidden));
       sidebar.inert = hidden;
+      // d-none de Bootstrap tiene !important y prevalece sobre el control
+      // compartido. Normalizarla al ocultar/mostrar en cualquier módulo.
+      open.classList.remove('d-none');
       open.classList.toggle('hidden', !hidden);
       open.setAttribute('aria-expanded', String(!hidden));
       const modal = mobile.matches && !hidden;
