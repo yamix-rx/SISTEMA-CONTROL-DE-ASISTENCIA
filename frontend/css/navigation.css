@@ -191,6 +191,7 @@
 }
 
 .sbss-navigation-layout #btnAbrirSidebar.hidden,
+.sbss-navigation-layout #btnAbrirSidebar.d-none,
 .sbss-sidebar-backdrop[hidden] {
     display: none !important;
 }
