@@ -284,7 +284,7 @@
     window.matchMedia('(min-width: 761px)').addEventListener('change', (event) => {
         if (event.matches) setMenuOpen(false);
     });
-    element('logoutButton').addEventListener('click', () => window.SBSSSession.logout());
+    // El botón superior y el lateral usan el manejador global de session.js.
     element('refreshButton').addEventListener('click', loadPanel);
     element('retryButton').addEventListener('click', loadPanel);
     window.addEventListener('storage', event => { if (event.key === 'sbss_asistencia_actualizada') loadPanel(); });

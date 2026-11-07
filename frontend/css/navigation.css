@@ -487,3 +487,24 @@ textarea:focus-visible {
         padding-inline: 10px !important;
     }
 }
+
+/* Control global de cierre de sesión dentro del menú común. */
+#sidebarMenu.sbss-sidebar { display: flex; flex-direction: column; }
+.sbss-sidebar .sbss-sidebar-footer {
+    margin-top: auto;
+    padding: 14px 2px 2px;
+    border-top: 1px solid rgba(255, 255, 255, .18);
+}
+.sbss-sidebar .sbss-nav-logout {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    border: 1px solid rgba(186, 230, 253, .28);
+    background: rgba(255, 255, 255, .08);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.sbss-sidebar .sbss-nav-logout:hover { background: rgba(255, 255, 255, .18); }
+.sbss-sidebar .sbss-nav-logout:focus-visible { outline: 2px solid #bae6fd; outline-offset: 2px; }
+.sbss-sidebar .sbss-nav-logout[aria-busy="true"] { opacity: .65; cursor: progress; }

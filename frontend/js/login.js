@@ -19,6 +19,14 @@
   link.textContent = 'Abrir SBSS: ' + canonical.host;
 
   function showError(text) { $('mensajeError').textContent = text; $('alertaError').classList.add('show'); }
+  // Advertir una sola vez si falló la revocación remota, aunque se haya salido del navegador.
+  try {
+    const warning = sessionStorage.getItem('sbss_logout_warning');
+    if (warning) {
+      sessionStorage.removeItem('sbss_logout_warning');
+      showError(warning);
+    }
+  } catch (_) { /* La página sigue operativa sin sessionStorage. */ }
   async function identifiesServer(origin) {
     try {
       const response = await fetch(origin + '/api/auth/disponibilidad', {

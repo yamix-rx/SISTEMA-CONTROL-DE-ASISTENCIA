@@ -38,15 +38,31 @@
     location.replace(destination);
   }
 
+  let closingSession = false;
   async function logout(revoke = true) {
+    if (closingSession) return false;
+    closingSession = true;
+    // Los dos botones usan una sola operación, evitando clics repetidos.
+    document.querySelectorAll('#btnCerrarSesion, #logoutButton, [data-logout]').forEach(button => {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    });
     const token = localStorage.getItem('sbss_token');
+    let serverRevoked = !token || revoke === false;
     if (token && revoke !== false) {
       try {
-        const response = await nativeFetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+        const response = await nativeFetch(`${API_BASE}/auth/logout`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store', signal: AbortSignal.timeout(10000)
+        });
         if (!response.ok && response.status !== 401) throw new Error('Cierre no confirmado');
+        serverRevoked = true;
       } catch (_) {
-        await showStatus('No pudimos cerrar la sesión en el servidor. Revisa la conexión y vuelve a pulsar Cerrar sesión.', true);
-        return false;
+        // El cierre local no debe quedarse bloqueado si falla la red o la API.
+        try {
+          sessionStorage.setItem('sbss_logout_warning',
+            'Se cerró el acceso en este navegador, pero no se pudo confirmar la revocación en el servidor. Si compartiste tu sesión, cambia la contraseña.');
+        } catch (_) { /* Se puede continuar sin almacenamiento de sesión. */ }
       }
     }
     verifiedSession = null;
@@ -54,7 +70,18 @@
     localStorage.removeItem('sbss_usuario');
     localStorage.removeItem('sbss_acceso');
     navigate('login.html');
+    return serverRevoked;
   }
+
+  // Captura también botones creados después de verificar la sesión (menú lateral).
+  // Evita depender de onclick y de manejadores particulares de cada módulo.
+  document.addEventListener('click', event => {
+    const button = event.target?.closest?.('#btnCerrarSesion, #logoutButton, [data-logout]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void logout();
+  }, true);
 
   async function showStatus(message, retry = false) {
     await domReady;
@@ -128,7 +155,7 @@
     }
     if (role) role.textContent = usuario.rol;
     if (avatar) avatar.textContent = (usuario.nombres || 'U').charAt(0).toUpperCase();
-    document.querySelectorAll('#btnCerrarSesion, [data-logout]').forEach(button => { button.onclick = logout; });
+    // El cierre de sesión se gestiona de forma global mediante delegación de eventos.
   }
 
   async function verifySession() {

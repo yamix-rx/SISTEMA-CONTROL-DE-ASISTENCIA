@@ -17,6 +17,7 @@
     reportes: '<path d="M4 20V10m5 10V6m5 14v-7m5 7V3M3 20h18"/>',
     auditoria: '<path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/>',
     cerrar: '<path d="m14 6-6 6 6 6"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
     abrir: '<path d="M4 6h16M4 12h16M4 18h16"/>'
   };
 
@@ -127,7 +128,16 @@
       });
       nav.appendChild(section);
     });
-    sidebar.replaceChildren(heading, nav);
+    const footer = document.createElement('div');
+    footer.className = 'sbss-sidebar-footer';
+    const logoutButton = document.createElement('button');
+    logoutButton.type = 'button';
+    logoutButton.className = 'sbss-nav-link sbss-nav-logout';
+    logoutButton.setAttribute('data-logout', '');
+    logoutButton.setAttribute('aria-label', 'Cerrar sesión');
+    logoutButton.append(icon('logout'), document.createTextNode('Cerrar sesión'));
+    footer.appendChild(logoutButton);
+    sidebar.replaceChildren(heading, nav, footer);
     sidebar.setAttribute('aria-label', 'Menú de módulos');
     // Se aplica antes de mostrar la página para evitar un parpadeo del menú en móvil.
     const hidden = window.matchMedia('(max-width: 768px)').matches || desktopHidden();
