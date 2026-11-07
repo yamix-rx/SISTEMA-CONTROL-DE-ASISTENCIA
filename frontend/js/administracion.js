@@ -72,7 +72,10 @@
   }
   function renderUsers() {
     const q=$('searchUsers').value.trim().toLowerCase();
-    table('usersBody',users.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q)),u=>{
+    // Esta tabla gestiona únicamente administradores. Las cuentas de practicantes,
+    // trabajadores y RRHH permanecen intactas en BD, pero no aparecen aquí.
+    const administradores=users.filter(u=>u.rol==='Administrador General');
+    table('usersBody',administradores.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q)),u=>{
       const person=cell();person.append(node('strong',u.colaborador));const email=node('div',u.email);email.className='email';person.append(email);
       const actions=cell();actions.append(action('Editar',()=>editUser(u)),action('Contraseña',()=>{
         $('passwordForm').reset();$('passwordError').textContent='';$('passwordUserId').value=u.id;$('passwordAccount').textContent=`${u.colaborador} · ${u.email}`;$('passwordDialog').showModal();
