@@ -31,7 +31,10 @@ function makeBrowser(logoutStatus = 200) {
     readyState: 'complete',
     documentElement: { classList: { add() {}, remove() {} } },
     head: { appendChild() {} },
-    createElement() { return { setAttribute() {} }; },
+    body: { appendChild() {} },
+    createElement() {
+      return { setAttribute() {}, replaceChildren() {}, append() {}, classList: { add() {}, remove() {} } };
+    },
     querySelector() { return null; },
     querySelectorAll() { return []; },
     getElementById() { return null; },
