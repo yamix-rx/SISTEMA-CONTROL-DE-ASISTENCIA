@@ -16,7 +16,7 @@
       <h1>Usuarios y configuración</h1><p class="muted">Administra los accesos, las áreas y los cargos de tus empresas.</p>
       <p id="adminStatus" role="status" aria-live="polite">Cargando configuración…</p>
       <nav class="admin-tabs" aria-label="Secciones de configuración"><a href="#cuentas">Usuarios</a><a href="#areas">Áreas</a><a href="#cargos">Cargos</a><a href="#tipos-documento">Documentos</a><a href="#tipos-permiso">Permisos</a><a href="empresas.html">Empresas</a></nav>
-      <section id="cuentas" class="admin-section"><h2>Cuentas de acceso</h2><div class="admin-grid">
+      <section id="cuentas" class="admin-section"><h2>Administradores del sistema</h2><p class="muted">Esta lista muestra únicamente cuentas con el perfil <strong>Administrador General</strong>. Al pulsar <strong>Quitar administrador</strong>, el usuario deja de aparecer aquí y conserva su cuenta como Trabajador/Practicante, su ficha, asistencia, documentos y vínculo de prácticas. Debe mantenerse al menos un administrador activo.</p><div class="admin-grid">
         <form id="userForm" class="admin-form"><fieldset id="userFields" disabled><legend id="userTitle">Crear cuenta</legend>
           <input id="userId" type="hidden">
           <label for="userEmployee">Colaborador</label><select id="userEmployee" required></select>
@@ -26,7 +26,7 @@
           <label for="userActive">Estado</label><select id="userActive"><option value="1">Activo</option><option value="0">Inactivo</option></select>
           <div class="actions"><button type="submit">Guardar cuenta</button><button id="cancelUser" class="secondary" type="button">Limpiar</button></div>
         </fieldset></form>
-        <div class="admin-panel"><label for="searchUsers">Buscar usuario</label><input id="searchUsers" type="search" placeholder="Nombre, correo o perfil"><div class="table-wrap"><table><caption class="sr-only">Usuarios registrados</caption><thead><tr><th>Colaborador / correo</th><th>Perfil</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div></div>
+        <div class="admin-panel"><label for="searchUsers">Buscar administrador</label><input id="searchUsers" type="search" placeholder="Nombre o correo del administrador"><div class="table-wrap"><table><caption class="sr-only">Administradores registrados</caption><thead><tr><th>Colaborador / correo</th><th>Perfil</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="usersBody"></tbody></table></div></div>
       </div></section>
       <section id="areas" class="admin-section"><h2>Áreas por empresa</h2><div class="admin-grid">
         <form id="areaForm" class="admin-form"><fieldset id="areaFields" disabled><legend id="areaTitle">Crear área</legend><input id="areaId" type="hidden"><label for="areaCompany">Empresa</label><select id="areaCompany" required></select><label for="areaName">Nombre del área</label><input id="areaName" maxlength="100" required><div class="actions"><button type="submit">Guardar área</button><button id="cancelArea" class="secondary" type="button">Limpiar</button></div></fieldset></form>

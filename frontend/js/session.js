@@ -38,15 +38,31 @@
     location.replace(destination);
   }
 
+  let closingSession = false;
   async function logout(revoke = true) {
+    if (closingSession) return false;
+    closingSession = true;
+    // Los dos botones usan una sola operación, evitando clics repetidos.
+    document.querySelectorAll('#btnCerrarSesion, #logoutButton, [data-logout]').forEach(button => {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    });
     const token = localStorage.getItem('sbss_token');
+    let serverRevoked = !token || revoke === false;
     if (token && revoke !== false) {
       try {
-        const response = await nativeFetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+        const response = await nativeFetch(`${API_BASE}/auth/logout`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store', signal: AbortSignal.timeout(10000)
+        });
         if (!response.ok && response.status !== 401) throw new Error('Cierre no confirmado');
+        serverRevoked = true;
       } catch (_) {
-        await showStatus('No pudimos cerrar la sesión en el servidor. Revisa la conexión y vuelve a pulsar Cerrar sesión.', true);
-        return false;
+        // El cierre local no debe quedarse bloqueado si falla la red o la API.
+        try {
+          sessionStorage.setItem('sbss_logout_warning',
+            'Se cerró el acceso en este navegador, pero no se pudo confirmar la revocación en el servidor. Si compartiste tu sesión, cambia la contraseña.');
+        } catch (_) { /* Se puede continuar sin almacenamiento de sesión. */ }
       }
     }
     verifiedSession = null;
@@ -54,7 +70,18 @@
     localStorage.removeItem('sbss_usuario');
     localStorage.removeItem('sbss_acceso');
     navigate('login.html');
+    return serverRevoked;
   }
+
+  // Captura también botones creados después de verificar la sesión (menú lateral).
+  // Evita depender de onclick y de manejadores particulares de cada módulo.
+  document.addEventListener('click', event => {
+    const button = event.target?.closest?.('#btnCerrarSesion, #logoutButton, [data-logout]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void logout();
+  }, true);
 
   async function showStatus(message, retry = false) {
     await domReady;
@@ -90,6 +117,100 @@
       .filter(Boolean).join('');
   }
 
+
+  function nombreVisible(usuario) {
+    return [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ').trim()
+      || usuario.email || 'Mi cuenta';
+  }
+
+  function iniciales(usuario) {
+    return [usuario.nombres, usuario.apellidos]
+      .map(text => String(text || '').trim().charAt(0).toUpperCase()).join('') || 'U';
+  }
+
+  // Todas las pantallas usan el mismo bloque de cuenta y un SVG propio;
+  // esto no depende de que una biblioteca de iconos se inicialice.
+  function unificarCabecera(usuario) {
+    const header = document.querySelector('header.sbss-header, header.topbar');
+    if (!header || header.querySelector('.sbss-session-account')) return;
+    const nombreAnterior = header.querySelector('#nombreUsuarioSesion, #accountName');
+    const rolAnterior = header.querySelector('#rolUsuarioSesion, #accountRole');
+    const avatarAnterior = header.querySelector('#avatarLetra, #accountInitials');
+    const botonAnterior = header.querySelector('#btnCerrarSesion, #logoutButton');
+    const partes = [nombreAnterior, rolAnterior, avatarAnterior, botonAnterior].filter(Boolean);
+    if (!partes.length) return;
+
+    const personal = currentPage === 'mipanel.html';
+    const cuenta = document.createElement('div');
+    cuenta.className = 'sbss-session-account';
+    cuenta.setAttribute('aria-label', 'Cuenta y sesión actual');
+
+    const avatar = document.createElement('span');
+    avatar.id = personal ? 'accountInitials' : 'avatarLetra';
+    avatar.className = 'sbss-session-account-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = iniciales(usuario);
+
+    const detalles = document.createElement('div');
+    detalles.className = 'sbss-session-account-details';
+    const nombre = document.createElement('strong');
+    nombre.id = personal ? 'accountName' : 'nombreUsuarioSesion';
+    nombre.className = 'sbss-session-account-name';
+    nombre.textContent = nombreVisible(usuario);
+    nombre.title = nombreVisible(usuario);
+    const rol = document.createElement('span');
+    rol.id = personal ? 'accountRole' : 'rolUsuarioSesion';
+    rol.className = 'sbss-session-account-role';
+    rol.textContent = usuario.rol || '';
+    detalles.append(nombre, rol);
+
+    const salir = document.createElement('button');
+    salir.id = personal ? 'logoutButton' : 'btnCerrarSesion';
+    salir.type = 'button';
+    salir.className = 'sbss-session-account-logout';
+    salir.setAttribute('aria-label', 'Cerrar sesión');
+    salir.title = 'Cerrar sesión';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.8');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    const marco = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    marco.setAttribute('d', 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4');
+    const flecha = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    flecha.setAttribute('d', 'm16 17 5-5-5-5M21 12H9');
+    svg.append(marco, flecha);
+    const texto = document.createElement('span');
+    texto.textContent = 'Cerrar sesión';
+    salir.append(svg, texto);
+    cuenta.append(avatar, detalles, salir);
+
+    // Si la cabecera tiene un grupo de cuenta ya formado, se sustituye entero.
+    // Si el nombre, avatar y botón están sueltos (p. ej. Auditoría),
+    // se retiran solo esos elementos; nunca se quitan filtros de empresa.
+    let grupo = (botonAnterior || avatarAnterior || nombreAnterior).parentElement;
+    while (grupo && grupo !== header && !partes.every(elemento => grupo.contains(elemento))) {
+      grupo = grupo.parentElement;
+    }
+    if (grupo && grupo !== header) {
+      grupo.replaceWith(cuenta);
+    } else {
+      const bloques = new Set();
+      partes.forEach(elemento => {
+        let bloque = elemento;
+        while (bloque.parentElement && bloque.parentElement !== header) bloque = bloque.parentElement;
+        if (bloque.parentElement === header) bloques.add(bloque);
+      });
+      bloques.forEach(bloque => bloque.remove());
+      header.append(cuenta);
+    }
+  }
+
   function configureNavigation(session) {
     const { usuario, acceso } = session;
     const allowed = new Set(acceso.modulos);
@@ -123,12 +244,12 @@
     const role = document.getElementById('rolUsuarioSesion');
     const avatar = document.getElementById('avatarLetra');
     if (name) {
-      name.textContent = abbreviateUserName(usuario);
-      name.title = `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim();
+      name.textContent = nombreVisible(usuario);
+      name.title = nombreVisible(usuario);
     }
     if (role) role.textContent = usuario.rol;
-    if (avatar) avatar.textContent = (usuario.nombres || 'U').charAt(0).toUpperCase();
-    document.querySelectorAll('#btnCerrarSesion, [data-logout]').forEach(button => { button.onclick = logout; });
+    if (avatar) avatar.textContent = iniciales(usuario);
+    // El cierre de sesión se gestiona de forma global mediante delegación de eventos.
   }
 
   async function verifySession() {
@@ -156,6 +277,7 @@
       }
       await domReady;
       if (window.SBSSNavigation) window.SBSSNavigation.render(data);
+      unificarCabecera(data.usuario);
       configureNavigation(data);
       verifiedSession = data;
       document.querySelector('.sbss-session-status')?.remove();

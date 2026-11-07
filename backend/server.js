@@ -19,8 +19,10 @@ const administracionRoutes = require('./routes/administracionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+if (process.env.VERCEL) app.set('trust proxy', 1);
 
-app.use(cors());
+// Vercel sirve frontend y API en el mismo origen; no abrir CORS a sitios externos.
+if (!process.env.VERCEL) app.use(cors());
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
   res.set('Referrer-Policy', 'same-origin');

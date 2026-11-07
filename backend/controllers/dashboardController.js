@@ -1,6 +1,8 @@
 const pool = require('../config/database');
 const diaria = require('../services/asistenciaDiariaService');
 const { hoy } = require('../services/asistenciaReglas');
+const POSTGRES = Boolean(process.env.DATABASE_URL);
+const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 
 exports.obtenerDatosDashboard = async (req, res) => {
   const { empresa_id } = req.query;
@@ -26,7 +28,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       FROM horarios h
       INNER JOIN empleados e ON h.empleado_id = e.id
       INNER JOIN empresas emp ON e.empresa_id = emp.id
-      WHERE h.dia_semana = (WEEKDAY(CURDATE()) + 1)
+      WHERE h.dia_semana = ${POSTGRES ? `EXTRACT(ISODOW FROM ${HOY_SQL})` : '(WEEKDAY(CURDATE()) + 1)'}
         AND h.activo = TRUE
         AND e.estado = 'activo'
         ${filtroEmpresaHorario}
@@ -81,7 +83,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
         ${filtroEmpresaPracticas}
       GROUP BY e.id, e.nombres, e.apellidos, emp.razon_social, ar.nombre, c.nombre, pd.horas_meta, e.horas_totales_asignadas
-      HAVING horas_meta > 0
+      HAVING ${POSTGRES ? 'COALESCE(pd.horas_meta,e.horas_totales_asignadas,0)' : 'horas_meta'} > 0
       ORDER BY porcentaje_avance DESC, horas_pendientes ASC, e.apellidos ASC
     `, paramsEmpresa);
 
@@ -120,32 +122,32 @@ exports.obtenerDatosDashboard = async (req, res) => {
     const [[contratosPorVencer], [tardanzasAcumuladas], [personalActivo], [conveniosPorVencer]] = await Promise.all([
       pool.query(`SELECT c.id, c.empleado_id, c.tipo_contrato, c.fecha_fin,
           CONCAT(e.nombres,' ',e.apellidos) AS colaborador, emp.razon_social AS empresa,
-          DATEDIFF(c.fecha_fin,CURDATE()) AS dias_restantes
+           ${POSTGRES ? `(c.fecha_fin - ${HOY_SQL})` : 'DATEDIFF(c.fecha_fin,CURDATE())'} AS dias_restantes
         FROM contratos c JOIN empleados e ON e.id=c.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
         WHERE c.estado='vigente' AND e.estado='activo'
-          AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY c.fecha_fin, c.id LIMIT 30`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, COUNT(*) AS tardanzas, SUM(a.minutos_tardanza) AS minutos
         FROM asistencias a JOIN empleados e ON e.id=a.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
-        WHERE a.minutos_tardanza>0 AND a.fecha BETWEEN DATE_FORMAT(CURDATE(),'%Y-%m-01') AND CURDATE()
+        WHERE a.minutos_tardanza>0 AND a.fecha BETWEEN ${POSTGRES ? `date_trunc('month',${HOY_SQL})::date` : `DATE_FORMAT(CURDATE(),'%Y-%m-01')`} AND ${HOY_SQL}
           ${filtroEmpresaHorario}
         GROUP BY e.id,e.nombres,e.apellidos,emp.razon_social HAVING COUNT(*)>=3
         ORDER BY tardanzas DESC, minutos DESC LIMIT 30`, paramsEmpresa),
-      pool.query(`SELECT COALESCE(SUM(e.tipo_vinculo='trabajador'),0) AS trabajadores,
-          COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0) AS practicantes
+      pool.query(`SELECT  ${POSTGRES ? `COUNT(*) FILTER (WHERE e.tipo_vinculo='trabajador')` : `COALESCE(SUM(e.tipo_vinculo='trabajador'),0)`} AS trabajadores,
+           ${POSTGRES ? `COUNT(*) FILTER (WHERE LOWER(e.tipo_vinculo) LIKE 'practicante%')` : `COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0)`} AS practicantes
         FROM empleados e WHERE e.estado='activo' ${filtroEmpresaHorario}`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, ar.nombre AS area, c.nombre AS cargo, e.puesto,
-          DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d') AS fecha_vencimiento_convenio,
-          DATEDIFF(pd.fecha_vencimiento_convenio,CURDATE()) AS dias_restantes
+           ${POSTGRES ? `TO_CHAR(pd.fecha_vencimiento_convenio,'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d')`} AS fecha_vencimiento_convenio,
+          ${POSTGRES ? `(pd.fecha_vencimiento_convenio - ${HOY_SQL})` : 'DATEDIFF(pd.fecha_vencimiento_convenio,CURDATE())'} AS dias_restantes
         FROM practicante_detalles pd
         JOIN empleados e ON e.id=pd.empleado_id
         JOIN empresas emp ON emp.id=e.empresa_id
         JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
         WHERE e.estado='activo' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
-          AND pd.fecha_vencimiento_convenio BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          AND pd.fecha_vencimiento_convenio BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY pd.fecha_vencimiento_convenio, e.id`, paramsEmpresa)
     ]);

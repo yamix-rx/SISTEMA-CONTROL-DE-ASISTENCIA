@@ -193,6 +193,28 @@ test('cambio de perfil registra antes/después y revoca el token anterior', asyn
   assert.deepEqual(transacciones, { inicios: 1, confirmaciones: 1, reversiones: 0, liberaciones: 1 });
 });
 
+test('retira privilegios a un segundo administrador sin borrar la cuenta ni la ficha del practicante', async () => {
+  usuarios.get(3).rol_id = 1;
+  const anterior = copy(usuarios.get(3));
+  const resultado = await request('/api/administracion/usuarios/3', {
+    method: 'PUT',
+    body: { email: anterior.email, rol_id: 3, activo: anterior.activo }
+  });
+  assert.equal(resultado.status, 200);
+  assert.equal(usuarios.size, 3);
+  assert.equal(usuarios.get(3).rol_id, 3);
+  assert.equal(usuarios.get(3).empleado_id, anterior.empleado_id);
+  assert.equal(usuarios.get(3).password, anterior.password);
+  assert.equal(usuarios.get(3).activo, anterior.activo);
+  assert.equal(usuarios.get(3).sesion_version, anterior.sesion_version + 1);
+  assert.equal(usuarios.get(1).rol_id, 1);
+  assert.ok(!sqlCalls.some(q => q.sql.includes('DELETE FROM') || q.sql.includes('UPDATE empleados')));
+  assert.equal((await request('/api/session', { usuario: 3 })).status, 401);
+  const nuevaSesion = await request('/api/session', { usuario: 3, sv: 1 });
+  assert.equal(nuevaSesion.status, 200);
+  assert.equal(nuevaSesion.body.usuario.rol, ROLES.COLABORADOR);
+});
+
 test('impide perder el acceso administrador propio y conservar cero administradores', async () => {
   for (const body of [{ email: 'persona1@fixture.invalid', rol_id: 3, activo: 1 }, { email: 'persona1@fixture.invalid', rol_id: 1, activo: 0 }]) {
     assert.equal((await request('/api/administracion/usuarios/1', { method: 'PUT', body })).status, 400);

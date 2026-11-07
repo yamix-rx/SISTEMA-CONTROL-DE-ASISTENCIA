@@ -30,3 +30,136 @@ html.sbss-session-pending body > :not(.sbss-session-status) {
     cursor: pointer;
 }
 .sbss-session-status button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 3px; }
+
+
+/* Cabecera de sesión unificada para todos los módulos y el portal personal.
+   Usamos un SVG propio, sin dependencias de Lucide ni de fuentes de iconos. */
+header.sbss-header .sbss-session-account,
+header.topbar .sbss-session-account {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: min(430px, 100%);
+    margin-left: auto;
+    gap: 10px;
+    padding: 0 16px 0 12px;
+    box-sizing: border-box;
+    border-left: 1px solid rgba(186, 230, 253, .26);
+    color: #fff;
+    text-align: left;
+    font: 12px/1.3 Arial, Helvetica, sans-serif;
+}
+header.sbss-header .sbss-session-account #avatarLetra.sbss-session-account-avatar,
+header.topbar .sbss-session-account #accountInitials.sbss-session-account-avatar {
+    display: grid;
+    flex: 0 0 34px;
+    place-items: center;
+    box-sizing: border-box;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #8ed8fa;
+    border-radius: 50%;
+    background: #0b78b3;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+header.sbss-header .sbss-session-account-details,
+header.topbar .sbss-session-account-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-width: 165px;
+    gap: 2px;
+}
+header.sbss-header .sbss-session-account-name,
+header.topbar .sbss-session-account-name {
+    display: block;
+    max-width: 165px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #fff;
+    font: 700 12px/1.25 Arial, Helvetica, sans-serif;
+}
+header.sbss-header .sbss-session-account-role,
+header.topbar .sbss-session-account-role {
+    display: block;
+    max-width: 165px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #c5e8fa;
+    font: 400 10px/1.2 Arial, Helvetica, sans-serif;
+}
+header.sbss-header #btnCerrarSesion.sbss-session-account-logout,
+header.topbar #logoutButton.sbss-session-account-logout {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    gap: 7px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 7px 11px;
+    border: 1px solid rgba(186, 230, 253, .48);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    font: 600 11px/1.3 Arial, Helvetica, sans-serif;
+    text-transform: none;
+    box-shadow: none;
+}
+header.sbss-header #btnCerrarSesion.sbss-session-account-logout:hover,
+header.topbar #logoutButton.sbss-session-account-logout:hover {
+    background: rgba(255, 255, 255, .23);
+}
+header.sbss-header #btnCerrarSesion.sbss-session-account-logout:focus-visible,
+header.topbar #logoutButton.sbss-session-account-logout:focus-visible {
+    outline: 2px solid #b9eaff;
+    outline-offset: 2px;
+}
+header.sbss-header #btnCerrarSesion.sbss-session-account-logout svg,
+header.topbar #logoutButton.sbss-session-account-logout svg {
+    display: block;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: inherit;
+}
+header.sbss-header #btnCerrarSesion.sbss-session-account-logout:disabled,
+header.topbar #logoutButton.sbss-session-account-logout:disabled {
+    opacity: .55;
+    cursor: progress;
+}
+@media (max-width: 900px) {
+    header.sbss-header .sbss-session-account,
+    header.topbar .sbss-session-account { gap: 7px; padding: 0 10px; }
+    header.sbss-header .sbss-session-account-details,
+    header.topbar .sbss-session-account-details { max-width: 105px; }
+    header.sbss-header .sbss-session-account-name,
+    header.topbar .sbss-session-account-name { max-width: 105px; }
+}
+@media (max-width: 600px) {
+    header.sbss-header .sbss-session-account,
+    header.topbar .sbss-session-account { gap: 6px; padding: 0 8px; }
+    header.sbss-header .sbss-session-account-role,
+    header.topbar .sbss-session-account-role { display: none; }
+    header.sbss-header #btnCerrarSesion.sbss-session-account-logout,
+    header.topbar #logoutButton.sbss-session-account-logout { gap: 5px; padding: 7px 8px; }
+}
+@media (max-width: 460px) {
+    header.sbss-header .sbss-session-account-details,
+    header.topbar .sbss-session-account-details { display: none; }
+    header.sbss-header .sbss-session-account #avatarLetra.sbss-session-account-avatar,
+    header.topbar .sbss-session-account #accountInitials.sbss-session-account-avatar {
+        flex-basis: 30px;
+        width: 30px;
+        height: 30px;
+    }
+}

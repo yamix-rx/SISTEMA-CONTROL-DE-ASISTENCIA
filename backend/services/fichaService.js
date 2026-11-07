@@ -10,7 +10,7 @@ async function obtenerFicha(id) {
              ELSE COALESCE(e.horas_totales_asignadas, 0) END AS horas_totales_asignadas,
            e.fecha_nacimiento, e.telefono, e.correo_personal, e.direccion, e.carrera, e.institucion_educativa,
            e.fecha_ingreso, e.fecha_finalizacion, e.estado, e.observaciones_rrhh, e.puesto,
-           DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d') AS fecha_vencimiento_convenio,
+           ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio,'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d')`} AS fecha_vencimiento_convenio,
            emp.id AS empresa_id, emp.razon_social AS empresa,
            ar.id AS area_id, ar.nombre AS area, c.id AS cargo_id, c.nombre AS cargo
     FROM empleados e
@@ -83,13 +83,16 @@ async function obtenerHistorial(empleadoId, filtros = {}) {
   const paginaAsistencias = pagina(filtros.asistencias_pagina);
   const paginaPermisos = pagina(filtros.permisos_pagina);
   const [[resumenAsistencias], [resumenPermisos]] = await Promise.all([
-    pool.query(`SELECT COUNT(*) AS total, COALESCE(SUM(estado IN ('presente','tardanza')),0) AS asistencias,
-      COALESCE(SUM(estado='falta'),0) AS faltas, COALESCE(SUM(minutos_tardanza > 0),0) AS tardanzas,
+    pool.query(`SELECT COUNT(*) AS total,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE estado IN ('presente','tardanza'))" : "COALESCE(SUM(estado IN ('presente','tardanza')),0)"} AS asistencias,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE estado='falta')" : "COALESCE(SUM(estado='falta'),0)"} AS faltas,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE minutos_tardanza > 0)" : "COALESCE(SUM(minutos_tardanza > 0),0)"} AS tardanzas,
       COALESCE(SUM(minutos_tardanza),0) AS minutos_tardanza,
       ROUND(COALESCE(SUM(horas_trabajadas),0),2) AS horas
       FROM asistencias WHERE empleado_id = ?`, [empleadoId]),
-    pool.query(`SELECT COUNT(*) AS total, COALESCE(SUM(LOWER(estado)='solicitado'),0) AS solicitados,
-      COALESCE(SUM(LOWER(estado)='aprobado'),0) AS aprobados
+    pool.query(`SELECT COUNT(*) AS total,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE LOWER(estado)='solicitado')" : "COALESCE(SUM(LOWER(estado)='solicitado'),0)"} AS solicitados,
+      ${process.env.DATABASE_URL ? "COUNT(*) FILTER (WHERE LOWER(estado)='aprobado')" : "COALESCE(SUM(LOWER(estado)='aprobado'),0)"} AS aprobados
       FROM permisos WHERE empleado_id = ?`, [empleadoId])
   ]);
   const asistenciasTotal = Number(resumenAsistencias[0]?.total || 0);
@@ -107,8 +110,17 @@ async function obtenerHistorial(empleadoId, filtros = {}) {
     [empleadoId, (permisosMeta.pagina - 1) * 20])
   ]);
   return { asistencias, permisos, paginacion: { asistencias: asistenciasMeta, permisos: permisosMeta },
-    resumenHistorial: { ...(resumenAsistencias[0] || {}), permisos: permisosTotal,
-      permisosSolicitados: Number(resumenPermisos[0]?.solicitados || 0), permisosAprobados: Number(resumenPermisos[0]?.aprobados || 0) } };
+    resumenHistorial: { ...(resumenAsistencias[0] || {}),
+      // COUNT devuelve bigint de tipo string en node-postgres; mantener números en la API.
+      total: asistenciasTotal,
+      asistencias: Number(resumenAsistencias[0]?.asistencias || 0),
+      faltas: Number(resumenAsistencias[0]?.faltas || 0),
+      tardanzas: Number(resumenAsistencias[0]?.tardanzas || 0),
+      minutos_tardanza: Number(resumenAsistencias[0]?.minutos_tardanza || 0),
+      horas: Number(resumenAsistencias[0]?.horas || 0),
+      permisos: permisosTotal,
+      permisosSolicitados: Number(resumenPermisos[0]?.solicitados || 0),
+      permisosAprobados: Number(resumenPermisos[0]?.aprobados || 0) } };
 }
 
 function fichaPublica(ficha) {

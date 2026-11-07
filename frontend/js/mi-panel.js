@@ -132,10 +132,10 @@
 
     function renderAccount(usuario) {
         const fullName = [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ') || usuario.email || 'Mi cuenta';
-        setText('accountName', window.SBSSSession.abbreviateUserName(usuario) || fullName);
+        setText('accountName', fullName);
         element('accountName').title = fullName;
         setText('accountRole', usuario.rol, 'Colaborador');
-        setText('accountInitials', fullName.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase());
+        setText('accountInitials', [usuario.nombres, usuario.apellidos].map(part => String(part || '').trim().charAt(0)).join('').toUpperCase() || 'U');
         setText('welcomeText', usuario.nombres ? `Hola, ${usuario.nombres}. Aquí puedes consultar tu información personal.` : 'Aquí puedes consultar tu información personal.');
     }
 
@@ -284,7 +284,7 @@
     window.matchMedia('(min-width: 761px)').addEventListener('change', (event) => {
         if (event.matches) setMenuOpen(false);
     });
-    element('logoutButton').addEventListener('click', () => window.SBSSSession.logout());
+    // El botón superior y el lateral usan el manejador global de session.js.
     element('refreshButton').addEventListener('click', loadPanel);
     element('retryButton').addEventListener('click', loadPanel);
     window.addEventListener('storage', event => { if (event.key === 'sbss_asistencia_actualizada') loadPanel(); });
