@@ -117,6 +117,100 @@
       .filter(Boolean).join('');
   }
 
+
+  function nombreVisible(usuario) {
+    return [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ').trim()
+      || usuario.email || 'Mi cuenta';
+  }
+
+  function iniciales(usuario) {
+    return [usuario.nombres, usuario.apellidos]
+      .map(text => String(text || '').trim().charAt(0).toUpperCase()).join('') || 'U';
+  }
+
+  // Todas las pantallas usan el mismo bloque de cuenta y un SVG propio;
+  // esto no depende de que una biblioteca de iconos se inicialice.
+  function unificarCabecera(usuario) {
+    const header = document.querySelector('header.sbss-header, header.topbar');
+    if (!header || header.querySelector('.sbss-session-account')) return;
+    const nombreAnterior = header.querySelector('#nombreUsuarioSesion, #accountName');
+    const rolAnterior = header.querySelector('#rolUsuarioSesion, #accountRole');
+    const avatarAnterior = header.querySelector('#avatarLetra, #accountInitials');
+    const botonAnterior = header.querySelector('#btnCerrarSesion, #logoutButton');
+    const partes = [nombreAnterior, rolAnterior, avatarAnterior, botonAnterior].filter(Boolean);
+    if (!partes.length) return;
+
+    const personal = currentPage === 'mipanel.html';
+    const cuenta = document.createElement('div');
+    cuenta.className = 'sbss-session-account';
+    cuenta.setAttribute('aria-label', 'Cuenta y sesión actual');
+
+    const avatar = document.createElement('span');
+    avatar.id = personal ? 'accountInitials' : 'avatarLetra';
+    avatar.className = 'sbss-session-account-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = iniciales(usuario);
+
+    const detalles = document.createElement('div');
+    detalles.className = 'sbss-session-account-details';
+    const nombre = document.createElement('strong');
+    nombre.id = personal ? 'accountName' : 'nombreUsuarioSesion';
+    nombre.className = 'sbss-session-account-name';
+    nombre.textContent = nombreVisible(usuario);
+    nombre.title = nombreVisible(usuario);
+    const rol = document.createElement('span');
+    rol.id = personal ? 'accountRole' : 'rolUsuarioSesion';
+    rol.className = 'sbss-session-account-role';
+    rol.textContent = usuario.rol || '';
+    detalles.append(nombre, rol);
+
+    const salir = document.createElement('button');
+    salir.id = personal ? 'logoutButton' : 'btnCerrarSesion';
+    salir.type = 'button';
+    salir.className = 'sbss-session-account-logout';
+    salir.setAttribute('aria-label', 'Cerrar sesión');
+    salir.title = 'Cerrar sesión';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.8');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    const marco = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    marco.setAttribute('d', 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4');
+    const flecha = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    flecha.setAttribute('d', 'm16 17 5-5-5-5M21 12H9');
+    svg.append(marco, flecha);
+    const texto = document.createElement('span');
+    texto.textContent = 'Cerrar sesión';
+    salir.append(svg, texto);
+    cuenta.append(avatar, detalles, salir);
+
+    // Si la cabecera tiene un grupo de cuenta ya formado, se sustituye entero.
+    // Si el nombre, avatar y botón están sueltos (p. ej. Auditoría),
+    // se retiran solo esos elementos; nunca se quitan filtros de empresa.
+    let grupo = (botonAnterior || avatarAnterior || nombreAnterior).parentElement;
+    while (grupo && grupo !== header && !partes.every(elemento => grupo.contains(elemento))) {
+      grupo = grupo.parentElement;
+    }
+    if (grupo && grupo !== header) {
+      grupo.replaceWith(cuenta);
+    } else {
+      const bloques = new Set();
+      partes.forEach(elemento => {
+        let bloque = elemento;
+        while (bloque.parentElement && bloque.parentElement !== header) bloque = bloque.parentElement;
+        if (bloque.parentElement === header) bloques.add(bloque);
+      });
+      bloques.forEach(bloque => bloque.remove());
+      header.append(cuenta);
+    }
+  }
+
   function configureNavigation(session) {
     const { usuario, acceso } = session;
     const allowed = new Set(acceso.modulos);
@@ -150,11 +244,11 @@
     const role = document.getElementById('rolUsuarioSesion');
     const avatar = document.getElementById('avatarLetra');
     if (name) {
-      name.textContent = abbreviateUserName(usuario);
-      name.title = `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim();
+      name.textContent = nombreVisible(usuario);
+      name.title = nombreVisible(usuario);
     }
     if (role) role.textContent = usuario.rol;
-    if (avatar) avatar.textContent = (usuario.nombres || 'U').charAt(0).toUpperCase();
+    if (avatar) avatar.textContent = iniciales(usuario);
     // El cierre de sesión se gestiona de forma global mediante delegación de eventos.
   }
 
@@ -183,6 +277,7 @@
       }
       await domReady;
       if (window.SBSSNavigation) window.SBSSNavigation.render(data);
+      unificarCabecera(data.usuario);
       configureNavigation(data);
       verifiedSession = data;
       document.querySelector('.sbss-session-status')?.remove();
