@@ -208,7 +208,7 @@ test('retira privilegios a un segundo administrador sin borrar la cuenta ni la f
   assert.equal(usuarios.get(3).activo, anterior.activo);
   assert.equal(usuarios.get(3).sesion_version, anterior.sesion_version + 1);
   assert.equal(usuarios.get(1).rol_id, 1);
-  assert.ok(!sqlCalls.some(q => /\\bDELETE\\b|UPDATE empleados/i.test(q.sql)));
+  assert.ok(!sqlCalls.some(q => q.sql.includes('DELETE FROM') || q.sql.includes('UPDATE empleados')));
   assert.equal((await request('/api/session', { usuario: 3 })).status, 401);
   const nuevaSesion = await request('/api/session', { usuario: 3, sv: 1 });
   assert.equal(nuevaSesion.status, 200);
