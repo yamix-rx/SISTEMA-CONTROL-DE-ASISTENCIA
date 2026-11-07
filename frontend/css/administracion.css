@@ -13,3 +13,7 @@
   .admin-account small { max-width: 130px; font-size: 10px; }
   .admin-header + .sbss-navigation-layout > main > h1 { padding-left: 38px; }
 }
+
+/* Retirada de privilegios: acción visible, sin eliminar el registro personal. */
+td button.revoke-admin { background: #fff1ef; color: #963d30; border: 1px solid #e3b3a9; }
+td button.revoke-admin:hover { background: #ffe2dc; }
