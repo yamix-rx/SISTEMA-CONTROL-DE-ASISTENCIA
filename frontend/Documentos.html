@@ -86,6 +86,23 @@
         <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Constancia de prácticas</h3><p>Convenio UPN y plan de capacitación según la carrera del practicante.</p></div><button class="button button-outline" type="button" data-plantilla="constancia_practicas">Generar<span class="sr-only"> constancia de prácticas</span></button></article>
         <article class="template-card"><svg class="icon template-icon"><use href="#i-document"/></svg><div><h3>Carta de culminación de prácticas</h3><p>Certificado de la empresa con fechas, horas y actividades realizadas.</p></div><button class="button button-outline" type="button" data-plantilla="culminacion">Generar<span class="sr-only"> carta de culminación de prácticas</span></button></article>
       </div></section>
+      <section class="panel recent-generated-panel" aria-labelledby="tituloGenerados">
+        <div class="panel-heading">
+          <div><h2 id="tituloGenerados">Documentos generados recientemente</h2>
+          <p class="muted">PDF guardados de forma privada al abrir la vista previa. Podrás descargarlos aunque cierres esta página.</p></div>
+          <button id="btnActualizarGenerados" class="button button-outline" type="button">Actualizar</button>
+        </div>
+        <div class="recent-generated-content">
+          <p id="estadoGenerados" class="recent-generated-status" role="status" aria-live="polite">Cargando historial de PDF…</p>
+          <div id="tablaGenerados" class="table-container" hidden>
+            <table>
+              <caption class="sr-only">Historial de documentos PDF generados y guardados</caption>
+              <thead><tr><th scope="col">Documento</th><th scope="col">Colaborador</th><th scope="col">Empresa</th><th scope="col">Generado</th><th scope="col">Acción</th></tr></thead>
+              <tbody id="filasGenerados"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
       <p class="page-footnote">Los estados se actualizan al revisar los archivos. “Sin entregar” corresponde a requisitos obligatorios pendientes.</p>
     </main>
   </div>

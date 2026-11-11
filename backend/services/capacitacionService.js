@@ -1,18 +1,20 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('./busquedaTexto');
 
+const POSTGRES = Boolean(process.env.DATABASE_URL);
 const ESTADOS = new Set(['borrador', 'programada', 'en_curso', 'finalizada', 'cancelada']);
 const MODALIDADES = new Set(['presencial', 'virtual', 'hibrida']);
 const ESTADOS_PARTICIPANTE = new Set(['inscrito', 'en_curso', 'aprobado', 'desaprobado', 'no_asistio', 'cancelado']);
 
 // Las fechas y horas de la programación se interpretan en Perú (UTC-05).
 // Sin hora, el inicio es a medianoche y el fin incluye todo el último día.
-const AHORA_PERU_SQL = "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
+const AHORA_PERU_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')" : "CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')";
 const ESTADO_HORARIO_SQL = `CASE
   WHEN cap.estado NOT IN ('programada', 'en_curso') THEN cap.estado
   WHEN ${AHORA_PERU_SQL} >= CASE WHEN cap.hora_fin IS NULL
-    THEN TIMESTAMP(DATE_ADD(cap.fecha_fin, INTERVAL 1 DAY), '00:00:00')
-    ELSE TIMESTAMP(cap.fecha_fin, cap.hora_fin) END THEN 'finalizada'
-  WHEN ${AHORA_PERU_SQL} >= TIMESTAMP(cap.fecha_inicio, COALESCE(cap.hora_inicio, '00:00:00')) THEN 'en_curso'
+    THEN ${POSTGRES ? "(cap.fecha_fin + INTERVAL '1 day')" : "TIMESTAMP(DATE_ADD(cap.fecha_fin, INTERVAL 1 DAY), '00:00:00')"}
+    ELSE ${POSTGRES ? "(cap.fecha_fin + cap.hora_fin)" : "TIMESTAMP(cap.fecha_fin, cap.hora_fin)"} END THEN 'finalizada'
+  WHEN ${AHORA_PERU_SQL} >= ${POSTGRES ? "(cap.fecha_inicio + COALESCE(cap.hora_inicio,TIME '00:00:00'))" : "TIMESTAMP(cap.fecha_inicio, COALESCE(cap.hora_inicio, '00:00:00'))"} THEN 'en_curso'
   ELSE cap.estado END`;
 
 function errorHttp(status, message) {
@@ -121,7 +123,7 @@ async function catalogos() {
       INNER JOIN empresas emp ON emp.id = e.empresa_id
       INNER JOIN areas ar ON ar.id = e.area_id
       INNER JOIN cargos c ON c.id = e.cargo_id
-      WHERE e.estado = 'activo'
+      WHERE e.estado = 'activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       ORDER BY e.apellidos, e.nombres
     `).then(([rows]) => rows),
     pool.query(`SELECT id, razon_social FROM empresas WHERE estado = 'activo' ORDER BY razon_social`).then(([rows]) => rows)
@@ -155,8 +157,8 @@ async function listar(filtros = {}) {
     params.push(modalidad);
   }
   if (filtros.buscar) {
-    const q = `%${String(filtros.buscar).trim().slice(0, 120)}%`;
-    where.push('(cap.titulo LIKE ? OR cap.categoria LIKE ? OR cap.proveedor LIKE ?)');
+    const q = patronBusqueda(String(filtros.buscar).trim().slice(0, 120));
+    where.push(`(LOWER(COALESCE(cap.titulo, '')) LIKE ? OR LOWER(COALESCE(cap.categoria, '')) LIKE ? OR LOWER(COALESCE(cap.proveedor, '')) LIKE ?)`);
     params.push(q, q, q);
   }
   if (filtros.desde) {
@@ -175,6 +177,7 @@ async function listar(filtros = {}) {
     FROM capacitaciones cap
     LEFT JOIN empresas emp ON emp.id = cap.empresa_id
     LEFT JOIN capacitacion_participantes cp ON cp.capacitacion_id = cap.id
+    LEFT JOIN empleados e ON e.id = cp.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     WHERE ${where.join(' AND ')}
   `;
 
@@ -183,12 +186,12 @@ async function listar(filtros = {}) {
            cap.empresa_id, emp.razon_social AS empresa, cap.fecha_inicio, cap.fecha_fin,
            cap.hora_inicio, cap.hora_fin, cap.horas, cap.lugar, cap.enlace, cap.cupo,
            cap.obligatorio, ${ESTADO_HORARIO_SQL} AS estado, cap.estado AS estado_registrado, cap.created_at, cap.updated_at,
-           SUM(CASE WHEN cp.estado <> 'cancelado' THEN 1 ELSE 0 END) AS inscritos,
-           SUM(CASE WHEN cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
-           SUM(CASE WHEN cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
-           SUM(CASE WHEN cp.estado = 'no_asistio' THEN 1 ELSE 0 END) AS no_asistieron
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado <> 'cancelado' THEN 1 ELSE 0 END) AS inscritos,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'no_asistio' THEN 1 ELSE 0 END) AS no_asistieron
     ${from}
-    GROUP BY cap.id
+    GROUP BY cap.id ${POSTGRES ? ', emp.razon_social' : ''}
     ORDER BY cap.fecha_inicio DESC, cap.id DESC
     LIMIT ? OFFSET ?
   `, [...params, limite, offset]);
@@ -220,8 +223,9 @@ async function resumen() {
     SELECT COUNT(*) AS inscritos,
            SUM(CASE WHEN estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
            SUM(CASE WHEN estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados
-    FROM capacitacion_participantes
-    WHERE estado <> 'cancelado'
+    FROM capacitacion_participantes cp
+    INNER JOIN empleados e ON e.id = cp.empleado_id
+    WHERE cp.estado <> 'cancelado' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
   `);
   const data = { total: 0, borrador: 0, programada: 0, en_curso: 0, finalizada: 0, cancelada: 0 };
   for (const row of rows) {
@@ -261,7 +265,7 @@ async function detalle(id) {
     INNER JOIN areas ar ON ar.id = e.area_id
     INNER JOIN cargos c ON c.id = e.cargo_id
     LEFT JOIN documentos_empleado de ON de.id = cp.certificado_documento_id
-    WHERE cp.capacitacion_id = ?
+    WHERE cp.capacitacion_id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     ORDER BY e.apellidos, e.nombres
   `, [cap.id]);
   return { ...cap, participantes };
@@ -310,8 +314,10 @@ async function actualizar(id, body, usuarioId) {
     await validarEmpresa(connection, data.empresa_id);
     if (data.cupo) {
       const [[conteo]] = await connection.query(`
-        SELECT COUNT(*) AS total FROM capacitacion_participantes
-        WHERE capacitacion_id = ? AND estado <> 'cancelado'
+        SELECT COUNT(*) AS total FROM capacitacion_participantes cp
+        INNER JOIN empleados e ON e.id = cp.empleado_id
+        WHERE cp.capacitacion_id = ? AND cp.estado <> 'cancelado'
+          AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       `, [capacitacionId]);
       if (Number(conteo.total) > data.cupo) throw errorHttp(409, 'El cupo no puede ser menor al número de participantes inscritos.');
     }
@@ -364,7 +370,7 @@ async function agregarParticipantes(id, body) {
     if (['finalizada', 'cancelada'].includes(cap.estado)) throw errorHttp(409, 'No se pueden agregar participantes a una capacitación finalizada o cancelada.');
 
     const [empleados] = await connection.query(`
-      SELECT id, empresa_id, estado FROM empleados WHERE id IN (?)
+      SELECT id, empresa_id, estado FROM empleados WHERE id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'} AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'
     `, [ids]);
     const encontrados = new Set(empleados.map(e => Number(e.id)));
     const faltantes = ids.filter(x => !encontrados.has(x));
@@ -376,7 +382,7 @@ async function agregarParticipantes(id, body) {
 
     const [existentes] = await connection.query(`
       SELECT empleado_id, estado FROM capacitacion_participantes
-      WHERE capacitacion_id = ? AND empleado_id IN (?)
+      WHERE capacitacion_id = ? AND empleado_id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'}
     `, [capacitacionId, ids]);
     const activos = new Set(existentes.filter(e => e.estado !== 'cancelado').map(e => Number(e.empleado_id)));
     const cancelados = new Set(existentes.filter(e => e.estado === 'cancelado').map(e => Number(e.empleado_id)));
@@ -418,7 +424,7 @@ async function actualizarParticipante(capacitacionIdRaw, empleadoIdRaw, body) {
   const capacitacionId = enteroPositivo(capacitacionIdRaw, 'La capacitación');
   const empleadoId = enteroPositivo(empleadoIdRaw, 'El colaborador');
   const [rows] = await pool.query(`
-    SELECT * FROM capacitacion_participantes WHERE capacitacion_id = ? AND empleado_id = ? LIMIT 1
+    SELECT cp.* FROM capacitacion_participantes cp INNER JOIN empleados e ON e.id=cp.empleado_id WHERE cp.capacitacion_id = ? AND cp.empleado_id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [capacitacionId, empleadoId]);
   if (!rows.length) throw errorHttp(404, 'El colaborador no está registrado en esta capacitación.');
   const actual = rows[0];
@@ -457,9 +463,10 @@ async function retirarParticipante(capacitacionId, empleadoId) {
   const capId = enteroPositivo(capacitacionId, 'La capacitación');
   const empId = enteroPositivo(empleadoId, 'El colaborador');
   const [result] = await pool.query(`
-    UPDATE capacitacion_participantes
+    UPDATE capacitacion_participantes cp
     SET estado = 'cancelado', fecha_completado = NULL
-    WHERE capacitacion_id = ? AND empleado_id = ?
+    WHERE cp.capacitacion_id = ? AND cp.empleado_id = ?
+      AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=cp.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')
   `, [capId, empId]);
   if (!result.affectedRows) throw errorHttp(404, 'El participante no está registrado en esta capacitación.');
   return { retirado: true, capacitacion_id: capId, empleado_id: empId };
@@ -469,7 +476,7 @@ async function historialEmpleado(empleadoIdRaw) {
   const empleadoId = enteroPositivo(empleadoIdRaw, 'El colaborador');
   const [empleados] = await pool.query(`
     SELECT id, CONCAT(nombres, ' ', apellidos) AS colaborador, numero_documento
-    FROM empleados WHERE id = ? LIMIT 1
+    FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [empleadoId]);
   if (!empleados.length) throw errorHttp(404, 'Colaborador no encontrado.');
   const [rows] = await pool.query(`

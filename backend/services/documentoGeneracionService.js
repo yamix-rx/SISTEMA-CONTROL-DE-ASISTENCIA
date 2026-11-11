@@ -81,8 +81,12 @@ async function catalogos() {
 async function guardarPlantilla(codigo, body) {
   if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
   const plantilla = validarPlantilla(body);
-  const [result] = await pool.query(`INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
-    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`,
+  const pgSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
+    VALUES (?, ?, ?) ON CONFLICT (codigo) DO UPDATE
+    SET titulo = EXCLUDED.titulo, cuerpo_html = EXCLUDED.cuerpo_html RETURNING id`;
+  const mysqlSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
+    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`;
+  const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
   [codigo, plantilla.titulo, plantilla.cuerpo]);
   return { id: Number(result.insertId) || null, codigo, ...plantilla, personalizada: true, revision: revision(plantilla) };
 }
@@ -153,7 +157,7 @@ async function preparar(body = {}) {
       e.direccion, e.fecha_nacimiento, e.puesto, pd.fecha_vencimiento_convenio,
       COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta
       FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-      WHERE e.id = ? LIMIT 1`, [empleadoId]),
+      WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1`, [empleadoId]),
     pool.query(`SELECT emp.razon_social AS empresa, emp.ruc, emp.direccion AS empresa_direccion, ar.nombre AS area, c.nombre AS cargo
       FROM empresas emp INNER JOIN areas ar ON ar.empresa_id = emp.id
       INNER JOIN cargos c ON c.area_id = ar.id

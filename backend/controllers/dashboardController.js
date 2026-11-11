@@ -1,6 +1,9 @@
 const pool = require('../config/database');
 const diaria = require('../services/asistenciaDiariaService');
 const { hoy } = require('../services/asistenciaReglas');
+const { filtrarSeguimientoPracticas } = require('../services/seguimientoPracticas');
+const POSTGRES = Boolean(process.env.DATABASE_URL);
+const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 
 exports.obtenerDatosDashboard = async (req, res) => {
   const { empresa_id } = req.query;
@@ -26,9 +29,10 @@ exports.obtenerDatosDashboard = async (req, res) => {
       FROM horarios h
       INNER JOIN empleados e ON h.empleado_id = e.id
       INNER JOIN empresas emp ON e.empresa_id = emp.id
-      WHERE h.dia_semana = (WEEKDAY(CURDATE()) + 1)
+      WHERE h.dia_semana = ${POSTGRES ? `EXTRACT(ISODOW FROM ${HOY_SQL})` : '(WEEKDAY(CURDATE()) + 1)'}
         AND h.activo = TRUE
         AND e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         ${filtroEmpresaHorario}
       ORDER BY h.hora_entrada ASC
     `, paramsEmpresa);
@@ -78,10 +82,11 @@ exports.obtenerDatosDashboard = async (req, res) => {
       LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
       LEFT JOIN asistencias a ON a.empleado_id = e.id
       WHERE e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
         ${filtroEmpresaPracticas}
       GROUP BY e.id, e.nombres, e.apellidos, emp.razon_social, ar.nombre, c.nombre, pd.horas_meta, e.horas_totales_asignadas
-      HAVING horas_meta > 0
+      HAVING ${POSTGRES ? 'COALESCE(pd.horas_meta,e.horas_totales_asignadas,0)' : 'horas_meta'} > 0
       ORDER BY porcentaje_avance DESC, horas_pendientes ASC, e.apellidos ASC
     `, paramsEmpresa);
 
@@ -91,6 +96,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       INNER JOIN empresas emp ON e.empresa_id = emp.id
       CROSS JOIN tipo_documentos td
       WHERE td.es_obligatorio = TRUE AND e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         ${filtroEmpresaHorario}
         AND NOT EXISTS (
           SELECT 1 FROM documentos_empleado de
@@ -110,7 +116,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id
       JOIN documentos_empleado de ON de.empleado_id=e.id
       JOIN tipo_documentos td ON td.id=de.tipo_documento_id AND td.es_obligatorio=TRUE
-      WHERE e.estado='activo' ${filtroEmpresaHorario}
+      WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${filtroEmpresaHorario}
         AND de.id=(SELECT MAX(ultimo.id) FROM documentos_empleado ultimo WHERE ultimo.empleado_id=e.id AND ultimo.tipo_documento_id=td.id)`, paramsEmpresa);
     const disponibilidad = await Promise.all(registradosObligatorios.map(async ({ruta_archivo,...doc}) => ({...doc,
       disponible: await require('../services/documentoArchivoService').disponible(ruta_archivo)})));
@@ -120,37 +126,40 @@ exports.obtenerDatosDashboard = async (req, res) => {
     const [[contratosPorVencer], [tardanzasAcumuladas], [personalActivo], [conveniosPorVencer]] = await Promise.all([
       pool.query(`SELECT c.id, c.empleado_id, c.tipo_contrato, c.fecha_fin,
           CONCAT(e.nombres,' ',e.apellidos) AS colaborador, emp.razon_social AS empresa,
-          DATEDIFF(c.fecha_fin,CURDATE()) AS dias_restantes
+           ${POSTGRES ? `(c.fecha_fin - ${HOY_SQL})` : 'DATEDIFF(c.fecha_fin,CURDATE())'} AS dias_restantes
         FROM contratos c JOIN empleados e ON e.id=c.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
-        WHERE c.estado='vigente' AND e.estado='activo'
-          AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        WHERE c.estado='vigente' AND e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
+          AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY c.fecha_fin, c.id LIMIT 30`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, COUNT(*) AS tardanzas, SUM(a.minutos_tardanza) AS minutos
         FROM asistencias a JOIN empleados e ON e.id=a.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
-        WHERE a.minutos_tardanza>0 AND a.fecha BETWEEN DATE_FORMAT(CURDATE(),'%Y-%m-01') AND CURDATE()
+        WHERE a.minutos_tardanza>0 AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' AND a.fecha BETWEEN ${POSTGRES ? `date_trunc('month',${HOY_SQL})::date` : `DATE_FORMAT(CURDATE(),'%Y-%m-01')`} AND ${HOY_SQL}
           ${filtroEmpresaHorario}
         GROUP BY e.id,e.nombres,e.apellidos,emp.razon_social HAVING COUNT(*)>=3
         ORDER BY tardanzas DESC, minutos DESC LIMIT 30`, paramsEmpresa),
-      pool.query(`SELECT COALESCE(SUM(e.tipo_vinculo='trabajador'),0) AS trabajadores,
-          COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0) AS practicantes
-        FROM empleados e WHERE e.estado='activo' ${filtroEmpresaHorario}`, paramsEmpresa),
+      pool.query(`SELECT  ${POSTGRES ? `COUNT(*) FILTER (WHERE e.tipo_vinculo='trabajador')` : `COALESCE(SUM(e.tipo_vinculo='trabajador'),0)`} AS trabajadores,
+           ${POSTGRES ? `COUNT(*) FILTER (WHERE LOWER(e.tipo_vinculo) LIKE 'practicante%')` : `COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0)`} AS practicantes
+        FROM empleados e WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${filtroEmpresaHorario}`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, ar.nombre AS area, c.nombre AS cargo, e.puesto,
-          DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d') AS fecha_vencimiento_convenio,
-          DATEDIFF(pd.fecha_vencimiento_convenio,CURDATE()) AS dias_restantes
+           ${POSTGRES ? `TO_CHAR(pd.fecha_vencimiento_convenio,'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d')`} AS fecha_vencimiento_convenio,
+          ${POSTGRES ? `(pd.fecha_vencimiento_convenio - ${HOY_SQL})` : 'DATEDIFF(pd.fecha_vencimiento_convenio,CURDATE())'} AS dias_restantes
         FROM practicante_detalles pd
         JOIN empleados e ON e.id=pd.empleado_id
         JOIN empresas emp ON emp.id=e.empresa_id
         JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
-        WHERE e.estado='activo' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
-          AND pd.fecha_vencimiento_convenio BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
+          AND pd.fecha_vencimiento_convenio BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY pd.fecha_vencimiento_convenio, e.id`, paramsEmpresa)
     ]);
-    const practicantesProximos = seguimientoPracticas.filter(item => Number(item.horas_realizadas) < Number(item.horas_meta) && Number(item.porcentaje_avance) >= 80);
-    const practicantesCompletados = seguimientoPracticas.filter(item => Number(item.horas_realizadas) >= Number(item.horas_meta));
+    // La tabla sólo recibe practicantes que alcanzaron al menos el 80 % o completaron su meta.
+    // Se compara con las horas exactas para evitar que el redondeo del porcentaje muestre 80 % antes de tiempo.
+    const seguimientoVisible = filtrarSeguimientoPracticas(seguimientoPracticas);
+    const practicantesProximos = seguimientoVisible.filter(item => Number(item.horas_realizadas) < Number(item.horas_meta));
+    const practicantesCompletados = seguimientoVisible.filter(item => Number(item.horas_realizadas) >= Number(item.horas_meta));
 
     return res.status(200).json({
       ok: true,
@@ -170,7 +179,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       alertasDocumentos: [...inaccesibles,...documentosPendientes].slice(0,10),
       practicantesProximos,
       practicantesCompletados,
-      seguimientoPracticas,
+      seguimientoPracticas: seguimientoVisible,
       contratosPorVencer,
       conveniosPorVencer,
       tardanzasAcumuladas

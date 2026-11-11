@@ -39,13 +39,85 @@
     $('newPasswordField').hidden=true;$('userPassword').required=false;$('userPassword').value='';
     $('userEmail').focus();$('userForm').scrollIntoView({behavior:'smooth',block:'center'});
   }
+  async function retirarAdministrador(u, boton) {
+    if (Number(u.id) === Number(current.usuario.id)) {
+      message('No puedes retirar tu propio perfil de administrador.', true);
+      return;
+    }
+    const perfil = catalogs.roles.find(r => r.nombre === 'Trabajador/Practicante');
+    if (!perfil) {
+      message('No está disponible el perfil Trabajador/Practicante.', true);
+      return;
+    }
+    const confirmar = window.confirm(
+      `¿Quitar el perfil de Administrador General a ${u.colaborador}?\n\n` +
+      'Su cuenta quedará como Trabajador/Practicante, sin cambiar su vínculo laboral o de prácticas. ' +
+      'Se conservarán su ficha de personal, asistencia y documentos. Las sesiones actuales se cerrarán.'
+    );
+    if (!confirmar) return;
+    boton.disabled = true;
+    try {
+      // Reutiliza la actualización transaccional: protege al último administrador
+      // e invalida las sesiones existentes sin modificar el registro de empleados.
+      await save(`/usuarios/${u.id}`, {
+        email: u.email, rol_id: perfil.id, activo: Number(u.activo)
+      }, 'PUT');
+      await load();
+      message(`Se retiraron los permisos de administrador de ${u.colaborador}. Su cuenta y ficha se conservan.`);
+    } catch (e) {
+      message(e.message, true);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+  async function eliminarCuenta(u, boton) {
+    if (Number(u.id) === Number(current.usuario.id)) {
+      message('No puedes eliminar la cuenta con la que has iniciado sesión.', true);
+      return;
+    }
+    const confirmar = window.confirm(
+      `¿Eliminar definitivamente la cuenta de acceso de ${u.colaborador}?\n\n` +
+      'Se eliminará su registro de usuarios y se cerrarán sus sesiones. ' +
+      'Se conservarán la ficha del colaborador, sus asistencias, documentos y vínculo laboral o de prácticas.'
+    );
+    if (!confirmar) return;
+    boton.disabled = true;
+    try {
+      const result = await api(`/usuarios/${u.id}`, { method: 'DELETE' });
+      await load();
+      message(result.mensaje);
+    } catch (e) {
+      message(e.message, true);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+
   function renderUsers() {
     const q=$('searchUsers').value.trim().toLowerCase();
-    table('usersBody',users.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q)),u=>{
+    const listado=users.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q));
+    $('usersCount').textContent = `${users.length} cuentas registradas`;
+    table('usersBody',listado,u=>{
       const person=cell();person.append(node('strong',u.colaborador));const email=node('div',u.email);email.className='email';person.append(email);
       const actions=cell();actions.append(action('Editar',()=>editUser(u)),action('Contraseña',()=>{
         $('passwordForm').reset();$('passwordError').textContent='';$('passwordUserId').value=u.id;$('passwordAccount').textContent=`${u.colaborador} · ${u.email}`;$('passwordDialog').showModal();
       }));
+      if (u.rol === 'Administrador General' && Number(u.id) !== Number(current.usuario.id)) {
+        const quitar = action('Quitar administrador', () => retirarAdministrador(u, quitar));
+        quitar.classList.add('revoke-admin');
+        quitar.title = 'Cambiar a Trabajador/Practicante sin eliminar datos del personal';
+        actions.append(quitar);
+      }
+      const esCuentaActual = Number(u.id) === Number(current.usuario.id);
+      const borrar = action(esCuentaActual ? 'Cuenta actual' : 'Eliminar cuenta', () => eliminarCuenta(u, borrar));
+      if (esCuentaActual) {
+        borrar.disabled = true;
+        borrar.title = 'No puedes eliminar la cuenta con la que has iniciado sesión.';
+      } else {
+        borrar.classList.add('delete-user');
+        borrar.title = 'Eliminar definitivamente esta cuenta de acceso';
+      }
+      actions.append(borrar);
       return [person,cell(u.rol),cell(Number(u.activo)?'Activo':'Inactivo'),actions];
     },4);
   }

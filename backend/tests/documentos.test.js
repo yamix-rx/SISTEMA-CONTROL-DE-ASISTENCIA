@@ -71,7 +71,7 @@ const pool = {
       if (esquemaFalla && /de.observacion/.test(sql)) throw Object.assign(new Error('Fixture missing column'), { code: 'ER_BAD_FIELD_ERROR' });
       return [filasPanel(sql, params)];
     }
-    if (/FROM documentos_empleado WHERE id/.test(sql)) return [registros.filter(d => d.id === params[0] && (!/AND empleado_id = \?/.test(sql) || d.empleado_id === params[1]))];
+    if (/FROM documentos_empleado de INNER JOIN empleados e/.test(sql)) return [registros.filter(d => d.id === params[0] && (!/AND de\.empleado_id = \?/.test(sql) || d.empleado_id === params[1]))];
     if (/SELECT id FROM empleados/.test(sql)) return [empleados.filter(e => e.id === params[0])];
     if (/SELECT id FROM tipo_documentos/.test(sql)) return [tipos.filter(t => t.id === params[0])];
     if (/FROM empleados e/.test(sql)) return [empleados];
@@ -347,7 +347,7 @@ test('colaborador puede abrir y descargar sus archivos; IDs ajenos devuelven 404
     assert.equal((await request(`/mios/3/${ruta}?empleado_id=102`, { usuario: 3 })).status, 404);
     assert.equal((await request(`/mios/${id}/${ruta}`, { usuario: null })).status, 401);
   }
-  const lecturas = consultas.filter(q => /FROM documentos_empleado WHERE id.*AND empleado_id/.test(q.sql));
+  const lecturas = consultas.filter(q => /FROM documentos_empleado de INNER JOIN empleados e.*WHERE de\.id.*AND de\.empleado_id/.test(q.sql));
   assert.ok(lecturas.length >= 4);
   assert.ok(lecturas.every(q => q.params[1] === 101));
   assert.equal((await request('/mios/3/descargar', { usuario: 2 })).status, 403);

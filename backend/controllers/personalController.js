@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('../services/busquedaTexto');
 
 // 1. Listar colaboradores para el buscador o selector
 exports.listarColaboradores = async (req, res) => {
@@ -9,7 +10,7 @@ exports.listarColaboradores = async (req, res) => {
       SELECT 
         e.id,
         e.empresa_id, e.area_id, e.cargo_id, e.puesto,
-        DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d') AS fecha_vencimiento_convenio,
+        ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d')`} AS fecha_vencimiento_convenio,
         CONCAT(e.nombres, ' ', e.apellidos) AS colaborador,
         e.numero_documento,
         e.tipo_vinculo,
@@ -22,7 +23,7 @@ exports.listarColaboradores = async (req, res) => {
       INNER JOIN areas ar ON e.area_id = ar.id
       INNER JOIN cargos c ON e.cargo_id = c.id
       LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-      WHERE 1 = 1
+      WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     `;
     const params = [];
 
@@ -40,8 +41,8 @@ exports.listarColaboradores = async (req, res) => {
       else return res.status(400).json({ ok: false, mensaje: 'Tipo de vínculo no válido.' });
     }
     if (buscar) {
-      query += ` AND (CONCAT(e.nombres, ' ', e.apellidos) LIKE ? OR e.numero_documento LIKE ? OR emp.razon_social LIKE ? OR ar.nombre LIKE ? OR c.nombre LIKE ? OR e.puesto LIKE ?)`;
-      params.push(...Array(6).fill(`%${buscar}%`));
+      query += ` AND (LOWER(CONCAT(COALESCE(e.nombres, ''), ' ', COALESCE(e.apellidos, ''))) LIKE ? OR LOWER(COALESCE(e.numero_documento, '')) LIKE ? OR LOWER(COALESCE(emp.razon_social, '')) LIKE ? OR LOWER(COALESCE(ar.nombre, '')) LIKE ? OR LOWER(COALESCE(c.nombre, '')) LIKE ? OR LOWER(COALESCE(e.puesto, '')) LIKE ?)`;
+      params.push(...Array(6).fill(patronBusqueda(buscar)));
     }
 
     query += ` ORDER BY e.apellidos ASC`;
@@ -94,9 +95,9 @@ exports.actualizarObservaciones = async (req, res) => {
     return res.status(400).json({ ok: false, mensaje: 'Las observaciones deben tener hasta 10000 caracteres.' });
   }
   try {
-    const [rows] = await pool.query('SELECT id FROM empleados WHERE id = ?', [id]);
+    const [rows] = await pool.query("SELECT id FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'", [id]);
     if (!rows.length) return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' });
-    await pool.query('UPDATE empleados SET observaciones_rrhh = ? WHERE id = ?', [valor.trim() || null, id]);
+    await pool.query("UPDATE empleados SET observaciones_rrhh = ? WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'", [valor.trim() || null, id]);
     return res.json({ ok: true, mensaje: 'Observaciones guardadas.', observaciones_rrhh: valor.trim() });
   } catch (error) {
     console.error('Error al guardar observaciones:', error.code || error.name);
@@ -233,7 +234,7 @@ exports.crearColaborador = async (req, res) => {
       connection.release();
     }
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
     if (error.status === 400) return res.status(400).json({ ok: false, mensaje: error.message });
     console.error('Error al crear colaborador:', error);
     return res.status(500).json({ ok: false, mensaje: 'Error al registrar personal.' });
@@ -257,15 +258,15 @@ exports.actualizarColaborador = async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      const [rows] = await connection.query(`SELECT e.*, DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d') AS fecha_vencimiento_convenio
-        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? FOR UPDATE`, [id]);
+      const [rows] = await connection.query(`SELECT e.*, ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d')`} AS fecha_vencimiento_convenio
+        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${process.env.DATABASE_URL ? 'FOR UPDATE OF e' : 'FOR UPDATE'}`, [id]);
       if (!rows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
       Object.assign(p, normalizarPuestoConvenio(req.body || {}, p.fecha_ingreso, rows[0]));
       await connection.query(
         'UPDATE empleados SET tipo_documento=?, numero_documento=?, nombres=?, apellidos=?, fecha_nacimiento=?, telefono=?, correo_personal=?, direccion=?, carrera=?, institucion_educativa=?, empresa_id=?, area_id=?, cargo_id=?, tipo_vinculo=?, horas_totales_asignadas=?, estado=?, fecha_ingreso=?, fecha_finalizacion=?, observaciones_rrhh=?, puesto=? WHERE id=?',
         [p.tipo_documento, p.numero_documento, p.nombres, p.apellidos, p.fecha_nacimiento, p.telefono, p.correo_personal, p.direccion, p.carrera, p.institucion_educativa, p.empresa_id, p.area_id, p.cargo_id, p.tipo_vinculo, p.horas_totales_asignadas, p.estado, p.fecha_ingreso, p.fecha_finalizacion, p.observaciones_rrhh, p.puesto, id]);
       if (p.tipo_vinculo.startsWith('practicante')) {
-        await connection.query('INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta), fecha_vencimiento_convenio = VALUES(fecha_vencimiento_convenio)',
+        await connection.query((process.env.DATABASE_URL ? 'INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta, fecha_vencimiento_convenio = EXCLUDED.fecha_vencimiento_convenio' : 'INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado, fecha_vencimiento_convenio) VALUES (?, ?, FALSE, ?) ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta), fecha_vencimiento_convenio = VALUES(fecha_vencimiento_convenio)'),
           [id, p.horas_totales_asignadas > 0 ? p.horas_totales_asignadas : 320, p.fecha_vencimiento_convenio]);
       } else if (Object.prototype.hasOwnProperty.call(req.body, 'fecha_vencimiento_convenio')) {
         await connection.query('UPDATE practicante_detalles SET fecha_vencimiento_convenio = ? WHERE empleado_id = ?', [p.fecha_vencimiento_convenio, id]);
@@ -277,7 +278,7 @@ exports.actualizarColaborador = async (req, res) => {
     } catch (error) { await connection.rollback(); throw error; }
     finally { connection.release(); }
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) return res.status(409).json({ ok: false, mensaje: 'El número de documento ya está registrado.' });
     if (error.status === 400) return res.status(400).json({ ok: false, mensaje: error.message });
     console.error('Error al actualizar colaborador:', error.code || error.name);
     return res.status(500).json({ ok: false, mensaje: 'Error al actualizar personal.' });
@@ -301,7 +302,7 @@ exports.actualizarHorasPracticas = async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
     const [empleadoRows] = await connection.query(`
-      SELECT id, tipo_vinculo FROM empleados WHERE id = ? LIMIT 1 FOR UPDATE
+      SELECT id, tipo_vinculo FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1 FOR UPDATE
     `, [empleadoId]);
     if (!empleadoRows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
     if (!String(empleadoRows[0].tipo_vinculo || '').toLowerCase().startsWith('practicante')) {
@@ -311,7 +312,7 @@ exports.actualizarHorasPracticas = async (req, res) => {
     await connection.query(`
       INSERT INTO practicante_detalles (empleado_id, horas_meta, estado_completado)
       VALUES (?, ?, FALSE)
-      ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)
+      ${process.env.DATABASE_URL ? 'ON CONFLICT (empleado_id) DO UPDATE SET horas_meta = EXCLUDED.horas_meta' : 'ON DUPLICATE KEY UPDATE horas_meta = VALUES(horas_meta)'}
     `, [empleadoId, horasMeta]);
     await connection.query(`UPDATE empleados SET horas_totales_asignadas = ? WHERE id = ?`, [horasMeta, empleadoId]);
     await connection.commit();
