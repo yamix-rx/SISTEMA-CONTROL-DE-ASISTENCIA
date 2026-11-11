@@ -28,7 +28,7 @@ exports.listar = async (req, res) => {
 
     const max = Math.min(Math.max(Number(limite) || 100, 1), 500);
     const sql = `
-      SELECT h.id, h.usuario_id, h.tabla_afectada, h.registro_id, h.accion,
+      SELECT h.id, h.tabla_afectada, h.registro_id, h.accion,
              h.datos_anteriores, h.datos_nuevos, h.ip_origen, h.created_at,
              CASE WHEN r.nombre = 'Administrador General' THEN NULL ELSE u.email END AS email,
              CASE WHEN r.nombre = 'Administrador General' THEN 'Cuenta del sistema' ELSE CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) END AS usuario_nombre,

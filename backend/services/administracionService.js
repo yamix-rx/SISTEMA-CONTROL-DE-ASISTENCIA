@@ -33,7 +33,7 @@ async function catalogos() {
   const [[roles], [empleados], [empresas], [areas], [cargos], [tiposDocumento], [tiposPermiso]] = await Promise.all([
     pool.query('SELECT id, nombre FROM roles ORDER BY id'),
     pool.query(`SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos) AS nombre, e.numero_documento,
-      e.estado, u.id AS usuario_id FROM empleados e LEFT JOIN usuarios u ON u.empleado_id=e.id ORDER BY e.apellidos, e.nombres`),
+      e.estado, u.id AS usuario_id FROM empleados e LEFT JOIN usuarios u ON u.empleado_id=e.id WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ORDER BY e.apellidos, e.nombres`),
     pool.query('SELECT id, razon_social, estado FROM empresas ORDER BY razon_social'),
     pool.query('SELECT a.id, a.nombre, a.empresa_id, e.razon_social AS empresa FROM areas a JOIN empresas e ON e.id=a.empresa_id ORDER BY e.razon_social, a.nombre'),
     pool.query('SELECT c.id, c.nombre, c.area_id, a.nombre AS area, a.empresa_id FROM cargos c JOIN areas a ON a.id=c.area_id ORDER BY a.nombre, c.nombre'),
