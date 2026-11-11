@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('./busquedaTexto');
 const archivos = require('./documentoArchivoService');
 
 const ESTADOS = ['sin_entregar', 'pendiente', 'validado', 'rechazado'];
@@ -27,8 +28,8 @@ function construirFiltros(query) {
   const params = [];
   if (query.q !== undefined && query.q !== '') {
     if (typeof query.q !== 'string' || query.q.length > 150) throw errorSolicitud('La búsqueda admite un máximo de 150 caracteres.');
-    const buscar = `%${query.q.trim()}%`;
-    condiciones.push("(CONCAT(e.nombres, ' ', e.apellidos) LIKE ? OR e.numero_documento LIKE ?)");
+    const buscar = patronBusqueda(query.q);
+    condiciones.push("(LOWER(CONCAT(COALESCE(e.nombres, ''), ' ', COALESCE(e.apellidos, ''))) LIKE ? OR LOWER(COALESCE(e.numero_documento, '')) LIKE ?)");
     params.push(buscar, buscar);
   }
   for (const [nombre, campo] of [['empresa_id', 'e.empresa_id'], ['tipo_documento_id', 'td.id'], ['empleado_id', 'e.id']]) {

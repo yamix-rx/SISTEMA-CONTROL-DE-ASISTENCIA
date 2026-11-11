@@ -311,9 +311,9 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
   };
 
   document.getElementById('txtBuscarEmpresa').addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase();
-    const filtradas = listaEmpresas.filter(x => 
-      x.razon_social.toLowerCase().includes(q) || (x.ruc && x.ruc.includes(q))
+    const q = String(e.target.value || '').trim().toLowerCase();
+    const filtradas = listaEmpresas.filter(x =>
+      String(x.razon_social || '').toLowerCase().includes(q) || String(x.ruc || '').includes(q)
     );
     renderEmpresas(filtradas);
   });

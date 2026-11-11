@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('../services/busquedaTexto');
 
 // 1. Listar colaboradores para el buscador o selector
 exports.listarColaboradores = async (req, res) => {
@@ -40,8 +41,8 @@ exports.listarColaboradores = async (req, res) => {
       else return res.status(400).json({ ok: false, mensaje: 'Tipo de vínculo no válido.' });
     }
     if (buscar) {
-      query += ` AND (CONCAT(e.nombres, ' ', e.apellidos) LIKE ? OR e.numero_documento LIKE ? OR emp.razon_social LIKE ? OR ar.nombre LIKE ? OR c.nombre LIKE ? OR e.puesto LIKE ?)`;
-      params.push(...Array(6).fill(`%${buscar}%`));
+      query += ` AND (LOWER(CONCAT(COALESCE(e.nombres, ''), ' ', COALESCE(e.apellidos, ''))) LIKE ? OR LOWER(COALESCE(e.numero_documento, '')) LIKE ? OR LOWER(COALESCE(emp.razon_social, '')) LIKE ? OR LOWER(COALESCE(ar.nombre, '')) LIKE ? OR LOWER(COALESCE(c.nombre, '')) LIKE ? OR LOWER(COALESCE(e.puesto, '')) LIKE ?)`;
+      params.push(...Array(6).fill(patronBusqueda(buscar)));
     }
 
     query += ` ORDER BY e.apellidos ASC`;

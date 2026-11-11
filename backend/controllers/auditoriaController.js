@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('../services/busquedaTexto');
 
 function parseJson(value) {
   if (value == null) return null;
@@ -16,8 +17,8 @@ exports.listar = async (req, res) => {
       if (/^\d+$/.test(usuario_id)) {
         where.push('h.usuario_id = ?'); params.push(Number(usuario_id));
       } else {
-        where.push(`(u.email LIKE ? OR e.nombres LIKE ? OR e.apellidos LIKE ? OR CONCAT(e.nombres,' ',e.apellidos) LIKE ?)`);
-        const q = `%${usuario_id}%`;
+        where.push(`(LOWER(COALESCE(u.email, '')) LIKE ? OR LOWER(COALESCE(e.nombres, '')) LIKE ? OR LOWER(COALESCE(e.apellidos, '')) LIKE ? OR LOWER(CONCAT(COALESCE(e.nombres, ''),' ',COALESCE(e.apellidos, ''))) LIKE ?)`);
+        const q = patronBusqueda(usuario_id);
         params.push(q, q, q, q);
       }
     }

@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('./busquedaTexto');
 
 const POSTGRES = Boolean(process.env.DATABASE_URL);
 const ESTADOS = new Set(['borrador', 'programada', 'en_curso', 'finalizada', 'cancelada']);
@@ -156,8 +157,8 @@ async function listar(filtros = {}) {
     params.push(modalidad);
   }
   if (filtros.buscar) {
-    const q = `%${String(filtros.buscar).trim().slice(0, 120)}%`;
-    where.push('(cap.titulo LIKE ? OR cap.categoria LIKE ? OR cap.proveedor LIKE ?)');
+    const q = patronBusqueda(String(filtros.buscar).trim().slice(0, 120));
+    where.push(`(LOWER(COALESCE(cap.titulo, '')) LIKE ? OR LOWER(COALESCE(cap.categoria, '')) LIKE ? OR LOWER(COALESCE(cap.proveedor, '')) LIKE ?)`);
     params.push(q, q, q);
   }
   if (filtros.desde) {

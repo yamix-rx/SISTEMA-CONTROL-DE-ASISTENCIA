@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('./busquedaTexto');
 
 const POSTGRES = Boolean(process.env.DATABASE_URL);
 const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
@@ -188,8 +189,8 @@ async function listar(filtros = {}) {
     params.push(tipo);
   }
   if (filtros.buscar) {
-    const q = `%${String(filtros.buscar).trim().slice(0, 100)}%`;
-    where.push(`(c.codigo LIKE ? OR e.nombres LIKE ? OR e.apellidos LIKE ? OR e.numero_documento LIKE ? OR c.tipo_contrato LIKE ?)`);
+    const q = patronBusqueda(String(filtros.buscar).trim().slice(0, 100));
+    where.push(`(LOWER(COALESCE(c.codigo, '')) LIKE ? OR LOWER(COALESCE(e.nombres, '')) LIKE ? OR LOWER(COALESCE(e.apellidos, '')) LIKE ? OR LOWER(COALESCE(e.numero_documento, '')) LIKE ? OR LOWER(COALESCE(c.tipo_contrato, '')) LIKE ?)`);
     params.push(q, q, q, q, q);
   }
   if (filtros.estado) {
