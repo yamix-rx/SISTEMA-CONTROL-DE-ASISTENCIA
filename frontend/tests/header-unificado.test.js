@@ -27,6 +27,12 @@ class Nodo {
       nodo.parentElement = this;
     }
   }
+  insertBefore(nodo, referencia) {
+    if (nodo.parentElement) nodo.remove();
+    const indice = this.children.indexOf(referencia);
+    this.children.splice(indice < 0 ? this.children.length : indice, 0, nodo);
+    nodo.parentElement = this;
+  }
   setAttribute(k, v) { this.attributes[k] = v; }
   contains(nodo) { return this === nodo || this.children.some(hijo => hijo.contains(nodo)); }
   remove() {
@@ -110,9 +116,10 @@ test('la cabecera compartida normaliza todas las variantes sin perder el filtro 
       createElement: tag => new Nodo(tag),
       createElementNS: (_ns, tag) => new Nodo(tag)
     };
-    const crear = new Function('document', 'currentPage', codigo + 'return unificarCabecera;');
+    const crear = new Function('document', 'currentPage', 'window', codigo + 'return unificarCabecera;');
     const pagina = variante === 'administracion' ? 'administracion.html' : personal ? 'mipanel.html' : 'dashboard.html';
-    const render = crear(document, pagina);
+    const window = { location: { hash: '' }, addEventListener() {} };
+    const render = crear(document, pagina, window);
     render({ nombres: 'Admin', apellidos: 'SBSS', rol: 'Administrador General' });
 
     const cuenta = header.querySelector('.sbss-session-account');
@@ -138,11 +145,48 @@ test('la cabecera compartida normaliza todas las variantes sin perder el filtro 
   }
 });
 
+test('la identidad administrativa solo se muestra en la sección Usuarios de configuración', () => {
+  const header = new Nodo('header');
+  const marca = new Nodo('a');
+  const cuentaAnterior = new Nodo('div');
+  const avatar = new Nodo('span', 'avatarLetra');
+  const detalles = new Nodo('div');
+  detalles.append(new Nodo('strong', 'nombreUsuarioSesion'), new Nodo('span', 'rolUsuarioSesion'));
+  const salir = new Nodo('button', 'btnCerrarSesion');
+  cuentaAnterior.append(avatar, detalles, salir);
+  header.append(marca, cuentaAnterior);
+  const document = {
+    querySelector: () => header,
+    createElement: tag => new Nodo(tag),
+    createElementNS: (_ns, tag) => new Nodo(tag)
+  };
+  const eventos = {};
+  const window = {
+    location: { hash: '#areas' },
+    addEventListener: (evento, callback) => { eventos[evento] = callback; }
+  };
+  const codigo = js.slice(inicio, fin);
+  const render = new Function('document', 'currentPage', 'window', codigo + 'return unificarCabecera;')
+    (document, 'administracion.html', window);
+  render({ nombres: 'Admin', apellidos: 'SBSS', rol: 'Administrador General' });
+  assert.equal(header.querySelector('#nombreUsuarioSesion'), null);
+  assert.ok(header.querySelector('#btnCerrarSesion'));
+  window.location.hash = '#cuentas';
+  eventos.hashchange();
+  assert.equal(header.querySelector('#nombreUsuarioSesion').textContent, 'Admin SBSS');
+  assert.ok(header.querySelector('#avatarLetra'));
+  window.location.hash = '#areas';
+  eventos.hashchange();
+  assert.equal(header.querySelector('#nombreUsuarioSesion'), null);
+  assert.ok(header.querySelector('#btnCerrarSesion'));
+});
+
 test('el botón superior sigue usando el logout delegado y no depende de iconos externos', () => {
   assert.match(js, /closest\?\.\('#btnCerrarSesion, #logoutButton, \[data-logout\]'\)/);
   assert.match(js, /createElementNS\('http:\/\/www\.w3\.org\/2000\/svg', 'svg'\)/);
   assert.match(js, /unificarCabecera\(data\.usuario\)/);
   assert.match(js, /auth\/perfil\?contexto=usuarios/);
-  assert.match(js, /usuario\.rol !== 'Administrador General' \|\| currentPage === 'administracion\.html'/);
+  assert.match(js, /window\.location\.hash === '#cuentas'/);
+  assert.match(js, /window\.addEventListener\('hashchange'/);
   assert.match(js, /salir\.append\(svg, texto\)/);
 });

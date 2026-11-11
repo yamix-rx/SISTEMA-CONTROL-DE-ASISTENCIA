@@ -141,7 +141,9 @@
     if (!partes.length) return;
 
     const personal = currentPage === 'mipanel.html';
-    const mostrarDatosCuenta = usuario.rol !== 'Administrador General' || currentPage === 'administracion.html';
+    const esAdministrador = usuario.rol === 'Administrador General';
+    const mostrarDatosCuenta = !esAdministrador || (currentPage === 'administracion.html'
+      && (!window.location.hash || window.location.hash === '#cuentas'));
     const cuenta = document.createElement('div');
     cuenta.className = 'sbss-session-account';
     cuenta.setAttribute('aria-label', 'Cuenta y sesión actual');
@@ -191,6 +193,20 @@
     salir.append(svg, texto);
     if (mostrarDatosCuenta) cuenta.append(avatar, detalles, salir);
     else cuenta.append(salir);
+    if (esAdministrador && currentPage === 'administracion.html') {
+      window.addEventListener('hashchange', () => {
+        const visible = !window.location.hash || window.location.hash === '#cuentas';
+        const avatarActual = cuenta.querySelector('.sbss-session-account-avatar');
+        const detallesActuales = cuenta.querySelector('.sbss-session-account-details');
+        if (visible) {
+          if (!avatarActual) cuenta.insertBefore(avatar, salir);
+          if (!detallesActuales) cuenta.insertBefore(detalles, salir);
+        } else {
+          if (avatarActual) avatarActual.remove();
+          if (detallesActuales) detallesActuales.remove();
+        }
+      });
+    }
 
     // Si la cabecera tiene un grupo de cuenta ya formado, se sustituye entero.
     // Si el nombre, avatar y botón están sueltos (p. ej. Auditoría),
