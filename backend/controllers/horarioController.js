@@ -30,7 +30,7 @@ exports.guardarHorarioSemanal=async(req,res)=>{
     const activo=b.estado!=='descanso';
     const editId=b.id?r.entero(b.id,'Horario'):null;
     connection=await pool.getConnection();await connection.beginTransaction();
-    const [[empleado]]=await connection.query("SELECT id FROM empleados WHERE id=? AND estado='activo' FOR UPDATE",[id]);
+    const [[empleado]]=await connection.query("SELECT id FROM empleados WHERE id=? AND estado='activo' AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' FOR UPDATE",[id]);
     if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
     const [anteriores]=await connection.query((process.env.DATABASE_URL ? 'SELECT * FROM horarios WHERE empleado_id=? AND dia_semana = ANY(CAST(? AS integer[])) FOR UPDATE' : 'SELECT * FROM horarios WHERE empleado_id=? AND dia_semana IN (?) FOR UPDATE'),[id,dias]);
     if(editId){
@@ -49,7 +49,7 @@ exports.guardarHorarioSemanal=async(req,res)=>{
   }catch(error){if(connection)await connection.rollback();return fallo(res,error);}finally{if(connection)connection.release();}
 };
 exports.eliminarHorarioDia=async(req,res)=>{
-  try {const id=r.entero(req.params.id,'Horario');const [[anterior]]=await pool.query('SELECT * FROM horarios WHERE id=?',[id]);
+  try {const id=r.entero(req.params.id,'Horario');const [[anterior]]=await pool.query("SELECT h.* FROM horarios h JOIN empleados e ON e.id=h.empleado_id WHERE h.id=? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'",[id]);
     if(!anterior)throw Object.assign(r.error('Horario no encontrado.'),{status:404});
     await pool.query('DELETE FROM horarios WHERE id=?',[id]);res.locals||={};res.locals.auditoria={tabla:'horarios',registroId:id,accion:'DELETE',anterior,nuevos:null};
     return res.json({ok:true,mensaje:'Horario eliminado; las asistencias anteriores se conservan.'});

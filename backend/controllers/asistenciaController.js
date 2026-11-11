@@ -28,7 +28,7 @@ exports.registrarMarcacion = async (req,res) => {
     const observacion=r.texto(req.body.observacion,'Observación',255);
     connection=await pool.getConnection(); await connection.beginTransaction();
     // Serializa las altas diarias del mismo empleado, incluida la primera marcación.
-    const [[empleado]]=await connection.query('SELECT id,estado FROM empleados WHERE id=? FOR UPDATE',[empleadoId]);
+    const [[empleado]]=await connection.query("SELECT id,estado FROM empleados WHERE id=? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' FOR UPDATE",[empleadoId]);
     if (!empleado) throw Object.assign(r.error('Trabajador no encontrado.'),{status:404});
     const [[anterior]]=await connection.query('SELECT * FROM asistencias WHERE empleado_id=? AND fecha=? FOR UPDATE',[empleadoId,fecha]);
     if (!anterior && empleado.estado!=='activo') throw r.error('Solo puede agregar asistencia a un trabajador activo.');
@@ -99,7 +99,7 @@ exports.crearPermiso=async(req,res)=>{
     const desde=r.hora(b.hora_desde,'Hora desde',true),hasta=r.hora(b.hora_hasta,'Hora hasta',true);
     if(Boolean(desde)!==Boolean(hasta)||inicio===fin&&desde&&hasta<=desde)throw r.error('Complete ambas horas y coloque una hora final posterior a la inicial.');
     const tipo=r.texto(b.tipo_permiso||'Personal','Tipo',50,true),motivo=r.texto(b.motivo,'Motivo',4000,true),observaciones=r.texto(b.observaciones,'Observaciones',4000);
-    const [[empleado]]=await pool.query("SELECT id FROM empleados WHERE id=? AND estado='activo'",[empleadoId]);
+    const [[empleado]]=await pool.query("SELECT id FROM empleados WHERE id=? AND estado='activo' AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'",[empleadoId]);
     if(!empleado)throw Object.assign(r.error('Trabajador activo no encontrado.'),{status:404});
     let nombre=null;
     if(b.sustento_ticket) {

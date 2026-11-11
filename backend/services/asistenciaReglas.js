@@ -34,7 +34,7 @@ function rango(inicio, fin, defecto = 'mensual') {
   return [desde, hasta];
 }
 function filtrosPersonal(query, alias = 'e') {
-  const condiciones = [], params = [];
+  const condiciones = [`LOWER(COALESCE(${alias}.tipo_vinculo,'')) <> 'sistema'`], params = [];
   for (const campo of ['empresa_id', 'area_id', 'cargo_id', 'empleado_id']) {
     if (query[campo]) { condiciones.push(`${alias}.${campo === 'empleado_id' ? 'id' : campo} = ?`); params.push(entero(query[campo], campo)); }
   }

@@ -18,7 +18,7 @@ async function obtenerFicha(id) {
     INNER JOIN areas ar ON e.area_id = ar.id
     INNER JOIN cargos c ON e.cargo_id = c.id
     LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-    WHERE e.id = ?
+    WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
   `, [id]);
   if (!empleadoRows.length) return null;
   const empleado = empleadoRows[0];

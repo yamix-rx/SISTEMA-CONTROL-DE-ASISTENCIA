@@ -22,7 +22,7 @@ exports.listarColaboradores = async (req, res) => {
       INNER JOIN areas ar ON e.area_id = ar.id
       INNER JOIN cargos c ON e.cargo_id = c.id
       LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-      WHERE 1 = 1
+      WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     `;
     const params = [];
 
@@ -94,9 +94,9 @@ exports.actualizarObservaciones = async (req, res) => {
     return res.status(400).json({ ok: false, mensaje: 'Las observaciones deben tener hasta 10000 caracteres.' });
   }
   try {
-    const [rows] = await pool.query('SELECT id FROM empleados WHERE id = ?', [id]);
+    const [rows] = await pool.query("SELECT id FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'", [id]);
     if (!rows.length) return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' });
-    await pool.query('UPDATE empleados SET observaciones_rrhh = ? WHERE id = ?', [valor.trim() || null, id]);
+    await pool.query("UPDATE empleados SET observaciones_rrhh = ? WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'", [valor.trim() || null, id]);
     return res.json({ ok: true, mensaje: 'Observaciones guardadas.', observaciones_rrhh: valor.trim() });
   } catch (error) {
     console.error('Error al guardar observaciones:', error.code || error.name);
@@ -258,7 +258,7 @@ exports.actualizarColaborador = async (req, res) => {
     try {
       await connection.beginTransaction();
       const [rows] = await connection.query(`SELECT e.*, ${process.env.DATABASE_URL ? `TO_CHAR(pd.fecha_vencimiento_convenio, 'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio, '%Y-%m-%d')`} AS fecha_vencimiento_convenio
-        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? ${process.env.DATABASE_URL ? 'FOR UPDATE OF e' : 'FOR UPDATE'}`, [id]);
+        FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${process.env.DATABASE_URL ? 'FOR UPDATE OF e' : 'FOR UPDATE'}`, [id]);
       if (!rows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
       Object.assign(p, normalizarPuestoConvenio(req.body || {}, p.fecha_ingreso, rows[0]));
       await connection.query(
@@ -301,7 +301,7 @@ exports.actualizarHorasPracticas = async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
     const [empleadoRows] = await connection.query(`
-      SELECT id, tipo_vinculo FROM empleados WHERE id = ? LIMIT 1 FOR UPDATE
+      SELECT id, tipo_vinculo FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1 FOR UPDATE
     `, [empleadoId]);
     if (!empleadoRows.length) { await connection.rollback(); return res.status(404).json({ ok: false, mensaje: 'Colaborador no encontrado.' }); }
     if (!String(empleadoRows[0].tipo_vinculo || '').toLowerCase().startsWith('practicante')) {
