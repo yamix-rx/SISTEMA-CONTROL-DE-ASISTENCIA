@@ -176,6 +176,7 @@ async function listar(filtros = {}) {
     FROM capacitaciones cap
     LEFT JOIN empresas emp ON emp.id = cap.empresa_id
     LEFT JOIN capacitacion_participantes cp ON cp.capacitacion_id = cap.id
+    LEFT JOIN empleados e ON e.id = cp.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     WHERE ${where.join(' AND ')}
   `;
 
@@ -184,10 +185,10 @@ async function listar(filtros = {}) {
            cap.empresa_id, emp.razon_social AS empresa, cap.fecha_inicio, cap.fecha_fin,
            cap.hora_inicio, cap.hora_fin, cap.horas, cap.lugar, cap.enlace, cap.cupo,
            cap.obligatorio, ${ESTADO_HORARIO_SQL} AS estado, cap.estado AS estado_registrado, cap.created_at, cap.updated_at,
-           SUM(CASE WHEN cp.estado <> 'cancelado' THEN 1 ELSE 0 END) AS inscritos,
-           SUM(CASE WHEN cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
-           SUM(CASE WHEN cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
-           SUM(CASE WHEN cp.estado = 'no_asistio' THEN 1 ELSE 0 END) AS no_asistieron
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado <> 'cancelado' THEN 1 ELSE 0 END) AS inscritos,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados,
+           SUM(CASE WHEN e.id IS NOT NULL AND cp.estado = 'no_asistio' THEN 1 ELSE 0 END) AS no_asistieron
     ${from}
     GROUP BY cap.id ${POSTGRES ? ', emp.razon_social' : ''}
     ORDER BY cap.fecha_inicio DESC, cap.id DESC
@@ -221,8 +222,9 @@ async function resumen() {
     SELECT COUNT(*) AS inscritos,
            SUM(CASE WHEN estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
            SUM(CASE WHEN estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados
-    FROM capacitacion_participantes
-    WHERE estado <> 'cancelado'
+    FROM capacitacion_participantes cp
+    INNER JOIN empleados e ON e.id = cp.empleado_id
+    WHERE cp.estado <> 'cancelado' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
   `);
   const data = { total: 0, borrador: 0, programada: 0, en_curso: 0, finalizada: 0, cancelada: 0 };
   for (const row of rows) {
@@ -311,8 +313,10 @@ async function actualizar(id, body, usuarioId) {
     await validarEmpresa(connection, data.empresa_id);
     if (data.cupo) {
       const [[conteo]] = await connection.query(`
-        SELECT COUNT(*) AS total FROM capacitacion_participantes
-        WHERE capacitacion_id = ? AND estado <> 'cancelado'
+        SELECT COUNT(*) AS total FROM capacitacion_participantes cp
+        INNER JOIN empleados e ON e.id = cp.empleado_id
+        WHERE cp.capacitacion_id = ? AND cp.estado <> 'cancelado'
+          AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       `, [capacitacionId]);
       if (Number(conteo.total) > data.cupo) throw errorHttp(409, 'El cupo no puede ser menor al número de participantes inscritos.');
     }

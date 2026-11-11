@@ -247,6 +247,8 @@ async function resumen() {
     FROM (
       SELECT ${ESTADO_VIGENCIA_SQL} AS estado_vigencia
       FROM contratos c
+      INNER JOIN empleados e ON e.id = c.empleado_id
+      WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     ) x
     GROUP BY estado_vigencia
   `);
