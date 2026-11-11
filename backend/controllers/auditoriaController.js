@@ -30,9 +30,10 @@ exports.listar = async (req, res) => {
     const sql = `
       SELECT h.id, h.usuario_id, h.tabla_afectada, h.registro_id, h.accion,
              h.datos_anteriores, h.datos_nuevos, h.ip_origen, h.created_at,
-             u.email,
-             CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) AS usuario_nombre,
-             r.nombre AS rol
+             CASE WHEN r.nombre = 'Administrador General' THEN NULL ELSE u.email END AS email,
+             CASE WHEN r.nombre = 'Administrador General' THEN 'Cuenta del sistema' ELSE CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) END AS usuario_nombre,
+             CASE WHEN r.nombre = 'Administrador General' THEN NULL ELSE r.nombre END AS rol,
+             (r.nombre = 'Administrador General') AS cuenta_sistema
       FROM historial_cambios h
       LEFT JOIN usuarios u ON u.id = h.usuario_id
       LEFT JOIN empleados e ON e.id = u.empleado_id
@@ -43,11 +44,15 @@ exports.listar = async (req, res) => {
     const [rows] = await pool.query(sql, params);
     res.json({
       ok: true,
-      registros: rows.map(row => ({
-        ...row,
-        datos_anteriores: parseJson(row.datos_anteriores),
-        datos_nuevos: parseJson(row.datos_nuevos)
-      }))
+      registros: rows.map(row => {
+        const { cuenta_sistema, ...publico } = row;
+        const anteriores = parseJson(row.datos_anteriores);
+        const nuevos = parseJson(row.datos_nuevos);
+        if (cuenta_sistema && row.tabla_afectada === 'sesiones' && nuevos && typeof nuevos === 'object' && !Array.isArray(nuevos)) {
+          delete nuevos.email;
+        }
+        return { ...publico, datos_anteriores: anteriores, datos_nuevos: nuevos };
+      })
     });
   } catch (error) {
     console.error('Error al listar auditoría:', error.code || error.message);

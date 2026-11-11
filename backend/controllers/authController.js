@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { buscarPorEmail, usuarioPublico } = require('../services/usuarioService');
-const { obtenerAcceso } = require('../config/accessPolicy');
+const { obtenerAcceso, ROLES } = require('../config/accessPolicy');
 const { registrarAuditoria } = require('../services/auditoriaService');
 
 exports.login = async (req, res) => {
@@ -69,7 +69,7 @@ exports.login = async (req, res) => {
       mensaje: 'Inicio de sesión exitoso',
       token,
       redirectUrl: acceso.panel,
-      usuario: usuarioPublico(usuario),
+      usuario: usuario.rol_nombre === ROLES.ADMIN ? { id: usuario.usuario_id, rol: ROLES.ADMIN } : usuarioPublico(usuario),
       acceso
     });
   } catch (error) {
@@ -78,7 +78,15 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.perfil = (req, res) => res.json({ ok: true, usuario: req.usuario, acceso: req.acceso });
+exports.perfil = (req, res) => {
+  const mostrarDatosAdministrativos = req.usuario.rol === ROLES.ADMIN
+    && req.query.contexto === 'usuarios'
+    && req.acceso.modulos.includes('administracion');
+  const usuario = req.usuario.rol === ROLES.ADMIN && !mostrarDatosAdministrativos
+    ? { id: req.usuario.id, rol: ROLES.ADMIN }
+    : req.usuario;
+  return res.json({ ok: true, usuario, acceso: req.acceso });
+};
 
 exports.logout = async (req, res) => {
   try {

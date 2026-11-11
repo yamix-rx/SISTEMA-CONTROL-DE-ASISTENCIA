@@ -122,7 +122,7 @@ async function catalogos() {
       INNER JOIN empresas emp ON emp.id = e.empresa_id
       INNER JOIN areas ar ON ar.id = e.area_id
       INNER JOIN cargos c ON c.id = e.cargo_id
-      WHERE e.estado = 'activo'
+      WHERE e.estado = 'activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       ORDER BY e.apellidos, e.nombres
     `).then(([rows]) => rows),
     pool.query(`SELECT id, razon_social FROM empresas WHERE estado = 'activo' ORDER BY razon_social`).then(([rows]) => rows)
@@ -262,7 +262,7 @@ async function detalle(id) {
     INNER JOIN areas ar ON ar.id = e.area_id
     INNER JOIN cargos c ON c.id = e.cargo_id
     LEFT JOIN documentos_empleado de ON de.id = cp.certificado_documento_id
-    WHERE cp.capacitacion_id = ?
+    WHERE cp.capacitacion_id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     ORDER BY e.apellidos, e.nombres
   `, [cap.id]);
   return { ...cap, participantes };
@@ -365,7 +365,7 @@ async function agregarParticipantes(id, body) {
     if (['finalizada', 'cancelada'].includes(cap.estado)) throw errorHttp(409, 'No se pueden agregar participantes a una capacitación finalizada o cancelada.');
 
     const [empleados] = await connection.query(`
-      SELECT id, empresa_id, estado FROM empleados WHERE id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'}
+      SELECT id, empresa_id, estado FROM empleados WHERE id ${POSTGRES ? '= ANY(CAST(? AS integer[]))' : 'IN (?)'} AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema'
     `, [ids]);
     const encontrados = new Set(empleados.map(e => Number(e.id)));
     const faltantes = ids.filter(x => !encontrados.has(x));
@@ -419,7 +419,7 @@ async function actualizarParticipante(capacitacionIdRaw, empleadoIdRaw, body) {
   const capacitacionId = enteroPositivo(capacitacionIdRaw, 'La capacitación');
   const empleadoId = enteroPositivo(empleadoIdRaw, 'El colaborador');
   const [rows] = await pool.query(`
-    SELECT * FROM capacitacion_participantes WHERE capacitacion_id = ? AND empleado_id = ? LIMIT 1
+    SELECT cp.* FROM capacitacion_participantes cp INNER JOIN empleados e ON e.id=cp.empleado_id WHERE cp.capacitacion_id = ? AND cp.empleado_id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [capacitacionId, empleadoId]);
   if (!rows.length) throw errorHttp(404, 'El colaborador no está registrado en esta capacitación.');
   const actual = rows[0];
@@ -470,7 +470,7 @@ async function historialEmpleado(empleadoIdRaw) {
   const empleadoId = enteroPositivo(empleadoIdRaw, 'El colaborador');
   const [empleados] = await pool.query(`
     SELECT id, CONCAT(nombres, ' ', apellidos) AS colaborador, numero_documento
-    FROM empleados WHERE id = ? LIMIT 1
+    FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [empleadoId]);
   if (!empleados.length) throw errorHttp(404, 'Colaborador no encontrado.');
   const [rows] = await pool.query(`

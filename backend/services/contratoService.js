@@ -112,7 +112,7 @@ function normalizarPayload(body, base = {}) {
 }
 
 async function empleadoExiste(connection, empleadoId) {
-  const [rows] = await connection.query('SELECT id, estado FROM empleados WHERE id = ? LIMIT 1', [empleadoId]);
+  const [rows] = await connection.query("SELECT id, estado FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1", [empleadoId]);
   if (!rows.length) throw errorHttp(404, 'El colaborador no existe.');
   return rows[0];
 }
@@ -157,7 +157,7 @@ async function catalogos() {
       FROM empleados e
       INNER JOIN empresas emp ON emp.id = e.empresa_id
       INNER JOIN cargos c ON c.id = e.cargo_id
-      WHERE e.estado = 'activo'
+      WHERE e.estado = 'activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       ORDER BY e.apellidos, e.nombres
     `).then(([rows]) => rows),
     pool.query(`SELECT id, razon_social FROM empresas WHERE estado = 'activo' ORDER BY razon_social`).then(([rows]) => rows)
@@ -171,7 +171,7 @@ async function catalogos() {
 }
 
 async function listar(filtros = {}) {
-  const where = ['1 = 1'];
+  const where = ["LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'"];
   const params = [];
   if (filtros.empresa_id) {
     where.push('e.empresa_id = ?');
@@ -272,7 +272,7 @@ async function obtenerPorId(id, connection = pool) {
     INNER JOIN areas ar ON ar.id = e.area_id
     INNER JOIN cargos ca ON ca.id = e.cargo_id
     LEFT JOIN documentos_empleado de ON de.id = c.documento_empleado_id
-    WHERE c.id = ? LIMIT 1
+    WHERE c.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [contratoId]);
   if (!rows.length) throw errorHttp(404, 'Contrato no encontrado.');
   return rows[0];
