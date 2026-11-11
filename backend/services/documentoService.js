@@ -104,9 +104,9 @@ async function subir(body) {
 
 async function obtenerPorId(id, empleadoId = null) {
   const params = [idPositivo(id)];
-  const propia = empleadoId == null ? '' : ' AND empleado_id = ?';
+  const propia = empleadoId == null ? '' : ' AND de.empleado_id = ?';
   if (empleadoId != null) params.push(idPositivo(empleadoId, 'colaborador'));
-  const [rows] = await pool.query(`SELECT de.id, de.nombre_archivo, de.ruta_archivo, de.mime_type FROM documentos_empleado de INNER JOIN empleados e ON e.id=de.empleado_id WHERE de.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'${propia.replace('empleado_id','de.empleado_id')} LIMIT 1`, params);
+  const [rows] = await pool.query(`SELECT de.id, de.nombre_archivo, de.ruta_archivo, de.mime_type FROM documentos_empleado de INNER JOIN empleados e ON e.id=de.empleado_id WHERE de.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'${propia} LIMIT 1`, params);
   if (!rows.length) throw errorSolicitud('El documento solicitado no existe.', 404);
   return rows[0];
 }
