@@ -49,7 +49,7 @@ exports.listar = async (req, res) => {
         const anteriores = parseJson(row.datos_anteriores);
         const nuevos = parseJson(row.datos_nuevos);
         if (cuenta_sistema && row.tabla_afectada === 'sesiones' && nuevos && typeof nuevos === 'object' && !Array.isArray(nuevos)) {
-          delete nuevos.email;
+          { delete nuevos.email; delete nuevos.rol; }
         }
         return { ...publico, datos_anteriores: anteriores, datos_nuevos: nuevos };
       })

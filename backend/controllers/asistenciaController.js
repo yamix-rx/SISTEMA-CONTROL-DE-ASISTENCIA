@@ -122,7 +122,7 @@ exports.actualizarEstadoPermiso=async(req,res)=>{
     if(!['Solicitado','Aprobado','Rechazado'].includes(estado))throw r.error('Estado no válido.');
     const [[anterior]]=await pool.query("SELECT * FROM permisos WHERE id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=permisos.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')",[id]);
     if(!anterior)throw Object.assign(r.error('Permiso no encontrado.'),{status:404});
-    await pool.query("UPDATE permisos SET estado=? WHERE id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=permisos.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')",[estado,id]);
+    await pool.query("UPDATE permisos p SET estado=? WHERE p.id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=p.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')",[estado,id]);
     auditar(res,'permisos',id,'UPDATE',anterior,{...anterior,estado});
     return res.json({ok:true,mensaje:'Estado del permiso actualizado.'});
   }catch(error){return fallo(res,error);}
