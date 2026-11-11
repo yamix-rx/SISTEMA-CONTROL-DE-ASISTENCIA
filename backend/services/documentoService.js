@@ -23,7 +23,7 @@ function idPositivo(valor, nombre = 'identificador') {
 }
 
 function construirFiltros(query) {
-  const condiciones = [process.env.DATABASE_URL ? '(td.es_obligatorio = TRUE OR de.id IS NOT NULL)' : '(td.es_obligatorio = 1 OR de.id IS NOT NULL)'];
+  const condiciones = ["LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'", process.env.DATABASE_URL ? '(td.es_obligatorio = TRUE OR de.id IS NOT NULL)' : '(td.es_obligatorio = 1 OR de.id IS NOT NULL)'];
   const params = [];
   if (query.q !== undefined && query.q !== '') {
     if (typeof query.q !== 'string' || query.q.length > 150) throw errorSolicitud('La búsqueda admite un máximo de 150 caracteres.');
@@ -47,7 +47,7 @@ function construirFiltros(query) {
 
 async function catalogos() {
   const [[empleados], [empresas], [tipos]] = await Promise.all([
-    pool.query("SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos) AS colaborador, e.numero_documento, e.empresa_id, emp.razon_social AS empresa FROM empleados e INNER JOIN empresas emp ON emp.id = e.empresa_id ORDER BY e.apellidos, e.nombres"),
+    pool.query("SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos) AS colaborador, e.numero_documento, e.empresa_id, emp.razon_social AS empresa FROM empleados e INNER JOIN empresas emp ON emp.id = e.empresa_id WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ORDER BY e.apellidos, e.nombres"),
     pool.query('SELECT id, razon_social FROM empresas ORDER BY razon_social'),
     pool.query('SELECT id, nombre, es_obligatorio FROM tipo_documentos ORDER BY es_obligatorio DESC, nombre')
   ]);
@@ -85,7 +85,7 @@ async function subir(body) {
   const tipoId = idPositivo(body.tipo_documento_id, 'tipo de documento');
   const archivo = archivos.validarArchivo(body.nombre_archivo, body.contenido_base64);
   const [[empleados], [tipos]] = await Promise.all([
-    pool.query('SELECT id FROM empleados WHERE id = ? LIMIT 1', [empleadoId]),
+    pool.query("SELECT id FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1", [empleadoId]),
     pool.query('SELECT id FROM tipo_documentos WHERE id = ? LIMIT 1', [tipoId])
   ]);
   if (!empleados.length || !tipos.length) throw errorSolicitud('El colaborador o el tipo de documento ya no existe.', 404);
@@ -106,7 +106,7 @@ async function obtenerPorId(id, empleadoId = null) {
   const params = [idPositivo(id)];
   const propia = empleadoId == null ? '' : ' AND empleado_id = ?';
   if (empleadoId != null) params.push(idPositivo(empleadoId, 'colaborador'));
-  const [rows] = await pool.query(`SELECT id, nombre_archivo, ruta_archivo, mime_type FROM documentos_empleado WHERE id = ?${propia} LIMIT 1`, params);
+  const [rows] = await pool.query(`SELECT de.id, de.nombre_archivo, de.ruta_archivo, de.mime_type FROM documentos_empleado de INNER JOIN empleados e ON e.id=de.empleado_id WHERE de.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'${propia.replace('empleado_id','de.empleado_id')} LIMIT 1`, params);
   if (!rows.length) throw errorSolicitud('El documento solicitado no existe.', 404);
   return rows[0];
 }
@@ -123,7 +123,7 @@ async function revisar(id, body, usuarioId) {
   // GROUP BY materializa la derivada y permite consultar la misma tabla en MySQL.
   const pgSql = `UPDATE documentos_empleado de
     SET estado = ?, observacion = ?, revisado_por = ?, fecha_revision = CURRENT_TIMESTAMP
-    WHERE de.id = ? AND de.id = (
+    WHERE de.id = ? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=de.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema') AND de.id = (
       SELECT MAX(actual.id) FROM documentos_empleado actual
       WHERE actual.empleado_id = de.empleado_id AND actual.tipo_documento_id = de.tipo_documento_id
     )`;
@@ -133,11 +133,11 @@ async function revisar(id, body, usuarioId) {
       FROM documentos_empleado GROUP BY empleado_id, tipo_documento_id
     ) ultima ON ultima.ultimo_id = de.id
     SET de.estado = ?, de.observacion = ?, de.revisado_por = ?, de.fecha_revision = CURRENT_TIMESTAMP
-    WHERE de.id = ?`;
+    WHERE de.id = ? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=de.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')`;
   const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
     [body.estado, observacion || null, reviewerId, documentoId]);
   if (!result.affectedRows) {
-    const [existentes] = await pool.query('SELECT id FROM documentos_empleado WHERE id = ? LIMIT 1', [documentoId]);
+    const [existentes] = await pool.query("SELECT de.id FROM documentos_empleado de INNER JOIN empleados e ON e.id=de.empleado_id WHERE de.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1", [documentoId]);
     if (!existentes.length) throw errorSolicitud('El documento solicitado no existe.', 404);
     throw errorSolicitud('Se cargó una versión más reciente. Actualice el panel y revise el nuevo archivo.', 409);
   }

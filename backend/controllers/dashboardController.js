@@ -31,6 +31,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       WHERE h.dia_semana = ${POSTGRES ? `EXTRACT(ISODOW FROM ${HOY_SQL})` : '(WEEKDAY(CURDATE()) + 1)'}
         AND h.activo = TRUE
         AND e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         ${filtroEmpresaHorario}
       ORDER BY h.hora_entrada ASC
     `, paramsEmpresa);
@@ -80,6 +81,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
       LEFT JOIN asistencias a ON a.empleado_id = e.id
       WHERE e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
         ${filtroEmpresaPracticas}
       GROUP BY e.id, e.nombres, e.apellidos, emp.razon_social, ar.nombre, c.nombre, pd.horas_meta, e.horas_totales_asignadas
@@ -93,6 +95,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       INNER JOIN empresas emp ON e.empresa_id = emp.id
       CROSS JOIN tipo_documentos td
       WHERE td.es_obligatorio = TRUE AND e.estado = 'activo'
+        AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
         ${filtroEmpresaHorario}
         AND NOT EXISTS (
           SELECT 1 FROM documentos_empleado de
@@ -112,7 +115,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       FROM empleados e JOIN empresas emp ON emp.id=e.empresa_id
       JOIN documentos_empleado de ON de.empleado_id=e.id
       JOIN tipo_documentos td ON td.id=de.tipo_documento_id AND td.es_obligatorio=TRUE
-      WHERE e.estado='activo' ${filtroEmpresaHorario}
+      WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${filtroEmpresaHorario}
         AND de.id=(SELECT MAX(ultimo.id) FROM documentos_empleado ultimo WHERE ultimo.empleado_id=e.id AND ultimo.tipo_documento_id=td.id)`, paramsEmpresa);
     const disponibilidad = await Promise.all(registradosObligatorios.map(async ({ruta_archivo,...doc}) => ({...doc,
       disponible: await require('../services/documentoArchivoService').disponible(ruta_archivo)})));
@@ -124,14 +127,14 @@ exports.obtenerDatosDashboard = async (req, res) => {
           CONCAT(e.nombres,' ',e.apellidos) AS colaborador, emp.razon_social AS empresa,
            ${POSTGRES ? `(c.fecha_fin - ${HOY_SQL})` : 'DATEDIFF(c.fecha_fin,CURDATE())'} AS dias_restantes
         FROM contratos c JOIN empleados e ON e.id=c.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
-        WHERE c.estado='vigente' AND e.estado='activo'
+        WHERE c.estado='vigente' AND e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
           AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY c.fecha_fin, c.id LIMIT 30`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, COUNT(*) AS tardanzas, SUM(a.minutos_tardanza) AS minutos
         FROM asistencias a JOIN empleados e ON e.id=a.empleado_id JOIN empresas emp ON emp.id=e.empresa_id
-        WHERE a.minutos_tardanza>0 AND a.fecha BETWEEN ${POSTGRES ? `date_trunc('month',${HOY_SQL})::date` : `DATE_FORMAT(CURDATE(),'%Y-%m-01')`} AND ${HOY_SQL}
+        WHERE a.minutos_tardanza>0 AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' AND a.fecha BETWEEN ${POSTGRES ? `date_trunc('month',${HOY_SQL})::date` : `DATE_FORMAT(CURDATE(),'%Y-%m-01')`} AND ${HOY_SQL}
           ${filtroEmpresaHorario}
         GROUP BY e.id,e.nombres,e.apellidos,emp.razon_social HAVING COUNT(*)>=3
         ORDER BY tardanzas DESC, minutos DESC LIMIT 30`, paramsEmpresa),
@@ -146,7 +149,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         JOIN empleados e ON e.id=pd.empleado_id
         JOIN empresas emp ON emp.id=e.empresa_id
         JOIN areas ar ON ar.id=e.area_id JOIN cargos c ON c.id=e.cargo_id
-        WHERE e.estado='activo' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
+        WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' AND LOWER(e.tipo_vinculo) LIKE 'practicante%'
           AND pd.fecha_vencimiento_convenio BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'}
           ${filtroEmpresaHorario}
         ORDER BY pd.fecha_vencimiento_convenio, e.id`, paramsEmpresa)

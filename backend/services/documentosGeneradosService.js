@@ -23,6 +23,8 @@ async function guardar(documento,contenido,body,usuarioId){
       ||contenido.subarray(0,5).toString('ascii')!=='%PDF-')
     throw Object.assign(new Error('El PDF generado no es válido o supera 5 MB.'),{status:413});
   const empleado=idPositivo(body.empleado_id),empresa=idPositivo(body.empresa_id);
+  const [colaboradores]=await pool.query("SELECT id FROM empleados WHERE id=? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1",[empleado]);
+  if(!colaboradores.length)throw Object.assign(new Error('El colaborador no existe.'),{status:404});
   const usuario=idPositivo(usuarioId),nombre=nombreSeguro(documento.nombre_archivo);
   const tipo=String(documento.tipo_documento_nombre||documento.titulo||'Documento').slice(0,150);
   const codigo=String(documento.codigo||'').slice(0,50);
@@ -50,13 +52,14 @@ async function recientes(limite=20){
     +' FROM documentos_generados dg '
     +'INNER JOIN empleados e ON e.id=dg.empleado_id '
     +'INNER JOIN empresas emp ON emp.id=dg.empresa_id '
-    +'ORDER BY dg.created_at DESC,dg.id DESC LIMIT ?',[total]);
+    +"WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' "
+     +'ORDER BY dg.created_at DESC,dg.id DESC LIMIT ?',[total]);
   return rows;
 }
 async function obtenerEnlace(id){
   exigirPostgres();
   const [rows]=await pool.query(
-    'SELECT id,nombre_archivo,ruta_archivo FROM documentos_generados WHERE id=? LIMIT 1',
+    "SELECT dg.id,dg.nombre_archivo,dg.ruta_archivo FROM documentos_generados dg INNER JOIN empleados e ON e.id=dg.empleado_id WHERE dg.id=? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1",
     [idPositivo(id)]);
   if(!rows.length)throw Object.assign(new Error('El documento generado no existe.'),{status:404});
   return {nombre_archivo:rows[0].nombre_archivo,

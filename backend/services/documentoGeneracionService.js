@@ -157,7 +157,7 @@ async function preparar(body = {}) {
       e.direccion, e.fecha_nacimiento, e.puesto, pd.fecha_vencimiento_convenio,
       COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta
       FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-      WHERE e.id = ? LIMIT 1`, [empleadoId]),
+      WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1`, [empleadoId]),
     pool.query(`SELECT emp.razon_social AS empresa, emp.ruc, emp.direccion AS empresa_direccion, ar.nombre AS area, c.nombre AS cargo
       FROM empresas emp INNER JOIN areas ar ON ar.empresa_id = emp.id
       INNER JOIN cargos c ON c.area_id = ar.id
