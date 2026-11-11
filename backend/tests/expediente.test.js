@@ -54,6 +54,7 @@ test('la ficha calcula avance decimal, tolerancia real y culminación sólo con 
   assert.equal(ficha.progresoHoras.porcentajeAvance, '76.6%');
   assert.equal(ficha.horarios[0].tolerancia_minutos, 12);
   const seleccion = consultas.find(q => q.sql.includes('WHERE e.id = ?')).sql;
+  assert.match(seleccion, /LOWER\(COALESCE\(e.tipo_vinculo,''\)\) <> 'sistema'/);
   assert.match(seleccion, /CASE WHEN LOWER\(e.tipo_vinculo\) LIKE 'practicante%'\s+THEN COALESCE\(pd.horas_meta, e.horas_totales_asignadas, 0\)\s+ELSE COALESCE\(e.horas_totales_asignadas, 0\) END AS horas_totales_asignadas/);
   horas = 319.99; ficha = await fichaService.obtenerFicha(7);
   assert.equal(ficha.progresoHoras.horasCompletadas, false);
@@ -110,6 +111,7 @@ test('las notas del expediente se persisten con el ID y texto parametrizados', a
 test('los filtros de personal combinan organización/estado/búsqueda y todos incluye inactivos', async () => {
   await personal.listarColaboradores({ query: { empresa_id: '1', area_id: '2', cargo_id: '3', estado: 'todos', buscar: 'Ana' } }, response());
   const first = consultas[0];
+  assert.match(first.sql, /LOWER\(COALESCE\(e.tipo_vinculo,''\)\) <> 'sistema'/);
   assert.ok(!first.sql.includes("WHERE e.estado = 'activo'"));
   assert.ok(!first.sql.includes('e.estado = ?'));
   assert.match(first.sql, /e.empresa_id = \?/);

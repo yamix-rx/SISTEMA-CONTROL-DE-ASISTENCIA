@@ -8,19 +8,21 @@ const frontend=readFileSync(join(__dirname,'../../frontend/js/documentos.js'),'u
 const html=readFileSync(join(__dirname,'../../frontend/Documentos.html'),'utf8');
 const routes=readFileSync(join(__dirname,'../routes/documentoRoutes.js'),'utf8');
 
-function setup({failInsert=false,failUpload=false}={}){
+function setup({failInsert=false,failUpload=false,systemEmployee=false}={}){
   const calls=[],stored=[];
   const pool={query:async (sql,values)=>{
     calls.push({sql,values});
+    if(sql.includes('SELECT id FROM empleados WHERE id=?') && sql.includes("tipo_vinculo"))
+      return [systemEmployee ? [] : [{id:values[0]}]];
     if(sql.startsWith('INSERT INTO documentos_generados')){
       if(failInsert)throw new Error('ERROR_TEST_INSERCION');
       return [{insertId:51}];
     }
+    if(sql.includes('FROM documentos_generados dg') && sql.includes('WHERE dg.id=?'))
+      return [[{id:51,nombre_archivo:'carta.pdf',ruta_archivo:'9ba1cb72-c5fb-4eaf-ae65-40fa8509d2f3.pdf'}]];
     if(sql.includes('FROM documentos_generados dg'))
       return [[{id:51,nombre_archivo:'carta.pdf',tipo_nombre:'Carta de aceptación',
         colaborador:'Persona de prueba',empresa:'Empresa de prueba',created_at:'2026-10-28T13:00:00Z'}]];
-    if(sql.includes('WHERE id=? LIMIT 1'))
-      return [[{id:51,nombre_archivo:'carta.pdf',ruta_archivo:'9ba1cb72-c5fb-4eaf-ae65-40fa8509d2f3.pdf'}]];
     return [[]];
   }};
   const storage={
@@ -63,6 +65,13 @@ test('Archiva un PDF como objeto privado y guarda referencia con empleado y auto
   assert.equal(insert.values.at(-1),'2026-10-28');
 });
 
+test('No permite archivar documentos para una cuenta interna de tipo sistema',async()=>{
+  const {service,calls,stored}=setup({systemEmployee:true});
+  await assert.rejects(service.guardar(doc,pdf,body,1),{status:404});
+  assert.equal(stored.length,0);
+  assert.ok(!calls.some(call=>call.sql.startsWith('INSERT INTO documentos_generados')));
+});
+
 test('Si falla la base, limpia el objeto recién subido para evitar huérfanos',async()=>{
   const {service,stored}=setup({failInsert:true});
   await assert.rejects(service.guardar(doc,pdf,body,1),/ERROR_TEST_INSERCION/);
@@ -72,7 +81,7 @@ test('Si falla la base, limpia el objeto recién subido para evitar huérfanos',
 test('Si falla Storage, no crea un registro de documento inexistente',async()=>{
   const {service,calls}=setup({failUpload:true});
   await assert.rejects(service.guardar(doc,pdf,body,1),/ERROR_TEST_STORAGE/);
-  assert.ok(!calls.length);
+  assert.ok(!calls.some(call=>call.sql.startsWith('INSERT INTO documentos_generados')));
 });
 test('Rechaza PDFs inválidos y limita el tamaño de archivos privados',async()=>{
   const {service,stored}=setup();

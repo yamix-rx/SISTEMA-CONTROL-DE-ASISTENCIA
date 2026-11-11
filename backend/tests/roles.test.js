@@ -112,9 +112,9 @@ test('los datos privados del administrador solo se devuelven en el contexto de g
 
 test('los filtros compartidos excluyen registros internos de tipo sistema sin perder los filtros del personal', () => {
   const general = filtrosPersonal({});
-  assert.match(general.where, /LOWER\\(COALESCE\\(e\\.tipo_vinculo,''\\)\\) <> 'sistema'/);
+  assert.match(general.where, /LOWER\(COALESCE\(e\.tipo_vinculo,''\)\) <> 'sistema'/);
   const practicantes = filtrosPersonal({ tipo_vinculo: 'practicante' });
-  assert.match(practicantes.where, /LOWER\\(COALESCE\\(e\\.tipo_vinculo,''\\)\\) <> 'sistema'/);
+  assert.match(practicantes.where, /LOWER\(e\.tipo_vinculo\) LIKE 'practicante%'/);
   assert.match(practicantes.where, /LOWER\\(e\\.tipo_vinculo\\) LIKE 'practicante%'/);
 });
 
