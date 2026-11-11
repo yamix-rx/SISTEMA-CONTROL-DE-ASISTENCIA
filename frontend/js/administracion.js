@@ -76,7 +76,7 @@
       return;
     }
     const confirmar = window.confirm(
-      `¿Eliminar definitivamente la cuenta de acceso de ${u.colaborador}?\\n\\n` +
+      `¿Eliminar definitivamente la cuenta de acceso de ${u.colaborador}?\n\n` +
       'Se eliminará su registro de usuarios y se cerrarán sus sesiones. ' +
       'Se conservarán la ficha del colaborador, sus asistencias, documentos y vínculo laboral o de prácticas.'
     );

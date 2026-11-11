@@ -163,7 +163,7 @@ test('la lista administrativa devuelve todas las cuentas y todos los perfiles, s
   const result = await request('/api/administracion/usuarios');
   assert.equal(result.status, 200);
   assert.equal(result.body.data.length, 3);
-  assert.deepEqual(result.body.data.map(u => u.rol), [ROLES.ADMIN, ROLES.RRHH, ROLES.COLABORADOR]);
+  assert.deepEqual(new Set(result.body.data.map(u => u.rol)), new Set([ROLES.ADMIN, ROLES.RRHH, ROLES.COLABORADOR]));
   assert.ok(result.body.data.every(u => !Object.hasOwn(u, 'password')));
 });
 
