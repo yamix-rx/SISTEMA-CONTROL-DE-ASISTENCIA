@@ -33,7 +33,8 @@ exports.listarEmpresas = async (req, res) => {
         e.email_contacto,
         CASE WHEN ${process.env.DATABASE_URL ? 'BOOL_OR(e.logo_data IS NOT NULL)' : 'MAX(e.logo_data IS NOT NULL) = 1'} THEN CONCAT('/api/empresas/', e.id, '/logo') ELSE NULL END AS logo_url,
         e.estado,
-        COUNT(emp.id) AS total_empleados
+        COUNT(emp.id) AS total_empleados,
+        (SELECT COUNT(*) FROM empleados emp_todos WHERE emp_todos.empresa_id = e.id) AS total_personal_vinculado
       FROM empresas e
       LEFT JOIN empleados emp ON emp.empresa_id = e.id AND emp.estado = 'activo' AND LOWER(COALESCE(emp.tipo_vinculo,'')) <> 'sistema'
       GROUP BY e.id, e.razon_social, e.ruc, e.direccion, e.telefono, e.email_contacto, e.estado
@@ -148,5 +149,62 @@ exports.cambiarEstado = async (req, res) => {
   } catch (error) {
     console.error('Error al cambiar estado de la empresa:', error);
     return res.status(500).json({ ok: false, mensaje: 'Error al actualizar el estado.' });
+  }
+};
+
+
+// 4. Eliminar empresa sin destruir información histórica vinculada
+exports.eliminarEmpresa = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ ok: false, mensaje: 'Empresa no válida.' });
+  }
+
+  try {
+    // El bloqueo evita que se elimine la empresa mientras se comprueban sus vínculos.
+    const [empresas] = await pool.query(
+      'SELECT id, razon_social FROM empresas WHERE id = ? FOR UPDATE',
+      [id]
+    );
+    if (!empresas.length) {
+      return res.status(404).json({ ok: false, mensaje: 'La empresa ya no existe o fue eliminada.' });
+    }
+
+    const [conteoPersonal] = await pool.query(
+      'SELECT COUNT(*) AS total FROM empleados WHERE empresa_id = ?',
+      [id]
+    );
+    const totalPersonal = Number(conteoPersonal[0]?.total || 0);
+    if (totalPersonal > 0) {
+      return res.status(409).json({
+        ok: false,
+        codigo: 'EMPRESA_CON_PERSONAL',
+        mensaje: 'No se puede eliminar "' + empresas[0].razon_social + '" porque tiene ' + totalPersonal +
+          ' registro(s) de personal vinculado(s). Para conservar sus asistencias y expedientes, inactiva la empresa en lugar de eliminarla.',
+        total_personal: totalPersonal
+      });
+    }
+
+    const [result] = await pool.query('DELETE FROM empresas WHERE id = ?', [id]);
+    if (!result.affectedRows) {
+      return res.status(404).json({ ok: false, mensaje: 'La empresa ya no existe o fue eliminada.' });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      mensaje: 'La empresa "' + empresas[0].razon_social + '" fue eliminada correctamente.'
+    });
+  } catch (error) {
+    // PostgreSQL (23503) y MySQL (1451) rechazan la operación si quedan
+    // documentos u otros registros históricos que dependen de la empresa.
+    if (error.code === '23503' || error.code === 'ER_ROW_IS_REFERENCED_2' || Number(error.errno) === 1451) {
+      return res.status(409).json({
+        ok: false,
+        codigo: 'EMPRESA_CON_HISTORIAL',
+        mensaje: 'No se puede eliminar esta empresa porque todavía tiene documentos generados u otros registros históricos vinculados. Inactívala para conservar esa información.'
+      });
+    }
+    console.error('Error al eliminar empresa:', error.code || error.name);
+    return res.status(500).json({ ok: false, mensaje: 'No se pudo eliminar la empresa de la base de datos.' });
   }
 };

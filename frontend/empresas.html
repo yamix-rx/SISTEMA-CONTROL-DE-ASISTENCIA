@@ -202,7 +202,12 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
           <span class="pill ${e.estado === 'activo' ? 'ok' : 'no'}">● ${e.estado === 'activo' ? 'Activo' : 'Inactivo'}</span>
         </td>
         <td class="text-center">
-          <button class="text-info fw-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar">✎</button>
+          <div class="d-inline-flex align-items-center gap-2">
+            <button type="button" class="text-info fw-bold p-1 editEmp" data-id="${Number(e.id)}" title="Editar" aria-label="Editar empresa">✎</button>
+            <button type="button" class="text-danger fw-bold p-1 deleteEmp" data-id="${Number(e.id)}" title="Eliminar empresa" aria-label="Eliminar empresa">
+              <i data-lucide="trash-2" class="sbss-w-4 sbss-h-4"></i>
+            </button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -214,6 +219,8 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         image.src = URL.createObjectURL(await response.blob());
       } catch (_) { /* La empresa conserva el texto alternativo si no se puede cargar. */ }
     });
+
+    if (window.lucide?.createIcons) window.lucide.createIcons();
 
     document.querySelectorAll('.editEmp').forEach(b => {
       b.onclick = () => {
@@ -233,6 +240,47 @@ body{margin:0;background:#eef5f9;color:#174766;font-family:Arial,Helvetica,sans-
         preview.src = item.logo_url || '';
         preview.classList.toggle('d-none', !item.logo_url);
         openM('modalEmpresa');
+      };
+    });
+
+    document.querySelectorAll('.deleteEmp').forEach(button => {
+      button.onclick = async () => {
+        const id = Number(button.dataset.id);
+        const empresa = listaEmpresas.find(item => Number(item.id) === id);
+        if (!empresa) return;
+
+        const totalPersonal = Number(empresa.total_personal_vinculado ?? empresa.total_empleados) || 0;
+        if (totalPersonal > 0) {
+          alert('No se puede eliminar "' + empresa.razon_social + '" porque tiene ' + totalPersonal +
+            ' registro(s) de personal vinculado(s). Inactiva la empresa para conservar sus asistencias y expedientes.');
+          return;
+        }
+
+        const confirmado = window.confirm(
+          '¿Eliminar permanentemente la empresa "' + empresa.razon_social + '"?\n\n' +
+          'Esta acción no se puede deshacer. Sus áreas y cargos asociados también se eliminarán. ' +
+          'Las capacitaciones conservarán su información, pero quedarán sin empresa.\n\n' +
+          'Si existen documentos generados u otros registros históricos, la base de datos bloqueará la eliminación.'
+        );
+        if (!confirmado) return;
+
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        try {
+          const response = await fetch('/api/empresas/' + id, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.mensaje || 'No se pudo eliminar la empresa.');
+
+          toast(data.mensaje || 'Empresa eliminada correctamente.');
+          await cargarEmpresas();
+        } catch (error) {
+          alert(error.message || 'No se pudo eliminar la empresa.');
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        }
       };
     });
   }
