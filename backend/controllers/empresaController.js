@@ -35,7 +35,7 @@ exports.listarEmpresas = async (req, res) => {
         e.estado,
         COUNT(emp.id) AS total_empleados
       FROM empresas e
-      LEFT JOIN empleados emp ON emp.empresa_id = e.id AND emp.estado = 'activo'
+      LEFT JOIN empleados emp ON emp.empresa_id = e.id AND emp.estado = 'activo' AND LOWER(COALESCE(emp.tipo_vinculo,'')) <> 'sistema'
       GROUP BY e.id, e.razon_social, e.ruc, e.direccion, e.telefono, e.email_contacto, e.estado
       ORDER BY e.razon_social ASC
     `;
