@@ -133,7 +133,8 @@
     function renderAccount(usuario) {
         const fullName = [usuario.nombres, usuario.apellidos].filter(Boolean).join(' ') || usuario.email || 'Mi cuenta';
         setText('accountName', fullName);
-        element('accountName').title = fullName;
+        const accountName = element('accountName');
+        if (accountName) accountName.title = fullName;
         setText('accountRole', usuario.rol, 'Colaborador');
         setText('accountInitials', [usuario.nombres, usuario.apellidos].map(part => String(part || '').trim().charAt(0)).join('').toUpperCase() || 'U');
         setText('welcomeText', usuario.nombres ? `Hola, ${usuario.nombres}. Aquí puedes consultar tu información personal.` : 'Aquí puedes consultar tu información personal.');

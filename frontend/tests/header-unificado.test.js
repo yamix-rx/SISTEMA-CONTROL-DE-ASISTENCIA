@@ -111,7 +111,8 @@ test('la cabecera compartida normaliza todas las variantes sin perder el filtro 
       createElementNS: (_ns, tag) => new Nodo(tag)
     };
     const crear = new Function('document', 'currentPage', codigo + 'return unificarCabecera;');
-    const render = crear(document, personal ? 'mipanel.html' : 'dashboard.html');
+    const pagina = variante === 'administracion' ? 'administracion.html' : personal ? 'mipanel.html' : 'dashboard.html';
+    const render = crear(document, pagina);
     render({ nombres: 'Admin', apellidos: 'SBSS', rol: 'Administrador General' });
 
     const cuenta = header.querySelector('.sbss-session-account');
@@ -122,7 +123,14 @@ test('la cabecera compartida normaliza todas las variantes sin perder el filtro 
     assert.ok(boton.children.some(hijo => hijo.tag === 'svg'));
     assert.ok(boton.children.some(hijo => hijo.tag === 'span' && hijo.textContent === 'Cerrar sesión'));
     const nombreVisible = header.querySelector(personal ? '#accountName' : '#nombreUsuarioSesion');
-    assert.equal(nombreVisible.textContent, 'Admin SBSS');
+    if (variante === 'administracion') {
+      assert.equal(nombreVisible.textContent, 'Admin SBSS');
+      assert.ok(header.querySelector(personal ? '#accountInitials' : '#avatarLetra'));
+    } else {
+      assert.equal(nombreVisible, null, 'no exponer datos del administrador en ' + variante);
+      assert.equal(header.querySelector(personal ? '#accountInitials' : '#avatarLetra'), null);
+      assert.equal(header.querySelector(personal ? '#accountRole' : '#rolUsuarioSesion'), null);
+    }
     assert.ok(header.contains(marca), 'conservar logotipo: ' + variante);
     if (filtro) assert.ok(header.contains(filtro), 'conservar selector de empresa');
     render({ nombres: 'Admin', apellidos: 'SBSS', rol: 'Administrador General' });
@@ -134,5 +142,7 @@ test('el botón superior sigue usando el logout delegado y no depende de iconos 
   assert.match(js, /closest\?\.\('#btnCerrarSesion, #logoutButton, \[data-logout\]'\)/);
   assert.match(js, /createElementNS\('http:\/\/www\.w3\.org\/2000\/svg', 'svg'\)/);
   assert.match(js, /unificarCabecera\(data\.usuario\)/);
+  assert.match(js, /auth\/perfil\?contexto=usuarios/);
+  assert.match(js, /usuario\.rol !== 'Administrador General' \|\| currentPage === 'administracion\.html'/);
   assert.match(js, /salir\.append\(svg, texto\)/);
 });

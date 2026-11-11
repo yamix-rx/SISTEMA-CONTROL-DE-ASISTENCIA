@@ -47,6 +47,7 @@ require.cache[databasePath] = { id: databasePath, filename: databasePath, loaded
 const app = require('../server');
 const { ROLES } = require('../config/accessPolicy');
 const { obtenerFicha } = require('../services/fichaService');
+const { filtrosPersonal } = require('../services/asistenciaReglas');
 let server;
 let baseUrl;
 
@@ -95,6 +96,26 @@ test('login devuelve el panel y los permisos de cada uno de los tres roles', asy
     assert.deepEqual(perfil.body.usuario, result.body.usuario);
     assert.deepEqual(perfil.body.acceso, result.body.acceso);
   }
+});
+
+test('los datos privados del administrador solo se devuelven en el contexto de gestión de usuarios', async () => {
+  const login = await request('/api/auth/login', { method: 'POST', body: { email: cuentas.get(1).email, password } });
+  assert.equal(login.status, 200);
+  assert.deepEqual(login.body.usuario, { id: 1, rol: ROLES.ADMIN });
+  const authorization = `Bearer ${login.body.token}`;
+  const perfilGeneral = await request('/api/auth/perfil', { authorization });
+  assert.deepEqual(perfilGeneral.body.usuario, { id: 1, rol: ROLES.ADMIN });
+  const perfilUsuarios = await request('/api/auth/perfil?contexto=usuarios', { authorization });
+  assert.equal(perfilUsuarios.body.usuario.email, cuentas.get(1).email);
+  assert.equal(perfilUsuarios.body.usuario.rol, ROLES.ADMIN);
+});
+
+test('los filtros compartidos excluyen registros internos de tipo sistema sin perder los filtros del personal', () => {
+  const general = filtrosPersonal({});
+  assert.match(general.where, /LOWER\\(COALESCE\\(e\\.tipo_vinculo,''\\)\\) <> 'sistema'/);
+  const practicantes = filtrosPersonal({ tipo_vinculo: 'practicante' });
+  assert.match(practicantes.where, /LOWER\\(COALESCE\\(e\\.tipo_vinculo,''\\)\\) <> 'sistema'/);
+  assert.match(practicantes.where, /LOWER\\(e\\.tipo_vinculo\\) LIKE 'practicante%'/);
 });
 
 test('login rechaza roles desconocidos, cuentas inactivas y contraseñas incorrectas', async () => {

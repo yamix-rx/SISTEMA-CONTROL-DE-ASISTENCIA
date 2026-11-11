@@ -141,6 +141,7 @@
     if (!partes.length) return;
 
     const personal = currentPage === 'mipanel.html';
+    const mostrarDatosCuenta = usuario.rol !== 'Administrador General' || currentPage === 'administracion.html';
     const cuenta = document.createElement('div');
     cuenta.className = 'sbss-session-account';
     cuenta.setAttribute('aria-label', 'Cuenta y sesión actual');
@@ -188,7 +189,8 @@
     const texto = document.createElement('span');
     texto.textContent = 'Cerrar sesión';
     salir.append(svg, texto);
-    cuenta.append(avatar, detalles, salir);
+    if (mostrarDatosCuenta) cuenta.append(avatar, detalles, salir);
+    else cuenta.append(salir);
 
     // Si la cabecera tiene un grupo de cuenta ya formado, se sustituye entero.
     // Si el nombre, avatar y botón están sueltos (p. ej. Auditoría),
@@ -257,7 +259,10 @@
     const token = localStorage.getItem('sbss_token');
     if (!token) { logout(false); return null; }
     try {
-      const response = await nativeFetch(`${API_BASE}/auth/perfil`, {
+      const perfilUrl = currentPage === 'administracion.html'
+        ? `${API_BASE}/auth/perfil?contexto=usuarios`
+        : `${API_BASE}/auth/perfil`;
+      const response = await nativeFetch(perfilUrl, {
         headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
         signal: AbortSignal.timeout(12000)
       });

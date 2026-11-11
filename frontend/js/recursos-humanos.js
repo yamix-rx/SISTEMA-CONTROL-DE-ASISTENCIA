@@ -109,7 +109,7 @@
     async function init() {
         const session = await window.SBSSSession.ready;
         if (!session) return;
-        const name = (session.usuario.nombres || '').trim();
+        const name = session.usuario.rol === 'Administrador General' ? '' : (session.usuario.nombres || '').trim();
         document.getElementById('saludo').textContent = name ? `Hola, ${name}` : 'Hola, bienvenido';
         const now = new Date();
         const date = document.getElementById('fechaHoy');
