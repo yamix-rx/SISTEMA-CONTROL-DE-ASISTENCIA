@@ -140,7 +140,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         ORDER BY tardanzas DESC, minutos DESC LIMIT 30`, paramsEmpresa),
       pool.query(`SELECT  ${POSTGRES ? `COUNT(*) FILTER (WHERE e.tipo_vinculo='trabajador')` : `COALESCE(SUM(e.tipo_vinculo='trabajador'),0)`} AS trabajadores,
            ${POSTGRES ? `COUNT(*) FILTER (WHERE LOWER(e.tipo_vinculo) LIKE 'practicante%')` : `COALESCE(SUM(LOWER(e.tipo_vinculo) LIKE 'practicante%'),0)`} AS practicantes
-        FROM empleados e WHERE e.estado='activo' ${filtroEmpresaHorario}`, paramsEmpresa),
+        FROM empleados e WHERE e.estado='activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ${filtroEmpresaHorario}`, paramsEmpresa),
       pool.query(`SELECT e.id AS empleado_id, CONCAT(e.nombres,' ',e.apellidos) AS colaborador,
           emp.razon_social AS empresa, ar.nombre AS area, c.nombre AS cargo, e.puesto,
            ${POSTGRES ? `TO_CHAR(pd.fecha_vencimiento_convenio,'YYYY-MM-DD')` : `DATE_FORMAT(pd.fecha_vencimiento_convenio,'%Y-%m-%d')`} AS fecha_vencimiento_convenio,

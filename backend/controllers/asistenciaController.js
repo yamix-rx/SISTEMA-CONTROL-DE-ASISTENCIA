@@ -120,9 +120,9 @@ exports.actualizarEstadoPermiso=async(req,res)=>{
   try {
     const id=r.entero(req.params.id,'Permiso'),estado=req.body.estado;
     if(!['Solicitado','Aprobado','Rechazado'].includes(estado))throw r.error('Estado no válido.');
-    const [[anterior]]=await pool.query('SELECT * FROM permisos WHERE id=?',[id]);
+    const [[anterior]]=await pool.query("SELECT * FROM permisos WHERE id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=permisos.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')",[id]);
     if(!anterior)throw Object.assign(r.error('Permiso no encontrado.'),{status:404});
-    await pool.query('UPDATE permisos SET estado=? WHERE id=?',[estado,id]);
+    await pool.query("UPDATE permisos SET estado=? WHERE id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=permisos.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')",[estado,id]);
     auditar(res,'permisos',id,'UPDATE',anterior,{...anterior,estado});
     return res.json({ok:true,mensaje:'Estado del permiso actualizado.'});
   }catch(error){return fallo(res,error);}
@@ -130,7 +130,7 @@ exports.actualizarEstadoPermiso=async(req,res)=>{
 exports.sustentoPermiso=async(req,res)=>{
   try {
     const id=r.entero(req.params.id,'Permiso'),propio=req.usuario.rol===ROLES.COLABORADOR;
-    const [[permiso]]=await pool.query(`SELECT empleado_id,archivo_sustento,archivo_sustento_nombre FROM permisos WHERE id=? ${propio?'AND empleado_id=?':''}`,propio?[id,req.usuario.empleado_id]:[id]);
+    const [[permiso]]=await pool.query(`SELECT empleado_id,archivo_sustento,archivo_sustento_nombre FROM permisos WHERE id=? AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=permisos.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema') ${propio?'AND empleado_id=?':''}`,propio?[id,req.usuario.empleado_id]:[id]);
     if(!permiso||!permiso.archivo_sustento_nombre)throw Object.assign(r.error('No existe un archivo adjunto disponible para este permiso.'),{status:404});
     const archivo=await archivos.obtenerArchivo(permiso.archivo_sustento,{descargar:req.query.descargar==='1',nombre:permiso.archivo_sustento_nombre});
     res.set({'Content-Type':archivo.mime_type,'Content-Disposition':archivos.disposicionArchivo(permiso.archivo_sustento_nombre,req.query.descargar==='1'),'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Content-Security-Policy':"default-src 'none'; sandbox"});

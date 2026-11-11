@@ -458,9 +458,10 @@ async function retirarParticipante(capacitacionId, empleadoId) {
   const capId = enteroPositivo(capacitacionId, 'La capacitación');
   const empId = enteroPositivo(empleadoId, 'El colaborador');
   const [result] = await pool.query(`
-    UPDATE capacitacion_participantes
+    UPDATE capacitacion_participantes cp
     SET estado = 'cancelado', fecha_completado = NULL
-    WHERE capacitacion_id = ? AND empleado_id = ?
+    WHERE cp.capacitacion_id = ? AND cp.empleado_id = ?
+      AND EXISTS (SELECT 1 FROM empleados e WHERE e.id=cp.empleado_id AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema')
   `, [capId, empId]);
   if (!result.affectedRows) throw errorHttp(404, 'El participante no está registrado en esta capacitación.');
   return { retirado: true, capacitacion_id: capId, empleado_id: empId };

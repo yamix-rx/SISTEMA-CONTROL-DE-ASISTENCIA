@@ -114,8 +114,8 @@ test('los filtros compartidos excluyen registros internos de tipo sistema sin pe
   const general = filtrosPersonal({});
   assert.match(general.where, /LOWER\(COALESCE\(e\.tipo_vinculo,''\)\) <> 'sistema'/);
   const practicantes = filtrosPersonal({ tipo_vinculo: 'practicante' });
+  assert.match(practicantes.where, /LOWER\(COALESCE\(e\.tipo_vinculo,''\)\) <> 'sistema'/);
   assert.match(practicantes.where, /LOWER\(e\.tipo_vinculo\) LIKE 'practicante%'/);
-  assert.match(practicantes.where, /LOWER\\(e\\.tipo_vinculo\\) LIKE 'practicante%'/);
 });
 
 test('login rechaza roles desconocidos, cuentas inactivas y contraseñas incorrectas', async () => {
