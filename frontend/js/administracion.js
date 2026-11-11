@@ -70,12 +70,34 @@
       boton.disabled = false;
     }
   }
+  async function eliminarCuenta(u, boton) {
+    if (Number(u.id) === Number(current.usuario.id)) {
+      message('No puedes eliminar la cuenta con la que has iniciado sesión.', true);
+      return;
+    }
+    const confirmar = window.confirm(
+      `¿Eliminar definitivamente la cuenta de acceso de ${u.colaborador}?\\n\\n` +
+      'Se eliminará su registro de usuarios y se cerrarán sus sesiones. ' +
+      'Se conservarán la ficha del colaborador, sus asistencias, documentos y vínculo laboral o de prácticas.'
+    );
+    if (!confirmar) return;
+    boton.disabled = true;
+    try {
+      const result = await api(`/usuarios/${u.id}`, { method: 'DELETE' });
+      await load();
+      message(result.mensaje);
+    } catch (e) {
+      message(e.message, true);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+
   function renderUsers() {
     const q=$('searchUsers').value.trim().toLowerCase();
-    // Esta tabla gestiona únicamente administradores. Las cuentas de practicantes,
-    // trabajadores y RRHH permanecen intactas en BD, pero no aparecen aquí.
-    const administradores=users.filter(u=>u.rol==='Administrador General');
-    table('usersBody',administradores.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q)),u=>{
+    const listado=users.filter(u=>`${u.colaborador} ${u.email} ${u.rol}`.toLowerCase().includes(q));
+    $('usersCount').textContent = `${users.length} cuentas registradas`;
+    table('usersBody',listado,u=>{
       const person=cell();person.append(node('strong',u.colaborador));const email=node('div',u.email);email.className='email';person.append(email);
       const actions=cell();actions.append(action('Editar',()=>editUser(u)),action('Contraseña',()=>{
         $('passwordForm').reset();$('passwordError').textContent='';$('passwordUserId').value=u.id;$('passwordAccount').textContent=`${u.colaborador} · ${u.email}`;$('passwordDialog').showModal();
@@ -86,6 +108,16 @@
         quitar.title = 'Cambiar a Trabajador/Practicante sin eliminar datos del personal';
         actions.append(quitar);
       }
+      const esCuentaActual = Number(u.id) === Number(current.usuario.id);
+      const borrar = action(esCuentaActual ? 'Cuenta actual' : 'Eliminar cuenta', () => eliminarCuenta(u, borrar));
+      if (esCuentaActual) {
+        borrar.disabled = true;
+        borrar.title = 'No puedes eliminar la cuenta con la que has iniciado sesión.';
+      } else {
+        borrar.classList.add('delete-user');
+        borrar.title = 'Eliminar definitivamente esta cuenta de acceso';
+      }
+      actions.append(borrar);
       return [person,cell(u.rol),cell(Number(u.activo)?'Activo':'Inactivo'),actions];
     },4);
   }

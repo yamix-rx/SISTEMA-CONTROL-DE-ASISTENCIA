@@ -36,7 +36,11 @@ const pool = {
     if (/SELECT u.id, u.empleado_id, u.rol_id, u.email, u.activo/.test(sql)) {
       return [[...usuarios.values()].map(u => ({ id: u.id, empleado_id: u.empleado_id, rol_id: u.rol_id, email: u.email, activo: u.activo, colaborador: `Persona ${u.id}`, rol: roles.get(u.rol_id) }))];
     }
-    if (/WHERE u.activo=1 AND r.nombre=/.test(sql)) return [[...usuarios.values()].filter(u => u.activo === 1 && roles.get(u.rol_id) === params[0]).map(u => ({ id: u.id }))];
+    if (/WHERE u\.activo=(?:1|TRUE) AND r\.nombre=/i.test(sql)) return [[...usuarios.values()].filter(u => (u.activo === 1 || u.activo === true) && roles.get(u.rol_id) === params[0]).map(u => ({ id: u.id }))];
+    if (/SELECT u\.id, u\.rol_id, u\.activo, r\.nombre AS rol FROM usuarios/.test(sql)) {
+      const u = usuarios.get(params[0]);
+      return [u ? [{ id:u.id, rol_id:u.rol_id, activo:u.activo, rol:roles.get(u.rol_id) }] : []];
+    }
     if (/SELECT id, rol_id, activo FROM usuarios WHERE id/.test(sql)) return [usuarios.has(params[0]) ? [copy(usuarios.get(params[0]))] : []];
     if (/SELECT id, nombre FROM roles WHERE id/.test(sql)) return [roles.has(params[0]) ? [{ id: params[0], nombre: roles.get(params[0]) }] : []];
     if (/SELECT id FROM empleados WHERE id/.test(sql)) return [params[0] >= 101 && params[0] <= 110 ? [{ id: params[0] }] : []];
@@ -45,6 +49,10 @@ const pool = {
       const id = Math.max(...usuarios.keys()) + 1;
       usuarios.set(id, { id, empleado_id: params[0], rol_id: params[1], email: params[2], password: params[3], activo: 1, sesion_version: 0 });
       return [{ insertId: id }];
+    }
+    if (/DELETE FROM usuarios WHERE id/.test(sql)) {
+      const deleted = usuarios.delete(params[0]);
+      return [{ affectedRows: deleted ? 1 : 0 }];
     }
     if (/UPDATE usuarios SET email=/.test(sql)) {
       const u = usuarios.get(params[3]);
@@ -149,6 +157,45 @@ test('solo administrador gestiona cuentas y una escritura rechazada queda como D
   }
   assert.equal((await request('/api/administracion/usuarios', { usuario: null })).status, 401);
   assert.ok(!sqlCalls.some(q => /^UPDATE usuarios/.test(q.sql)));
+});
+
+test('la lista administrativa devuelve todas las cuentas y todos los perfiles, sin credenciales', async () => {
+  const result = await request('/api/administracion/usuarios');
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.length, 3);
+  assert.deepEqual(result.body.data.map(u => u.rol), [ROLES.ADMIN, ROLES.RRHH, ROLES.COLABORADOR]);
+  assert.ok(result.body.data.every(u => !Object.hasOwn(u, 'password')));
+});
+
+test('elimina físicamente la cuenta de acceso, conserva la ficha del colaborador y audita DELETE', async () => {
+  const result = await request('/api/administracion/usuarios/2', { method: 'DELETE' });
+  assert.equal(result.status, 200);
+  assert.equal(usuarios.has(2), false);
+  assert.equal(usuarios.size, 2);
+  assert.ok(sqlCalls.some(q => /DELETE FROM usuarios WHERE id/.test(q.sql)));
+  assert.ok(!sqlCalls.some(q => /DELETE FROM empleados/.test(q.sql)));
+  assert.equal(logs.at(-1).accion, 'DELETE');
+  assert.equal(logs.at(-1).tabla, 'usuarios');
+  assert.equal(logs.at(-1).usuario_id, 1);
+  assert.equal(logs.at(-1).anterior.id, 2);
+  assert.equal(logs.at(-1).anterior.password, '[OCULTO]');
+  assert.equal((await request('/api/session', { usuario: 2 })).status, 401);
+});
+
+test('no permite eliminar la cuenta propia ni el último administrador activo', async () => {
+  const propia = await request('/api/administracion/usuarios/1', { method: 'DELETE' });
+  assert.equal(propia.status, 400);
+  assert.equal(usuarios.has(1), true);
+  await assert.rejects(servicio.eliminarUsuario(1, 999), /último administrador activo/);
+  assert.equal(usuarios.has(1), true);
+});
+
+test('permite eliminar otro administrador si permanece al menos uno activo', async () => {
+  usuarios.get(2).rol_id = 1;
+  const result = await request('/api/administracion/usuarios/2', { method: 'DELETE' });
+  assert.equal(result.status, 200);
+  assert.equal(usuarios.has(2), false);
+  assert.equal(usuarios.has(1), true);
 });
 
 test('crear cuenta almacena bcrypt y audita ID real sin exponer contraseña ni hash', async () => {
