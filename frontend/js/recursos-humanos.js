@@ -14,7 +14,12 @@
 
     function showFollowup(data) {
         const body = document.getElementById('seguimientoPracticas'); body.replaceChildren();
-        const rows = data.seguimientoPracticas || [];
+        const rows = (data.seguimientoPracticas || []).filter(item => {
+            const meta = Number(item.horas_meta);
+            const realizadas = Number(item.horas_realizadas);
+            return Number.isFinite(meta) && meta > 0 && Number.isFinite(realizadas)
+                && (realizadas >= meta || realizadas >= meta * 0.8);
+        });
         rows.forEach(item => {
             const row = create('tr'), person = create('a', item.colaborador);
             person.href = 'FichaIndividual.html?empleado_id=' + encodeURIComponent(item.empleado_id);
@@ -26,7 +31,7 @@
             row.append(create('td', completed ? 'HORAS DE PRÁCTICAS COMPLETADAS' : Number(item.porcentaje_avance) >= 80 ? 'Próximo a completar' : 'En progreso'));
             body.append(row);
         });
-        if (!rows.length) { const row = create('tr'), cell = create('td', 'No hay practicantes con una meta asignada.'); cell.colSpan = 6; row.append(cell); body.append(row); }
+        if (!rows.length) { const row = create('tr'), cell = create('td', 'No hay practicantes que hayan alcanzado el 80 % de su meta o la hayan completado.'); cell.colSpan = 6; row.append(cell); body.append(row); }
         const alerts = document.getElementById('alertasSeguimiento'); alerts.replaceChildren();
         const add = (message, href) => { const p = create('p'); p.append(create('span', message + ' ')); const a = create('a', 'Ver expediente'); a.href = href; p.append(a); alerts.append(p); };
         (data.practicantesProximos || []).forEach(item => add(item.colaborador + ': próximo a completar sus horas; faltan ' + num(item.horas_pendientes) + ' h.', 'FichaIndividual.html?empleado_id=' + item.empleado_id));

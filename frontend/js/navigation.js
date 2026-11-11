@@ -58,8 +58,7 @@
     const requestedView = params.get('vista') || (currentPage === 'documentos.html' && params.has('generar') ? 'generar' : '');
     const availableViews = { 'fichaindividual.html': 'practicantes', 'registros.html': 'permisos', 'documentos.html': 'generar' };
     const currentView = availableViews[currentPage] === requestedView ? requestedView : '';
-    const homeLabel = filename(panel) === 'recursoshumanos.html' ? 'Inicio RRHH'
-      : filename(panel) === 'dashboard.html' ? 'Dashboard' : 'Mi inicio';
+    const homeLabel = ['recursoshumanos.html', 'dashboard.html'].includes(filename(panel)) ? 'Dashboard' : 'Mi inicio';
     const groups = [
       { links: [
         { label: homeLabel, href: panel, icon: 'dashboard', primary: true },

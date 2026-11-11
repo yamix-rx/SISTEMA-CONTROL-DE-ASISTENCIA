@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const diaria = require('../services/asistenciaDiariaService');
 const { hoy } = require('../services/asistenciaReglas');
+const { filtrarSeguimientoPracticas } = require('../services/seguimientoPracticas');
 const POSTGRES = Boolean(process.env.DATABASE_URL);
 const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 
@@ -154,8 +155,11 @@ exports.obtenerDatosDashboard = async (req, res) => {
           ${filtroEmpresaHorario}
         ORDER BY pd.fecha_vencimiento_convenio, e.id`, paramsEmpresa)
     ]);
-    const practicantesProximos = seguimientoPracticas.filter(item => Number(item.horas_realizadas) < Number(item.horas_meta) && Number(item.porcentaje_avance) >= 80);
-    const practicantesCompletados = seguimientoPracticas.filter(item => Number(item.horas_realizadas) >= Number(item.horas_meta));
+    // La tabla sólo recibe practicantes que alcanzaron al menos el 80 % o completaron su meta.
+    // Se compara con las horas exactas para evitar que el redondeo del porcentaje muestre 80 % antes de tiempo.
+    const seguimientoVisible = filtrarSeguimientoPracticas(seguimientoPracticas);
+    const practicantesProximos = seguimientoVisible.filter(item => Number(item.horas_realizadas) < Number(item.horas_meta));
+    const practicantesCompletados = seguimientoVisible.filter(item => Number(item.horas_realizadas) >= Number(item.horas_meta));
 
     return res.status(200).json({
       ok: true,
@@ -175,7 +179,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       alertasDocumentos: [...inaccesibles,...documentosPendientes].slice(0,10),
       practicantesProximos,
       practicantesCompletados,
-      seguimientoPracticas,
+      seguimientoPracticas: seguimientoVisible,
       contratosPorVencer,
       conveniosPorVencer,
       tardanzasAcumuladas

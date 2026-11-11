@@ -119,6 +119,11 @@ test('En móvil el menú se abre con foco y se cierra restaurando interacción',
   assert.equal(ui.doc.activeElement,ui.open);
   assert.equal(ui.doc.backdrop.hidden,true);
 });
+test('El acceso principal del panel de Recursos Humanos se llama Dashboard',()=>{
+  assert.match(navigationSource,/\['recursoshumanos\.html', 'dashboard\.html'\]\.includes\(filename\(panel\)\) \? 'Dashboard'/);
+  assert.doesNotMatch(navigationSource,/Inicio RRHH/);
+});
+
 test('Mi panel personal mantiene un botón separado para abrir su navegación móvil',()=>{
   const html=readFileSync(path.join(root,'MiPanel.html'),'utf8');
   const script=readFileSync(path.join(root,'js/mi-panel.js'),'utf8');
