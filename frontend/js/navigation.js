@@ -67,6 +67,7 @@
       { label: 'Gestión de personal', id: 'sbss-menu-personal', links: [
         { label: 'Registro Personal', href: 'FichaIndividual.html', icon: 'personal', module: 'personal', primary: true },
         { label: 'Practicantes', href: 'FichaIndividual.html?vista=practicantes', view: 'practicantes', icon: 'practicantes', module: 'personal', primary: true },
+        { label: 'Panel de practicantes', href: 'Practicantes.html', icon: 'practicantes', module: 'personal', primary: true },
         { label: 'Documentos', href: 'Documentos.html', icon: 'documentos', module: 'documentos', primary: true },
         { label: 'Generar documentos', href: 'Documentos.html?vista=generar', view: 'generar', icon: 'generar', module: 'documentos', primary: true },
         { label: 'Contratos', href: 'Contratos.html', icon: 'contratos', module: 'contratos', primary: true },

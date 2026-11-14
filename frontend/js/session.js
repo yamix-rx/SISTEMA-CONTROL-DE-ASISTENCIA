@@ -16,7 +16,7 @@
     : Promise.resolve();
   const pages = {
     'dashboard.html': 'dashboard', 'recursoshumanos.html': 'rrhh',
-    'empresas.html': 'empresas', 'fichaindividual.html': 'personal',
+    'empresas.html': 'empresas', 'fichaindividual.html': 'personal', 'practicantes.html': 'personal',
     'documentos.html': 'documentos', 'contratos.html': 'contratos',
     'capacitaciones.html': 'capacitaciones', 'horarios.html': 'horarios', 'registros.html': 'asistencia',
     'reportes.html': 'reportes', 'auditoria.html': 'auditoria', 'mipanel.html': 'mi-panel',
