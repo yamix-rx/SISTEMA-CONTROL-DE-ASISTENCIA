@@ -4,6 +4,23 @@
  const chips=['chip-green','chip-blue','chip-purple','chip-pink','chip-red','chip-cyan','chip-yellow','chip-slate'];
  let data,rows=[],sequence=0;
  const minute=t=>Number(t.slice(0,2))*60+Number(t.slice(3,5));
+ const dayInputs=()=>Array.from(document.querySelectorAll('input[name="modalDias"]'));
+ function selectedDays(){return dayInputs().filter(input=>input.checked).map(input=>Number(input.value)).sort((a,b)=>a-b);}
+ function setDays(days){
+   const selected=new Set(days.map(Number));
+   for(const input of dayInputs()){
+     input.checked=selected.has(Number(input.value));
+     input.parentElement.classList.toggle('selected',input.checked);
+   }
+ }
+ function setDaysLocked(locked){
+   for(const input of dayInputs())input.disabled=locked;
+   for(const id of ['btnDiasLaborables','btnTodosDias','btnLimpiarDias'])$(id).disabled=locked;
+   $('modalDiasAyuda').textContent=locked
+     ?'Al editar un horario existente solo puedes modificar el día de ese turno. Para asignar otros días, registra un nuevo horario.'
+     :'Puedes combinar cualquier día. Se guardará el mismo horario para todos los días seleccionados.';
+ }
+ for(const input of dayInputs())input.addEventListener('change',()=>input.parentElement.classList.toggle('selected',input.checked));
  const employees=()=>data.empleados.filter(x=>x.estado==='activo');
  function populateFilters(){
    const company=$('filtroEmpresa').value;
@@ -45,15 +62,40 @@
  }
  function metadata(){const e=employees().find(e=>Number(e.id)===Number($('empleadoSelect').value));$('modalEmpresa').value=e?.empresa||'';$('modalArea').value=e?.area||'';}
  function open(){
-   $('formHorario').reset();$('editHorarioId').value='';options('empleadoSelect',employees(),'colaborador','Seleccione trabajador');$('empleadoSelect').disabled=false;$('modalDia').disabled=false;$('modalTolerancia').value='0';u.setVisible('btnEliminar',false);metadata();show('modalHorario',true);
+   $('formHorario').reset();$('editHorarioId').value='';setDays([]);setDaysLocked(false);
+   options('empleadoSelect',employees(),'colaborador','Seleccione trabajador');$('empleadoSelect').disabled=false;
+   $('modalTolerancia').value='0';u.setVisible('btnEliminar',false);metadata();show('modalHorario',true);
  }
- function edit(s){open();$('editHorarioId').value=s.id;$('empleadoSelect').value=s.empleado.empleado_id;$('empleadoSelect').disabled=true;$('modalDia').value=s.dia_semana;$('modalDia').disabled=true;$('modalEntrada').value=u.time(s.hora_entrada);$('modalSalida').value=u.time(s.hora_salida);$('modalTolerancia').value=s.tolerancia_minutos;$('modalEstado').value=s.activo?'asignado':'descanso';$('modalNocturno').checked=s.hora_salida<s.hora_entrada;u.setVisible('btnEliminar',true);metadata();}
+ function edit(s){
+   open();$('editHorarioId').value=s.id;$('empleadoSelect').value=s.empleado.empleado_id;$('empleadoSelect').disabled=true;
+   setDays([s.dia_semana]);setDaysLocked(true);
+   $('modalEntrada').value=u.time(s.hora_entrada);$('modalSalida').value=u.time(s.hora_salida);$('modalTolerancia').value=s.tolerancia_minutos;
+   $('modalEstado').value=s.activo?'asignado':'descanso';$('modalNocturno').checked=s.hora_salida<s.hora_entrada;
+   u.setVisible('btnEliminar',true);metadata();
+ }
  $('formHorario').onsubmit=async event=>{
-   event.preventDefault();$('btnSubmitForm').disabled=true;
-   try{await api('/api/horarios/asignar',{method:'POST',body:JSON.stringify({id:$('editHorarioId').value||undefined,empleado_id:Number($('empleadoSelect').value),dias:[Number($('modalDia').value)],hora_entrada:$('modalEntrada').value,hora_salida:$('modalSalida').value,tolerancia_minutos:Number($('modalTolerancia').value),estado:$('modalEstado').value,cruza_medianoche:$('modalNocturno').checked})});show('modalHorario',false);await load();toast('Horario guardado.');}catch(error){toast(error.message);}finally{$('btnSubmitForm').disabled=false;}
+   event.preventDefault();
+   const dias=selectedDays();
+   if(!dias.length){toast('Selecciona al menos un día de la semana.');return;}
+   $('btnSubmitForm').disabled=true;
+   try{
+     await api('/api/horarios/asignar',{method:'POST',body:JSON.stringify({
+       id:$('editHorarioId').value||undefined,empleado_id:Number($('empleadoSelect').value),dias,
+       hora_entrada:$('modalEntrada').value,hora_salida:$('modalSalida').value,
+       tolerancia_minutos:Number($('modalTolerancia').value),estado:$('modalEstado').value,
+       cruza_medianoche:$('modalNocturno').checked
+     })});
+     show('modalHorario',false);await load();toast('Horario guardado para '+dias.length+' día(s).');
+   }catch(error){toast(error.message);}finally{$('btnSubmitForm').disabled=false;}
  };
  $('btnEliminar').onclick=async()=>{if(!confirm('¿Eliminar este horario? Las asistencias anteriores se conservan.'))return;try{await api('/api/horarios/'+$('editHorarioId').value,{method:'DELETE'});show('modalHorario',false);await load();}catch(error){toast(error.message);}};
- $('btnAbrirModal').onclick=open;$('btnCerrarModal').onclick=$('btnCancelar').onclick=()=>show('modalHorario',false);$('modalHorario').onclick=e=>{if(e.target===$('modalHorario'))show('modalHorario',false);};$('empleadoSelect').onchange=metadata;
+ $('btnAbrirModal').onclick=open;
+ $('btnDiasLaborables').onclick=()=>setDays([1,2,3,4,5]);
+ $('btnTodosDias').onclick=()=>setDays([1,2,3,4,5,6,7]);
+ $('btnLimpiarDias').onclick=()=>setDays([]);
+ $('btnCerrarModal').onclick=$('btnCancelar').onclick=()=>show('modalHorario',false);
+ $('modalHorario').onclick=e=>{if(e.target===$('modalHorario'))show('modalHorario',false);};
+ $('empleadoSelect').onchange=metadata;
  document.addEventListener('keydown',e=>{if(e.key==='Escape')show('modalHorario',false);});
  $('filtroVista').onchange=$('filtroSemana').onchange=render;
  try{data=await u.catalogs();for(const id of ['filtroEmpresa','empresaGlobal'])options(id,data.empresas,'razon_social','Todas las empresas');populateFilters();

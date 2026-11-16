@@ -69,6 +69,30 @@
     .toast { animation: slideIn .2s ease-out; }
     @keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+    .schedule-modal-card { max-height: calc(100vh - 2rem); overflow-y: auto; }
+    .schedule-days-field { grid-column: 1 / -1; min-width: 0; }
+    .schedule-days-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .schedule-day-option {
+      display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+      min-height: 38px; padding: 7px 10px; border: 1px solid #d9e6ef;
+      border-radius: 8px; background: #fff; color: #36576e;
+      font-size: 11px; font-weight: 700; cursor: pointer; user-select: none;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .schedule-day-option input { width: 15px; height: 15px; margin: 0; accent-color: #0b6fae; flex-shrink: 0; }
+    .schedule-day-option.selected { border-color: #1680c5; background: #e8f5fd; color: #075985; }
+    .schedule-day-option:focus-within { outline: 2px solid rgba(22,128,197,.3); outline-offset: 1px; }
+    .schedule-day-option:has(input:disabled) { cursor: not-allowed; opacity: .75; }
+    .schedule-days-presets { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    .schedule-day-preset {
+      padding: 5px 10px; border: 1px solid #cfe1ec; border-radius: 6px;
+      background: #f5f9fc; color: #145477; font-size: 10px; font-weight: 700;
+    }
+    .schedule-day-preset:hover:not(:disabled) { background: #e5f3fb; border-color: #8fc5e5; }
+    .schedule-day-preset:disabled { cursor: not-allowed; opacity: .55; }
+    .schedule-days-help { margin-top: 6px; color: #64748b; font-size: 10px; }
+    @media (max-width: 520px) { .schedule-days-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
  
   </style>
 <link rel="stylesheet" href="css/navigation.css">
@@ -232,7 +256,7 @@
 
 <!-- MODAL REGISTRAR HORARIO -->
 <div id="modalHorario" class="d-none position-fixed top-0 end-0 bottom-0 start-0 sbss-z-50 modal-backdrop align-items-center justify-content-center p-3">
-  <div class="bg-white w-100 sbss-max-w-2xl rounded-3 shadow-lg overflow-hidden">
+  <div class="bg-white w-100 sbss-max-w-2xl rounded-3 shadow-lg overflow-hidden schedule-modal-card">
     <div class="sbss-h-14 sbss-px-5 top-gradient text-white core-heading d-flex align-items-center justify-content-between">
       <div class="d-flex align-items-center gap-2"><i data-lucide="calendar-plus" class="sbss-w-5 sbss-h-5"></i><h3 class="fw-bolder sbss-fs-14">REGISTRAR HORARIO</h3></div>
       <button id="btnCerrarModal" class="sbss-p-1-5 rounded-3 sbss-hover-white"><i data-lucide="x" class="sbss-w-5 sbss-h-5"></i></button>
@@ -249,11 +273,27 @@
         <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Área
           <input id="modalArea" readonly class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary-subtle bg-light text-body-secondary fw-medium">
         </label>
-        <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Día
-          <select id="modalDia" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary bg-white fw-medium">
-            <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="7">Domingo</option>
-          </select>
-        </label>
+        <div class="schedule-days-field">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <span class="sbss-fs-12 fw-bold text-body-secondary">Días de la semana</span>
+            <span class="sbss-fs-10 text-body-secondary">Selecciona uno o varios días</span>
+          </div>
+          <div id="modalDias" class="schedule-days-grid" role="group" aria-label="Días de la semana">
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="1"><span>Lunes</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="2"><span>Martes</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="3"><span>Miércoles</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="4"><span>Jueves</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="5"><span>Viernes</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="6"><span>Sábado</span></label>
+            <label class="schedule-day-option"><input type="checkbox" name="modalDias" value="7"><span>Domingo</span></label>
+          </div>
+          <div class="schedule-days-presets">
+            <button id="btnDiasLaborables" type="button" class="schedule-day-preset">Lunes a viernes</button>
+            <button id="btnTodosDias" type="button" class="schedule-day-preset">Todos los días</button>
+            <button id="btnLimpiarDias" type="button" class="schedule-day-preset">Limpiar selección</button>
+          </div>
+          <p id="modalDiasAyuda" class="schedule-days-help">Puedes combinar cualquier día. Se guardará el mismo horario para todos los días seleccionados.</p>
+        </div>
         <label class="sbss-fs-12 fw-bold text-body-secondary sbss-space-y-1">Hora de entrada
           <input id="modalEntrada" type="time" value="08:00" required class="w-100 sbss-h-10 sbss-px-3 rounded-3 border border-secondary">
         </label>
@@ -272,7 +312,7 @@
       </div>
       <div class="rounded-3 bg-info-subtle border border-info-subtle sbss-p-3 sbss-fs-11 text-info d-flex gap-2">
         <i data-lucide="info" class="sbss-w-4 sbss-h-4 flex-shrink-0"></i>
-        <p>La tolerancia define cuándo se considera tardanza. Un día marcado como descanso no cuenta como turno programado. Los cambios conservan las asistencias anteriores.</p>
+        <p>La tolerancia define cuándo se considera tardanza. Los días marcados como descanso no cuentan como turnos programados. Los cambios conservan las asistencias anteriores.</p>
       </div>
       <div class="core-heading d-flex align-items-center justify-content-between sbss-pt-2 border-top border-light">
         <button id="btnEliminar" type="button" class="d-none sbss-h-9 px-3 rounded-3 border border-danger-subtle bg-danger-subtle text-danger sbss-fs-12 fw-bold sbss-hover-rose-soft">
