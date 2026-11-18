@@ -120,7 +120,7 @@ test('En móvil el menú se abre con foco y se cierra restaurando interacción',
   assert.equal(ui.doc.backdrop.hidden,true);
 });
 test('El enlace del módulo de practicantes se presenta como Listado Practicantes',()=>{
-  assert.match(navigationSource,/label: 'Listado Practicantes', href: 'Practicantes\\.html'/);
+  assert.ok(navigationSource.includes("label: 'Listado Practicantes', href: 'Practicantes.html'"));
   assert.doesNotMatch(navigationSource,/label: 'Panel de practicantes'/);
 });
 
