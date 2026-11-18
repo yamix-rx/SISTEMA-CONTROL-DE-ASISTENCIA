@@ -33,7 +33,7 @@ test('la validación de solapamiento tipa la fecha opcional como DATE en Postgre
       fecha_inicio: '2026-11-18'
     });
 
-    assert.match(captured.sql, /fecha_inicio <= COALESCE\\(CAST\\(\\? AS date\\), DATE '9999-12-31'\\)/);
+    assert.match(captured.sql, /fecha_inicio <= COALESCE\(CAST\(\? AS date\), DATE '9999-12-31'\)/);
     const sqlPostgres = prepare(captured.sql, captured.params);
     assert.match(sqlPostgres, /fecha_inicio <= COALESCE\(CAST\(\$2 AS date\), DATE '9999-12-31'\)/);
     assert.deepEqual(captured.params, [42, fechaFin, '2026-11-18']);
