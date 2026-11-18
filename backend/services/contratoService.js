@@ -5,6 +5,10 @@ const POSTGRES = Boolean(process.env.DATABASE_URL);
 const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 const ESTADOS = new Set(['borrador', 'vigente', 'finalizado', 'cancelado']);
 const ESTADOS_FILTRO = new Set([...ESTADOS, 'por_vencer', 'vencido']);
+// PostgreSQL necesita tipar explícitamente la fecha opcional para COALESCE.
+const LIMITE_FECHA_FIN_SQL = POSTGRES
+  ? "COALESCE(CAST(? AS date), DATE '9999-12-31')"
+  : "COALESCE(?, '9999-12-31')";
 const TIPOS_CONTRATO = [
   'Indeterminado',
   'Plazo fijo',
@@ -140,7 +144,7 @@ async function validarSolapamiento(connection, data, excluirId = null) {
     FROM contratos
     WHERE empleado_id = ?
       AND estado = 'vigente'
-      AND fecha_inicio <= COALESCE(?, '9999-12-31')
+      AND fecha_inicio <= ${LIMITE_FECHA_FIN_SQL}
       AND (fecha_fin IS NULL OR fecha_fin >= ?)
       ${excluir}
     LIMIT 1
@@ -369,5 +373,5 @@ module.exports = {
   actualizar,
   cambiarEstado,
   eliminar,
-  _internals: { normalizarPayload, ESTADO_VIGENCIA_SQL }
+  _internals: { normalizarPayload, ESTADO_VIGENCIA_SQL, validarSolapamiento }
 };
