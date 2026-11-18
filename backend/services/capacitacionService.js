@@ -221,8 +221,8 @@ async function resumen() {
   `);
   const [[participantes]] = await pool.query(`
     SELECT COUNT(*) AS inscritos,
-           SUM(CASE WHEN estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
-           SUM(CASE WHEN estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados
+           SUM(CASE WHEN cp.estado = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+           SUM(CASE WHEN cp.estado = 'desaprobado' THEN 1 ELSE 0 END) AS desaprobados
     FROM capacitacion_participantes cp
     INNER JOIN empleados e ON e.id = cp.empleado_id
     WHERE cp.estado <> 'cancelado' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
