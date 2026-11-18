@@ -123,8 +123,19 @@ module.exports = async (req, res, next) => {
       next(error);
     };
     res.json = function (body) {
-      transaction.complete(res.statusCode >= 200 && res.statusCode < 300)
-        .then(() => originalJson(body)).catch(fail);
+      const success = res.statusCode >= 200 && res.statusCode < 300;
+      transaction.complete(success).then(async () => {
+        if (success && typeof res.locals.afterCommit === 'function') {
+          try {
+            const resultado = await res.locals.afterCommit();
+            if (resultado && resultado.cleanupFailed && body && typeof body === 'object') body.cleanupFailed = true;
+          } catch (error) {
+            console.error('Limpieza posterior a la transacción:', error.code || error.name);
+            if (body && typeof body === 'object') body.cleanupFailed = true;
+          }
+        }
+        originalJson(body);
+      }).catch(fail);
       return res;
     };
     res.once('close', () => { transaction.complete(false).catch(() => {}); });

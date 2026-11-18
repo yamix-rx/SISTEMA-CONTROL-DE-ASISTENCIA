@@ -68,6 +68,21 @@ function entregar(descargar, propia = false) {
   };
 }
 
+exports.eliminar = async (req, res) => {
+  try {
+    const resultado = await documentos.eliminar(req.params.id);
+    res.locals.auditoria = { tabla: 'documentos_empleado', registroId: resultado.documento_id, accion: 'DELETE', anterior: resultado.anterior };
+    res.locals.afterCommit = async () => {
+      let cleanupFailed = false;
+      for (const ruta of resultado.rutas_archivo) {
+        try { await archivos.eliminarArchivo(ruta); }
+        catch (error) { if (error.status !== 404) { cleanupFailed = true; console.error('No se pudo eliminar un archivo del almacenamiento privado:', error.code || error.name); } }
+      }
+      return { cleanupFailed };
+    };
+    return res.json({ ok: true, deletedCount: resultado.deletedCount, mensaje: 'Se eliminó el documento y todas sus versiones. El requisito vuelve a Sin entregar.' });
+  } catch (error) { return responderError(res, error); }
+};
 exports.archivo = entregar(false);
 exports.descargar = entregar(true);
 exports.archivoPropio = entregar(false, true);

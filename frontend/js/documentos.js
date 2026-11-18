@@ -21,7 +21,7 @@
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
     listRevision: 0, previewRevision: 0, previewUrl: null,
     listController: null, previewController: null, loading: false,
-    uploading: false, reviewing: false, generating: false
+    uploading: false, reviewing: false, deleting: false, generating: false
   };
 
   function node(tag, className, value) {
@@ -343,6 +343,11 @@
         upload.appendChild(node('span', '', 'Subir'));
         actions.appendChild(upload);
       }
+      if (row.documento_id) {
+        const remove = actionButton('Eliminar ' + row.tipo_documento + ' de ' + row.colaborador, 'trash', event => deleteDocument(row, event.currentTarget), 'icon-button danger-icon-button');
+        remove.dataset.action = 'eliminar';
+        actions.appendChild(remove);
+      }
       tr.append(person, doc, date, status, actions);
       fragment.appendChild(tr);
     });
@@ -365,6 +370,7 @@
     $('vistaDetalle').hidden = true;
     $('vistaVacia').hidden = false;
     $('btnCerrarVista').hidden = true;
+    $('btnEliminarDocumento').hidden = true;
     $('observacion').value = '';
     document.querySelectorAll('#filasDocumentos tr').forEach(tr => tr.classList.remove('selected'));
     if (restoreFocus && previous) {
@@ -392,8 +398,12 @@
     $('btnDescargar').hidden = !row.documento_id || row.archivo_disponible===false;
     $('revisionCampos').hidden = !row.documento_id || row.archivo_disponible===false;
     $('btnNuevaVersion').replaceChildren(icon('upload'), document.createTextNode(row.documento_id ? 'Subir nueva versión' : 'Subir documento'));
-    $('btnObservar').disabled = state.reviewing;
-    $('btnValidar').disabled = state.reviewing;
+    $('btnEliminarDocumento').hidden = !row.documento_id;
+    $('btnEliminarDocumento').disabled = state.deleting;
+    $('btnObservar').disabled = state.reviewing || state.deleting;
+    $('btnValidar').disabled = state.reviewing || state.deleting;
+    $('btnNuevaVersion').disabled = state.deleting;
+    $('btnDescargar').disabled = state.deleting;
     document.querySelectorAll('#filasDocumentos tr').forEach(tr => tr.classList.toggle('selected', tr.dataset.clave === row.clave));
     if (focus) {
       $('panelVista').focus({ preventScroll: true });
@@ -556,6 +566,35 @@
         delete element.dataset.previousDisabled;
       }
     });
+  }
+
+  async function deleteDocument(row, button = null) {
+    if (!row || !row.documento_id || state.deleting) return;
+    const confirmar = window.confirm('¿Eliminar ' + row.tipo_documento + ' de ' + row.colaborador + '?\n\nSe eliminarán todas las versiones de este requisito y sus archivos almacenados. El documento volverá a figurar como “Sin entregar” y podrá subirse nuevamente.');
+    if (!confirmar) return;
+    state.deleting = true;
+    if (button) button.disabled = true;
+    $('btnEliminarDocumento').disabled = true;
+    $('btnObservar').disabled = true;
+    $('btnValidar').disabled = true;
+    $('btnNuevaVersion').disabled = true;
+    try {
+      const data = await request('/documentos/' + row.documento_id, { method: 'DELETE' });
+      $('fEstado').value = '';
+      state.page = 1;
+      await loadDocuments({ preserveSelection: false });
+      notify(data.cleanupFailed ? 'El registro fue eliminado, pero no se pudo retirar uno o más archivos del almacenamiento privado. Contacte al administrador.' : (data.mensaje || 'Documento eliminado. El requisito vuelve a Sin entregar.'), Boolean(data.cleanupFailed));
+    } catch (error) { notify(friendlyError(error), true); }
+    finally {
+      state.deleting = false;
+      if (state.selected && state.selected.documento_id) {
+        $('btnEliminarDocumento').disabled = false;
+        $('btnObservar').disabled = state.reviewing;
+        $('btnValidar').disabled = state.reviewing;
+        $('btnNuevaVersion').disabled = false;
+        $('btnDescargar').disabled = false;
+      }
+    }
   }
 
   async function reviewDocument(estado) {
@@ -1020,6 +1059,7 @@
     $('btnDescargar').addEventListener('click', event => downloadFile(state.selected, event.currentTarget));
     $('btnSubir').addEventListener('click', () => openUpload());
     $('btnNuevaVersion').addEventListener('click', () => openUpload(state.selected));
+    $('btnEliminarDocumento').addEventListener('click', event => deleteDocument(state.selected, event.currentTarget));
     $('formSubir').addEventListener('submit', submitUpload);
     $('btnObservar').addEventListener('click', () => reviewDocument('rechazado'));
     $('btnValidar').addEventListener('click', () => reviewDocument('validado'));

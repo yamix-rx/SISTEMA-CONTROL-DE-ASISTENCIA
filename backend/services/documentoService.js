@@ -145,4 +145,18 @@ async function revisar(id, body, usuarioId) {
   return { mensaje: body.estado === 'validado' ? 'Documento validado.' : 'Documento observado. Se guardó el motivo de corrección.' };
 }
 
-module.exports = { catalogos, listar, subir, obtenerPorId, revisar, construirFiltros, idPositivo };
+async function eliminar(id) {
+  const documentoId = idPositivo(id, 'documento');
+  const [actuales] = await pool.query('SELECT de.id, de.empleado_id, de.tipo_documento_id, de.nombre_archivo, de.estado FROM documentos_empleado de INNER JOIN empleados e ON e.id = de.empleado_id WHERE de.id = ? AND LOWER(COALESCE(e.tipo_vinculo,\'\')) <> \'sistema\' LIMIT 1', [documentoId]);
+  if (!actuales.length) throw errorSolicitud('El documento solicitado no existe.', 404);
+  const actual = actuales[0];
+  const [versiones] = await pool.query('SELECT id, ruta_archivo, nombre_archivo, estado FROM documentos_empleado WHERE empleado_id = ? AND tipo_documento_id = ? ORDER BY id DESC', [actual.empleado_id, actual.tipo_documento_id]);
+  if (!versiones.length) throw errorSolicitud('El documento solicitado no existe.', 404);
+  if (Number(versiones[0].id) !== documentoId) throw errorSolicitud('Se cargó una versión más reciente. Actualice el panel antes de eliminar.', 409);
+  const [resultado] = await pool.query('DELETE FROM documentos_empleado WHERE empleado_id = ? AND tipo_documento_id = ?', [actual.empleado_id, actual.tipo_documento_id]);
+  if (!resultado.affectedRows) throw errorSolicitud('El documento ya fue eliminado o cambió. Actualice el panel.', 409);
+  const rutas = [...new Set(versiones.map(v => v.ruta_archivo).filter(r => typeof r === 'string' && r.trim()))];
+  return { documento_id: documentoId, empleado_id: actual.empleado_id, tipo_documento_id: actual.tipo_documento_id, deletedCount: Number(resultado.affectedRows), rutas_archivo: rutas,
+    anterior: { empleado_id: actual.empleado_id, tipo_documento_id: actual.tipo_documento_id, documento_id: documentoId, nombre_archivo: actual.nombre_archivo, estado: actual.estado, versiones: versiones.map(v => ({ id: v.id, nombre_archivo: v.nombre_archivo, estado: v.estado })) } };
+}
+module.exports = { catalogos, listar, subir, obtenerPorId, revisar, eliminar, construirFiltros, idPositivo };

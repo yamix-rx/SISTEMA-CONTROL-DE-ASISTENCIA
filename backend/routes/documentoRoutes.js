@@ -27,6 +27,7 @@ router.post('/', controller.subir);
 router.get('/:id/archivo', controller.archivo);
 router.get('/:id/descargar', controller.descargar);
 router.patch('/:id/revision', controller.revisar);
+router.delete('/:id', controller.eliminar);
 
 router.use((error, req, res, next) => {
   if (error.type === 'entity.too.large') return res.status(413).json({ ok: false, mensaje: 'El archivo supera el tamaño permitido. El máximo es 5 MB.' });
