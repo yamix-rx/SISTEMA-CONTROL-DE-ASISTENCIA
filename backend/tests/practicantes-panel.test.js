@@ -67,7 +67,7 @@ test('la ruta es de solo lectura y exige rol Administrador o RRHH', () => {
 test('el panel está en el menú lateral, protegido por el módulo personal y con la vista migrada', () => {
   const frontend = path.join(__dirname, '../../frontend');
   const nav = readFileSync(path.join(frontend, 'js/navigation.js'), 'utf8');
-  assert.match(nav, /label: 'Panel de practicantes', href: 'Practicantes\.html'[^}]*module: 'personal'/);
+  assert.match(nav, /label: 'Listado Practicantes', href: 'Practicantes\.html'[^}]*module: 'personal'/);
   assert.match(readFileSync(path.join(frontend, 'js/session.js'), 'utf8'), /'practicantes\.html': 'personal'/);
   const html = readFileSync(path.join(frontend, 'Practicantes.html'), 'utf8');
   for (const pattern of [/js\/session\.js/, /css\/session\.css/, /js\/navigation\.js/, /js\/sidebar\.js/, /id="sidebarMenu"/, /id="btnAbrirSidebar"/]) assert.match(html, pattern);
