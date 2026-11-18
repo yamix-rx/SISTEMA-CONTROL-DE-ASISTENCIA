@@ -128,7 +128,7 @@ module.exports = async (req, res, next) => {
         if (success && typeof res.locals.afterCommit === 'function') {
           try {
             const resultado = await res.locals.afterCommit();
-            if (resultado && resultado.cleanupFailed && body && typeof body === 'object') body.cleanupFailed = true;
+            if (resultado && body && typeof body === 'object') body.cleanupFailed = Boolean(resultado.cleanupFailed);
           } catch (error) {
             console.error('Limpieza posterior a la transacción:', error.code || error.name);
             if (body && typeof body === 'object') body.cleanupFailed = true;
