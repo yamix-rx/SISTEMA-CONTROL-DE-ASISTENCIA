@@ -51,6 +51,7 @@ function generarPdfCertificado(documento) {
       const cabecera = () => {
         const y = doc.y;
         let tituloY = formato.titulo;
+        let finLogoPersonalizado = 0;
         if (marca) doc.image(path.join(__dirname, '../assets/documentos/certificados', `${marca}.png`), 0, 0, { width: doc.page.width, height: doc.page.height });
         if (documento.logo_personalizado) {
           const imagenLogo = doc.openImage(documento.logo_personalizado);
@@ -61,11 +62,14 @@ function generarPdfCertificado(documento) {
           doc.save().rect(0, 0, doc.page.width, altoCabecera).fill('#ffffff').restore();
           doc.image(documento.logo_personalizado, (doc.page.width - anchoLogo) / 2, 12,
             { width: anchoLogo, height: altoLogo });
-          tituloY = Math.max(tituloY, 12 + altoLogo + 18);
+          finLogoPersonalizado = 12 + altoLogo;
+          tituloY = Math.max(tituloY, finLogoPersonalizado + 18);
         }
         if (lema) {
+          const lemaY = documento.logo_personalizado
+            ? Math.max(formato.titulo - 45, finLogoPersonalizado + 8) : formato.titulo - 45;
           doc.font(formato.fuente).fontSize(10).fillColor('#111111')
-            .text(lema, formato.margen, formato.titulo - 45, { width: ancho, align: 'center' });
+            .text(lema, formato.margen, lemaY, { width: ancho, align: 'center' });
           tituloY = Math.max(tituloY, doc.y + 12);
         }
         const titulo = formato.horizontal ? documento.titulo : documento.titulo.replace(/ PRE-PROFESIONALES$/, '\nPRE-PROFESIONALES');
