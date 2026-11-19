@@ -92,6 +92,18 @@ async function request(path, { usuario = 1, method = 'GET', body } = {}) {
   const buffer = Buffer.from(await response.arrayBuffer());
   return { status: response.status, headers: response.headers, body: response.headers.get('content-type')?.includes('application/json') ? JSON.parse(buffer.toString()) : buffer };
 }
+async function subirLogo({ usuario = 2, nombre = 'Logo de prueba', mime = 'image/png', contenido } = {}) {
+  const headers = {};
+  if (usuario) headers.Authorization = \`Bearer \${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}\`;
+  const form = new FormData();
+  form.append('nombre', nombre);
+  form.append('logo', new Blob([contenido], { type: mime }), mime === 'image/jpeg' ? 'logo.jpg' : 'logo.png');
+  const response = await fetch(base + '/logos', { method: 'POST', headers, body: form });
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return { status: response.status, headers: response.headers,
+    body: response.headers.get('content-type')?.includes('application/json') ? JSON.parse(buffer.toString()) : buffer };
+}
+
 function payload(extra = {}) {
   return { codigo: 'aceptacion', empleado_id: 101, empresa_id: 10, area_id: 20, cargo_id: 30, fecha: '2026-09-19', horas: 245.5,
     datos_documento: { empresa_direccion: 'Empresa de prueba 456', actividad_economica: 'Servicios de prueba',
@@ -167,6 +179,51 @@ test('guardar una plantilla persiste y cambia futuros documentos; rechaza placeh
     assert.equal((await request('/plantillas/aceptacion', { method: 'PUT', body: { titulo: 'Documento', cuerpo } })).status, 400);
   }
   assert.equal((await request('/plantillas/otro', { method: 'PUT', body })).status, 400);
+});
+
+
+test('sube logos a la biblioteca privada, los asigna a una plantilla y los inserta en el PDF', async () => {
+  const contenido = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC', 'base64');
+  const subida = await subirLogo({ contenido, nombre: 'Logo institucional' });
+  assert.equal(subida.status, 201);
+  assert.equal(subida.body.logo.nombre, 'Logo institucional');
+  assert.equal(subida.body.logo.mime_type, 'image/png');
+  assert.equal(logos.size, 1);
+  assert.equal(objetos.size, 1);
+
+  const logoId = subida.body.logo.id;
+  const plantilla = await request('/plantillas/aceptacion', { usuario: 2, method: 'PUT', body: {
+    titulo: 'Aceptación personalizada', cuerpo: 'Se acepta a {{trabajador}}.', logo_id: logoId
+  } });
+  assert.equal(plantilla.status, 200);
+  assert.equal(plantilla.body.plantilla.logo_id, logoId);
+  assert.equal(guardadas.get('aceptacion').logo_path, [...objetos.keys()][0]);
+
+  const catalogos = await request('/generacion/catalogos', { usuario: 2 });
+  assert.equal(catalogos.status, 200);
+  assert.equal(catalogos.body.logos[0].id, logoId);
+  assert.equal(catalogos.body.plantillas.find(item => item.codigo === 'aceptacion').logo_id, logoId);
+
+  const body = payload();
+  const preview = await request('/generar/vista-previa', { usuario: 2, method: 'POST', body });
+  assert.equal(preview.status, 200);
+  assert.equal(preview.body.documento.logo_personalizado, null);
+  const pdf = await request('/generar/pdf', { usuario: 2, method: 'POST', body: {
+    ...body, revision_plantilla: preview.body.documento.revision_plantilla
+  } });
+  assert.equal(pdf.status, 200);
+  assert.match(pdf.body.toString('ascii'), /\/Subtype \/Image/);
+  comprobarPdf(pdf.body);
+});
+
+test('rechaza logos no válidos y bloquea la biblioteca para colaboradores y cuentas anónimas', async () => {
+  const invalido = await subirLogo({ contenido: Buffer.from('texto'), mime: 'image/png' });
+  assert.equal(invalido.status, 400);
+  const contenido = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC', 'base64');
+  assert.equal((await subirLogo({ usuario: 3, contenido })).status, 403);
+  assert.equal((await subirLogo({ usuario: null, contenido })).status, 401);
+  assert.equal(logos.size, 0);
+  assert.equal(objetos.size, 0);
 });
 
 test('validación impide fechas inexistentes, horas inválidas y cruces de empresa/área/cargo', async () => {
