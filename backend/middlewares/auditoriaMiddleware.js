@@ -9,7 +9,7 @@ const MODULOS = [
   ['/administracion/cargos', 'cargos'], ['/documentos/plantillas', 'plantillas_documentos'],
   ['/asistencias/permisos', 'permisos'], ['/personal', 'empleados'],
   ['/asistencias', 'asistencias'], ['/empresas', 'empresas'], ['/horarios', 'horarios'],
-  ['/documentos', 'documentos_empleado'], ['/contratos', 'contratos'], ['/capacitaciones', 'capacitaciones']
+  ['/documentos/logos', 'logos_documentos'], ['/documentos', 'documentos_empleado'], ['/contratos', 'contratos'], ['/capacitaciones', 'capacitaciones']
 ];
 const TABLAS = new Set(MODULOS.map(([, tabla]) => tabla));
 const idValido = value => Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0;
