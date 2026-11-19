@@ -7,6 +7,8 @@ const { textoPdf } = require('./helpers/pdf');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
 let guardadas;
+let logos;
+let objetos;
 let consultas;
 const cuentas = new Map([
   [1, { usuario_id: 1, activo: 1, rol_nombre: ROLES.ADMIN, empleado_id: 101 }],
@@ -25,10 +27,31 @@ const pool = { async query(sql, params = []) {
   if (/FROM usuarios u/.test(sql)) return [cuentas.has(params[0]) ? [cuentas.get(params[0])] : []];
   if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
   if (/SELECT \*/.test(sql) && /plantillas_documentos/.test(sql)) return [[...guardadas.values()].filter(x => x.codigo === params[0])];
+  if (/SELECT \*/.test(sql) && /logos_documentos/.test(sql)) return [[logos.get(Number(params[0]))].filter(Boolean)];
   if (/SELECT \*/.test(sql) && /documentos_empleado/.test(sql)) return [[]];
-  if (/SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos/.test(sql)) return [[...guardadas.values()]];
+  if (/SELECT id, nombre, mime_type, tamano_bytes, created_at FROM logos_documentos/.test(sql)) {
+    return [[...logos.values()].map(({ id, nombre, mime_type, tamano_bytes, created_at }) => ({ id, nombre, mime_type, tamano_bytes, created_at }))];
+  }
+  if (/FROM plantillas_documentos p LEFT JOIN logos_documentos l/.test(sql)) {
+    return [[...guardadas.values()].map(row => ({
+      ...row, logo_id: [...logos.values()].find(logo => logo.ruta_archivo === row.logo_path)?.id || null
+    }))];
+  }
+  if (/SELECT logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = \? LIMIT 1/.test(sql)) {
+    return [[guardadas.get(params[0])].filter(Boolean)];
+  }
+  if (/SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE id = \? LIMIT 1/.test(sql)) {
+    return [[logos.get(Number(params[0]))].filter(Boolean)];
+  }
+  if (/INSERT INTO logos_documentos/.test(sql)) {
+    const id = logos.size + 1;
+    logos.set(id, { id, nombre: params[0], ruta_archivo: params[1], mime_type: params[2],
+      tamano_bytes: params[3], creado_por_usuario_id: params[4], created_at: '2026-11-19T15:00:00.000Z' });
+    return [{ affectedRows: 1, insertId: id }];
+  }
   if (/INSERT INTO plantillas_documentos/.test(sql)) {
-    guardadas.set(params[0], { codigo: params[0], titulo: params[1], cuerpo_html: params[2] });
+    guardadas.set(params[0], { codigo: params[0], titulo: params[1], cuerpo_html: params[2],
+      logo_path: params[3] ?? null, logo_mime: params[4] ?? null, logo_nombre: params[5] ?? null });
     return [{ affectedRows: 1, insertId: 1 }];
   }
   if (/FROM empleados e LEFT JOIN practicante_detalles/.test(sql)) return [params[0] === 101 ? [empleado] : []];
@@ -40,6 +63,16 @@ const pool = { async query(sql, params = []) {
 } };
 const databasePath = require.resolve('../config/database');
 require.cache[databasePath] = { id: databasePath, filename: databasePath, loaded: true, exports: pool };
+const storagePath = require.resolve('../services/storagePrivadoService');
+require.cache[storagePath] = { id: storagePath, filename: storagePath, loaded: true, exports: {
+  async subirObjeto(ruta, contenido, mime_type) { objetos.set(ruta, { contenido: Buffer.from(contenido), mime_type }); },
+  async verificarContenido(ruta) {
+    const objeto = objetos.get(ruta);
+    if (!objeto) throw Object.assign(new Error('Logo no encontrado'), { status: 404 });
+    return Buffer.from(objeto.contenido);
+  },
+  async eliminarObjeto(ruta) { objetos.delete(ruta); }
+} };
 const app = express();
 app.use('/api/documentos', require('../routes/documentoRoutes'));
 const { generarPdf } = require('../services/documentoPdfService');
@@ -51,7 +84,7 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}/api/documentos`;
 });
 after(async () => { await new Promise(resolve => server.close(resolve)); });
-beforeEach(() => { guardadas = new Map(); consultas = []; });
+beforeEach(() => { guardadas = new Map(); logos = new Map(); objetos = new Map(); consultas = []; });
 async function request(path, { usuario = 1, method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (usuario) headers.Authorization = `Bearer ${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}`;
