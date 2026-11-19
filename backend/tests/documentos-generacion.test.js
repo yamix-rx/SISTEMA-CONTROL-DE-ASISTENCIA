@@ -113,7 +113,7 @@ test('catálogos incluyen tres plantillas editables y estructura seleccionable, 
     assert.ok(response.body.campos.includes('horas'));
     assert.deepEqual(response.body.logos, []);
   }
-  for (const [method, path, body] of [['GET', '/generacion/catalogos'], ['PUT', '/plantillas/aceptacion', { titulo: 'Título', cuerpo: 'Texto' }], ['POST', '/generar/vista-previa', payload()], ['POST', '/generar/pdf', payload()]]) {
+  for (const [method, path, body] of [['GET', '/generacion/catalogos'], ['POST', '/logos', { nombre: 'Logo', mime_type: 'image/png', contenido_base64: 'AA==' }], ['PUT', '/plantillas/aceptacion', { titulo: 'Título', cuerpo: 'Texto' }], ['POST', '/generar/vista-previa', payload()], ['POST', '/generar/pdf', payload()]]) {
     assert.equal((await request(path, { method, body, usuario: 3 })).status, 403);
     assert.equal((await request(path, { method, body, usuario: null })).status, 401);
   }
