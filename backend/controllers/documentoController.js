@@ -77,8 +77,10 @@ exports.catalogosGeneracion = async (req, res) => {
 };
 exports.subirLogo = async (req, res) => {
   try {
-    const logo = await logos.guardar(req.body || {});
+    const body = req.body || {};
+    const contenidoBase64 = body.contenido_base64;
     if (req.body) req.body.contenido_base64 = '[contenido omitido en auditoría]';
+    const logo = await logos.guardar({ ...body, contenido_base64: contenidoBase64 });
     res.locals.auditoria = { tabla: 'logos_documentos', registroId: logo.id, nuevos: logo };
     return res.status(201).json({ ok: true, logo });
   }
