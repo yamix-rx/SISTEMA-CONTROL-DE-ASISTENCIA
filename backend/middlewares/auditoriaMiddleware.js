@@ -43,7 +43,8 @@ async function auditoriaMiddleware(req, res, next) {
         anterior = rows;
         operacion = rows.length ? 'UPDATE' : 'INSERT';
       } else if (tabla === 'plantillas_documentos') {
-        const [rows] = await pool.query('SELECT * FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [req.path.split('/').pop()]);
+        const codigo = /^\\/plantillas\\/([^/]+)/.exec(req.path)?.[1];
+        const [rows] = await pool.query('SELECT * FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo ? decodeURIComponent(codigo) : req.path.split('/').pop()]);
         anterior = rows[0] || null;
         registroId = idValido(anterior?.id);
         operacion = anterior ? 'UPDATE' : 'INSERT';
