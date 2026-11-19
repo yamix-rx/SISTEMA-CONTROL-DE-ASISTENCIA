@@ -18,8 +18,8 @@ function error(mensaje, status = 400) {
 function nombreSeguro(valor, archivo) {
   const original = path.parse(path.basename(String(archivo.originalname || 'logo'))).name;
   const fuente = typeof valor === 'string' && valor.trim() ? valor : original;
-  const nombre = fuente.normalize('NFC').replace(/[\\u0000-\\u001f\\u007f]/g, ' ')
-    .replace(/[\\/\\\\]/g, '-').replace(/\\s+/g, ' ').trim().slice(0, 200);
+  const nombre = fuente.normalize('NFC').replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[\/\\]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!nombre) throw error('Escribe un nombre para identificar el logo.');
   return nombre;
 }
@@ -67,7 +67,7 @@ async function guardar(archivo, nombre, usuarioId) {
 }
 
 async function obtenerContenido(ruta) {
-  if (typeof ruta !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.(?:png|jpg)$/i.test(ruta)) {
+  if (typeof ruta !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:png|jpg)$/i.test(ruta)) {
     throw error('La referencia del logo no es válida.', 409);
   }
   const contenido = await storage.verificarContenido(ruta);
