@@ -10,7 +10,7 @@ function responderError(res, error) {
   if (res.headersSent) return;
   if (error.status) return res.status(error.status).json({ ok: false, mensaje: error.message });
   if (['ER_BAD_FIELD_ERROR', 'ER_NO_SUCH_TABLE', '42703', '42P01'].includes(error.code)) {
-    return res.status(503).json({ ok: false, mensaje: 'Falta preparar la base de datos de Documentos. Ejecute npm run migrar:documentos desde la carpeta backend y compruebe la tabla plantillas_documentos del esquema base.' });
+    return res.status(503).json({ ok: false, mensaje: 'Falta preparar la base de datos de Documentos. Aplique las migraciones SQL de supabase/migrations en el proyecto Supabase conectado.' });
   }
   if (error.code === 'ER_NO_REFERENCED_ROW_2') {
     return res.status(409).json({ ok: false, mensaje: 'El colaborador o el tipo de documento cambió. Actualice el panel e intente otra vez.' });
