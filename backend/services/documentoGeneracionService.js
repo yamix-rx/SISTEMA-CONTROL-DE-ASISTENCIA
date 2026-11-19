@@ -80,7 +80,7 @@ async function plantillas() {
       personalizada: Boolean(almacenada), logo_path: plantilla.logo_path,
       logo_mime: plantilla.logo_mime, logo_nombre: plantilla.logo_nombre,
       logo_personalizado: Boolean(plantilla.logo_path),
-      logo_url: plantilla.logo_path ? `/api/documentos/plantillas/${encodeURIComponent(codigo)}/logo` : null,
+      logo_url: plantilla.logo_path ? `/documentos/plantillas/${encodeURIComponent(codigo)}/logo` : null,
       revision: revision(plantilla)
     };
   });
@@ -167,16 +167,12 @@ async function guardarLogoPlantilla(codigo, body) {
     await storage.eliminarObjeto(ruta).catch(() => {});
     throw errorGuardado;
   }
-  if (actual?.logo_path && actual.logo_path !== ruta) {
-    await storage.eliminarObjeto(actual.logo_path).catch(errorStorage => {
-      if (errorStorage.status !== 404) console.error('No se pudo limpiar el logo anterior de la plantilla.');
-    });
-  }
   const [guardadas] = await pool.query('SELECT id, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
   const guardada = guardadas[0];
   return {
     id: Number(guardada.id) || null, codigo, titulo: guardada.titulo, cuerpo: guardada.cuerpo_html,
     personalizada: true, logo_personalizado: true, logo_nombre: guardada.logo_nombre,
+    accion: actual ? 'UPDATE' : 'INSERT', logo_anterior_path: actual?.logo_path || null,
     revision: revision({ titulo: guardada.titulo, cuerpo: guardada.cuerpo_html, logo_path: guardada.logo_path, logo_mime: guardada.logo_mime })
   };
 }
@@ -185,18 +181,11 @@ async function eliminarLogoPlantilla(codigo) {
   codigoPlantillaValido(codigo);
   const [rows] = await pool.query('SELECT id, logo_path FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
   const actual = rows[0];
-  if (!actual) {
-    const definicion = (await plantillas()).find(item => item.codigo === codigo);
-    return { id: null, codigo, logo_personalizado: false, revision: definicion?.revision || null };
-  }
+  if (!actual?.logo_path) throw error('Esta plantilla no tiene un logo personalizado.', 404);
   await pool.query('UPDATE plantillas_documentos SET logo_path = NULL, logo_mime = NULL, logo_nombre = NULL WHERE codigo = ?', [codigo]);
-  if (actual.logo_path) {
-    await storage.eliminarObjeto(actual.logo_path).catch(errorStorage => {
-      if (errorStorage.status !== 404) console.error('No se pudo limpiar el logo quitado de la plantilla.');
-    });
-  }
   const definicion = (await plantillas()).find(item => item.codigo === codigo);
-  return { id: Number(actual.id) || null, codigo, logo_personalizado: false, logo_nombre: null, revision: definicion?.revision || null };
+  return { id: Number(actual.id) || null, codigo, logo_personalizado: false, logo_nombre: null,
+    accion: 'UPDATE', logo_anterior_path: actual.logo_path, revision: definicion?.revision || null };
 }
 
 async function obtenerLogoPlantilla(codigo) {
@@ -206,6 +195,10 @@ async function obtenerLogoPlantilla(codigo) {
   if (!actual?.logo_path) throw error('Esta plantilla no tiene un logo personalizado.', 404);
   const mime = actual.logo_mime || (actual.logo_path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
   return { buffer: await storage.obtenerObjeto(actual.logo_path), mime_type: mime };
+}
+
+async function eliminarObjetoLogo(path) {
+  if (path) await storage.eliminarObjeto(path);
 }
 
 async function cargarLogoPersonalizado(documento) {
@@ -356,4 +349,4 @@ async function preparar(body = {}) {
   };
 }
 
-module.exports = { catalogos, guardarPlantilla, guardarLogoPlantilla, eliminarLogoPlantilla, obtenerLogoPlantilla, cargarLogoPersonalizado, preparar, validarPlantilla, CAMPOS, PREDETERMINADAS };
+module.exports = { catalogos, guardarPlantilla, guardarLogoPlantilla, eliminarLogoPlantilla, obtenerLogoPlantilla, cargarLogoPersonalizado, eliminarObjetoLogo, preparar, validarPlantilla, CAMPOS, PREDETERMINADAS };
