@@ -369,7 +369,7 @@ body{
        BOTÓN ABRIR SIDEBAR
        ===================================================== */
 
-    #btnAbrirSidebar{
+    #btnAbrirSidebar:not(.hidden):not(.d-none){
 
         position:fixed !important;
 
@@ -704,7 +704,7 @@ body{
 
     <!-- BOTÓN ABRIR SIDEBAR -->
 
-    <button id="btnAbrirSidebar" class="sbss-sidebar-open d-none" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" title="Mostrar menú lateral" aria-label="Mostrar menú lateral" aria-controls="sidebarMenu" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
 
 
 
@@ -1665,22 +1665,13 @@ document
     .addEventListener('input', (e) => {
 
         const q =
-            e.target.value.toLowerCase();
+            String(e.target.value || '').trim().toLowerCase();
 
 
         const filtrados =
             listadoTurnoOriginal.filter(c =>
-
-                c.colaborador
-                    .toLowerCase()
-                    .includes(q)
-
-                ||
-
-                c.empresa
-                    .toLowerCase()
-                    .includes(q)
-
+                String(c.colaborador || '').toLowerCase().includes(q)
+                || String(c.empresa || '').toLowerCase().includes(q)
             );
 
 
@@ -1699,28 +1690,14 @@ document
     .addEventListener('input', (e) => {
 
         const q =
-            e.target.value.toLowerCase();
+            String(e.target.value || '').trim().toLowerCase();
 
 
         const filtrados =
             listadoDocsOriginal.filter(d =>
-
-                d.colaborador
-                    .toLowerCase()
-                    .includes(q)
-
-                ||
-
-                d.empresa
-                    .toLowerCase()
-                    .includes(q)
-
-                ||
-
-                d.documento_faltante
-                    .toLowerCase()
-                    .includes(q)
-
+                String(d.colaborador || '').toLowerCase().includes(q)
+                || String(d.empresa || '').toLowerCase().includes(q)
+                || String(d.documento_faltante || '').toLowerCase().includes(q)
             );
 
 

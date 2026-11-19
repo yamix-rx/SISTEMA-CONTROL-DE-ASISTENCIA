@@ -21,6 +21,11 @@ router.get('/catalogos', atender(async (req, res) => res.json({ ok:true, data:aw
 router.get('/usuarios', atender(async (req, res) => res.json({ ok:true, data:await servicio.listarUsuarios() })));
 router.post('/usuarios', atender(async (req, res) => res.status(201).json({ ok:true, id:await servicio.crearUsuario(req.body), mensaje:'Cuenta creada.' })));
 router.put('/usuarios/:id', atender(async (req, res) => res.json({ ok:true, id:await servicio.actualizarUsuario(req.params.id,req.body,req.usuario.id), mensaje:'Cuenta actualizada. Debe volver a iniciar sesión.' })));
+router.delete('/usuarios/:id', atender(async (req, res) => {
+  const id = await servicio.eliminarUsuario(req.params.id, req.usuario.id);
+  res.locals.auditoria = { tabla:'usuarios', registroId:id, accion:'DELETE' };
+  res.json({ ok:true, id, mensaje:'Cuenta eliminada de la base de datos. Se conservaron la ficha y los registros del colaborador.' });
+}));
 router.post('/usuarios/:id/clave', atender(async (req, res) => {
   const id = await servicio.restablecerClave(req.params.id,req.body.password);
   res.locals.auditoria = { tabla:'usuarios', registroId:id, accion:'UPDATE' };

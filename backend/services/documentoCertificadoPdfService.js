@@ -1,13 +1,25 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 
 // Fondos extraídos de los modelos, sin textos ni firmas del ejemplo.
 const FORMATOS = Object.freeze({
-  sbss: { titulo: 210, cuerpo: 292, margen: 85, derecha: 85, inferior: 125, firmaX: 355, fuente: 'Times-Roman' },
-  nanas: { titulo: 122, cuerpo: 174, margen: 72, derecha: 54, inferior: 110, fuente: 'Times-Roman' },
-  silsan: { titulo: 156, cuerpo: 215, margen: 85, derecha: 85, inferior: 135, fuente: 'Helvetica' },
-  camara: { titulo: 176, cuerpo: 236, margen: 85, derecha: 85, inferior: 125, fuente: 'Helvetica' },
-  ong: { titulo: 136, cuerpo: 180, margen: 94, derecha: 94, inferior: 40, horizontal: true, fuente: 'Times-Roman' }
+  // Coordenadas en puntos A4 del logo incrustado en cada fondo original.
+  sbss: { titulo: 210, cuerpo: 292, margen: 85, derecha: 85, inferior: 125, firmaX: 355, fuente: 'Times-Roman',
+    logoCaja: { x: 65, y: 34, width: 140, height: 60, horizontal: 'left', vertical: 'top' },
+    logoParche: { x: 60, y: 29, width: 150, height: 68 } },
+  nanas: { titulo: 122, cuerpo: 174, margen: 72, derecha: 54, inferior: 110, fuente: 'Times-Roman',
+    logoCaja: { x: 430, y: 28, width: 125, height: 45, horizontal: 'right', vertical: 'top' },
+    logoParche: { x: 425, y: 23, width: 135, height: 50 } },
+  silsan: { titulo: 156, cuerpo: 215, margen: 85, derecha: 85, inferior: 135, fuente: 'Helvetica',
+    logoCaja: { x: 23, y: 45, width: 235, height: 83, horizontal: 'left', vertical: 'top' },
+    logoParche: { x: 18, y: 38, width: 250, height: 95 } },
+  camara: { titulo: 176, cuerpo: 236, margen: 85, derecha: 85, inferior: 125, fuente: 'Helvetica',
+    logoCaja: { x: 46, y: 46, width: 290, height: 90, horizontal: 'left', vertical: 'top' },
+    logoParche: { x: 40, y: 38, width: 310, height: 100 } },
+  ong: { titulo: 136, cuerpo: 180, margen: 94, derecha: 94, inferior: 40, horizontal: true, fuente: 'Times-Roman',
+    logoCaja: { x: 710, y: 23, width: 100, height: 95, horizontal: 'right', vertical: 'top' },
+    logoParche: { x: 700, y: 18, width: 115, height: 105 } }
 });
 
 function generarPdfCertificado(documento) {
@@ -52,9 +64,20 @@ function generarPdfCertificado(documento) {
         const y = doc.y;
         let tituloY = formato.titulo;
         if (marca) doc.image(path.join(__dirname, '../assets/documentos/certificados', `${marca}.png`), 0, 0, { width: doc.page.width, height: doc.page.height });
+        if (documento.logo_personalizado) {
+          const cajaLogo = formato.logoCaja || { x: (doc.page.width - 190) / 2, y: 12, width: 190, height: 54, horizontal: 'center', vertical: 'center' };
+          // Sólo se cubre el logo original, no la cabecera completa del certificado.
+          const parcheLogo = formato.logoParche || cajaLogo;
+          doc.save().rect(parcheLogo.x, parcheLogo.y, parcheLogo.width, parcheLogo.height).fill('#ffffff').restore();
+          dibujarLogoEnCaja(doc, documento.logo_personalizado, cajaLogo, {
+            horizontal: cajaLogo.horizontal || 'center',
+            vertical: cajaLogo.vertical || 'center'
+          });
+        }
         if (lema) {
+          const lemaY = formato.titulo - 45;
           doc.font(formato.fuente).fontSize(10).fillColor('#111111')
-            .text(lema, formato.margen, formato.titulo - 45, { width: ancho, align: 'center' });
+            .text(lema, formato.margen, lemaY, { width: ancho, align: 'center' });
           tituloY = Math.max(tituloY, doc.y + 12);
         }
         const titulo = formato.horizontal ? documento.titulo : documento.titulo.replace(/ PRE-PROFESIONALES$/, '\nPRE-PROFESIONALES');

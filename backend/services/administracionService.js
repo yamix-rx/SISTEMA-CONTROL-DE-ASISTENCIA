@@ -33,7 +33,7 @@ async function catalogos() {
   const [[roles], [empleados], [empresas], [areas], [cargos], [tiposDocumento], [tiposPermiso]] = await Promise.all([
     pool.query('SELECT id, nombre FROM roles ORDER BY id'),
     pool.query(`SELECT e.id, CONCAT(e.nombres, ' ', e.apellidos) AS nombre, e.numero_documento,
-      e.estado, u.id AS usuario_id FROM empleados e LEFT JOIN usuarios u ON u.empleado_id=e.id ORDER BY e.apellidos, e.nombres`),
+      e.estado, u.id AS usuario_id FROM empleados e LEFT JOIN usuarios u ON u.empleado_id=e.id WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' ORDER BY e.apellidos, e.nombres`),
     pool.query('SELECT id, razon_social, estado FROM empresas ORDER BY razon_social'),
     pool.query('SELECT a.id, a.nombre, a.empresa_id, e.razon_social AS empresa FROM areas a JOIN empresas e ON e.id=a.empresa_id ORDER BY e.razon_social, a.nombre'),
     pool.query('SELECT c.id, c.nombre, c.area_id, a.nombre AS area, a.empresa_id FROM cargos c JOIN areas a ON a.id=c.area_id ORDER BY a.nombre, c.nombre'),
@@ -44,8 +44,12 @@ async function catalogos() {
 }
 async function listarUsuarios() {
   const [rows] = await pool.query(`SELECT u.id, u.empleado_id, u.rol_id, u.email, u.activo,
-    CONCAT(e.nombres,' ',e.apellidos) AS colaborador, r.nombre AS rol
-    FROM usuarios u JOIN empleados e ON e.id=u.empleado_id JOIN roles r ON r.id=u.rol_id ORDER BY e.apellidos,e.nombres`);
+    COALESCE(CONCAT(e.nombres,' ',e.apellidos),'Colaborador no disponible') AS colaborador,
+    COALESCE(r.nombre,'Perfil no disponible') AS rol
+    FROM usuarios u
+    LEFT JOIN empleados e ON e.id=u.empleado_id
+    LEFT JOIN roles r ON r.id=u.rol_id
+    ORDER BY COALESCE(e.apellidos,''),COALESCE(e.nombres,''),u.id`);
   return rows;
 }
 async function validarRol(connection, rolId) {
@@ -61,7 +65,7 @@ async function crearUsuario(body) {
   await validarRol(pool, rol);
   const [personas] = await pool.query('SELECT id FROM empleados WHERE id = ?', [empleado]);
   if (!personas.length) throw error('El colaborador no existe.');
-  const [result] = await pool.query('INSERT INTO usuarios (empleado_id,rol_id,email,password,activo) VALUES (?,?,?,?,1)', [empleado, rol, email, password]);
+  const [result] = await pool.query('INSERT INTO usuarios (empleado_id,rol_id,email,password,activo) VALUES (?,?,?,?,TRUE)', [empleado, rol, email, password]);
   return result.insertId;
 }
 async function actualizarUsuario(usuarioId, body, actorId) {
@@ -74,7 +78,7 @@ async function actualizarUsuario(usuarioId, body, actorId) {
     await connection.beginTransaction();
     // Serializa cambios de administradores para impedir eliminar el último acceso.
     const [admins] = await connection.query(`SELECT u.id FROM usuarios u JOIN roles r ON r.id=u.rol_id
-      WHERE u.activo=1 AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
+      WHERE u.activo=${process.env.DATABASE_URL ? 'TRUE' : '1'} AND r.nombre=? ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
     const [rows] = await connection.query('SELECT id, rol_id, activo FROM usuarios WHERE id = ? FOR UPDATE', [usuario]);
     if (!rows.length) throw error('La cuenta no existe.', 404);
     const perfil = await validarRol(connection, rol);
@@ -87,6 +91,44 @@ async function actualizarUsuario(usuarioId, body, actorId) {
   finally { connection.release(); }
   return usuario;
 }
+async function eliminarUsuario(usuarioId, actorId) {
+  const usuario = id(usuarioId, 'Cuenta');
+  if (usuario === Number(actorId)) throw error('No puedes eliminar la cuenta con la que has iniciado sesión.');
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query(`SELECT u.id, u.rol_id, u.activo, r.nombre AS rol
+      FROM usuarios u JOIN roles r ON r.id=u.rol_id
+      WHERE u.id=? FOR UPDATE`, [usuario]);
+    if (!rows.length) throw error('La cuenta no existe.', 404);
+
+    const cuenta = rows[0];
+    const habilitada = cuenta.activo === true || cuenta.activo === 1 || cuenta.activo === '1';
+    if (cuenta.rol === ROLES.ADMIN && habilitada) {
+      // Bloquea las cuentas administradoras activas para impedir borrar la última,
+      // incluso si dos solicitudes de eliminación llegan al mismo tiempo.
+      const [admins] = await connection.query(`SELECT u.id FROM usuarios u
+        JOIN roles r ON r.id=u.rol_id
+        WHERE u.activo=${process.env.DATABASE_URL ? 'TRUE' : '1'} AND r.nombre=?
+        ORDER BY u.id FOR UPDATE`, [ROLES.ADMIN]);
+      if (admins.length <= 1) {
+        throw error('No se puede eliminar el último administrador activo. Debe existir otra cuenta administradora activa.');
+      }
+    }
+
+    const [result] = await connection.query('DELETE FROM usuarios WHERE id=?', [usuario]);
+    if (!result.affectedRows) throw error('La cuenta ya no existe.', 404);
+    await connection.commit();
+  } catch (e) {
+    await connection.rollback();
+    throw e;
+  } finally {
+    connection.release();
+  }
+  return usuario;
+}
+
 async function restablecerClave(usuarioId, password) {
   const usuario = id(usuarioId);
   const hash = await bcrypt.hash(validarClave(password), 12);
@@ -160,4 +202,4 @@ async function guardarTipoPermiso(tipoId, body) {
   const [result] = await pool.query('INSERT INTO tipo_permisos (nombre) VALUES (?)', [text]);
   return result.insertId;
 }
-module.exports = { catalogos, listarUsuarios, crearUsuario, actualizarUsuario, restablecerClave, guardarArea, guardarCargo, guardarTipoDocumento, guardarTipoPermiso, validarClave, correo };
+module.exports = { catalogos, listarUsuarios, crearUsuario, actualizarUsuario, eliminarUsuario, restablecerClave, guardarArea, guardarCargo, guardarTipoDocumento, guardarTipoPermiso, validarClave, correo };

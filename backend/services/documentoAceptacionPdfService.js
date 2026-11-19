@@ -1,5 +1,6 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { cajaLogoOriginal, dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 const { rutaFirma } = require('./documentoCartaPdfService');
 
 // Coordenadas en puntos de los originales A4. Los anclajes son mínimos:
@@ -52,9 +53,20 @@ function generarPdfAceptacion(documento) {
       const fecha = y => {
         if (fechaCabecera) doc.font(cursiva).fontSize(tamano).text(fechaCabecera, margen, y, { ...opciones, align: 'right' });
       };
-      doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
-        { width: formato.banda ? doc.page.width : formato.width });
       let tituloY = formato.tituloY;
+      if (documento.logo_personalizado) {
+        const archivoLogo = path.join(__dirname, '../assets/documentos', documento.logo + '.png');
+        const anchoLogo = formato.banda ? doc.page.width : formato.width;
+        const caja = cajaLogoOriginal(doc, archivoLogo, { x: formato.x, y: formato.y, width: anchoLogo });
+        dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, {
+          horizontal: formato.banda ? 'center' : 'left',
+          vertical: formato.banda ? 'center' : 'top'
+        });
+        // No se desplaza el título: conserva las coordenadas del modelo original.
+      } else {
+        doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
+          { width: formato.banda ? doc.page.width : formato.width });
+      }
       if (nanas && fechaCabecera) {
         fecha(formato.fechaY);
         tituloY = Math.max(tituloY, doc.y + 10);

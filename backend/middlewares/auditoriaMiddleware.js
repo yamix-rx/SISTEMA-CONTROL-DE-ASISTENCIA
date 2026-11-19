@@ -9,7 +9,7 @@ const MODULOS = [
   ['/administracion/cargos', 'cargos'], ['/documentos/plantillas', 'plantillas_documentos'],
   ['/asistencias/permisos', 'permisos'], ['/personal', 'empleados'],
   ['/asistencias', 'asistencias'], ['/empresas', 'empresas'], ['/horarios', 'horarios'],
-  ['/documentos', 'documentos_empleado'], ['/contratos', 'contratos'], ['/capacitaciones', 'capacitaciones']
+  ['/documentos/logos', 'logos_documentos'], ['/documentos', 'documentos_empleado'], ['/contratos', 'contratos'], ['/capacitaciones', 'capacitaciones']
 ];
 const TABLAS = new Set(MODULOS.map(([, tabla]) => tabla));
 const idValido = value => Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0;
@@ -123,8 +123,19 @@ module.exports = async (req, res, next) => {
       next(error);
     };
     res.json = function (body) {
-      transaction.complete(res.statusCode >= 200 && res.statusCode < 300)
-        .then(() => originalJson(body)).catch(fail);
+      const success = res.statusCode >= 200 && res.statusCode < 300;
+      transaction.complete(success).then(async () => {
+        if (success && typeof res.locals.afterCommit === 'function') {
+          try {
+            const resultado = await res.locals.afterCommit();
+            if (resultado && body && typeof body === 'object') body.cleanupFailed = Boolean(resultado.cleanupFailed);
+          } catch (error) {
+            console.error('Limpieza posterior a la transacción:', error.code || error.name);
+            if (body && typeof body === 'object') body.cleanupFailed = true;
+          }
+        }
+        originalJson(body);
+      }).catch(fail);
       return res;
     };
     res.once('close', () => { transaction.complete(false).catch(() => {}); });

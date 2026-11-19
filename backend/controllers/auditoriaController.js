@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('../services/busquedaTexto');
 
 function parseJson(value) {
   if (value == null) return null;
@@ -16,8 +17,8 @@ exports.listar = async (req, res) => {
       if (/^\d+$/.test(usuario_id)) {
         where.push('h.usuario_id = ?'); params.push(Number(usuario_id));
       } else {
-        where.push(`(u.email LIKE ? OR e.nombres LIKE ? OR e.apellidos LIKE ? OR CONCAT(e.nombres,' ',e.apellidos) LIKE ?)`);
-        const q = `%${usuario_id}%`;
+        where.push(`(LOWER(COALESCE(u.email, '')) LIKE ? OR LOWER(COALESCE(e.nombres, '')) LIKE ? OR LOWER(COALESCE(e.apellidos, '')) LIKE ? OR LOWER(CONCAT(COALESCE(e.nombres, ''),' ',COALESCE(e.apellidos, ''))) LIKE ?)`);
+        const q = patronBusqueda(usuario_id);
         params.push(q, q, q, q);
       }
     }
@@ -28,11 +29,12 @@ exports.listar = async (req, res) => {
 
     const max = Math.min(Math.max(Number(limite) || 100, 1), 500);
     const sql = `
-      SELECT h.id, h.usuario_id, h.tabla_afectada, h.registro_id, h.accion,
+      SELECT h.id, h.tabla_afectada, h.registro_id, h.accion,
              h.datos_anteriores, h.datos_nuevos, h.ip_origen, h.created_at,
-             u.email,
-             CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) AS usuario_nombre,
-             r.nombre AS rol
+             CASE WHEN r.nombre = 'Administrador General' THEN NULL ELSE u.email END AS email,
+             CASE WHEN r.nombre = 'Administrador General' THEN 'Cuenta del sistema' ELSE CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) END AS usuario_nombre,
+             CASE WHEN r.nombre = 'Administrador General' THEN NULL ELSE r.nombre END AS rol,
+             (r.nombre = 'Administrador General') AS cuenta_sistema
       FROM historial_cambios h
       LEFT JOIN usuarios u ON u.id = h.usuario_id
       LEFT JOIN empleados e ON e.id = u.empleado_id
@@ -43,11 +45,15 @@ exports.listar = async (req, res) => {
     const [rows] = await pool.query(sql, params);
     res.json({
       ok: true,
-      registros: rows.map(row => ({
-        ...row,
-        datos_anteriores: parseJson(row.datos_anteriores),
-        datos_nuevos: parseJson(row.datos_nuevos)
-      }))
+      registros: rows.map(row => {
+        const { cuenta_sistema, ...publico } = row;
+        const anteriores = parseJson(row.datos_anteriores);
+        const nuevos = parseJson(row.datos_nuevos);
+        if (cuenta_sistema && row.tabla_afectada === 'sesiones' && nuevos && typeof nuevos === 'object' && !Array.isArray(nuevos)) {
+          { delete nuevos.email; delete nuevos.rol; }
+        }
+        return { ...publico, datos_anteriores: anteriores, datos_nuevos: nuevos };
+      })
     });
   } catch (error) {
     console.error('Error al listar auditoría:', error.code || error.message);

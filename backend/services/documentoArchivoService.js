@@ -2,6 +2,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { esDoc, esDocx } = require('./documentoWordService');
+const storage = require('./storagePrivadoService');
+const usarStorage = () => Boolean(process.env.DATABASE_URL);
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const DIRECTORIO = process.env.DOCUMENTOS_DIR
@@ -45,6 +47,15 @@ function validarArchivo(nombre, base64) {
   return { contenido, nombre_archivo: nombre.trim(), extension, mime_type: FORMATOS[extension] };
 }
 
+function validarMetadatos(nombre, mime, tamano) {
+  if(typeof nombre!=='string'||!nombre.trim()||nombre.length>200||/[\\/\u0000-\u001f\u007f]/.test(nombre))
+    throw errorArchivo('Nombre de archivo inválido.');
+  const extension=path.extname(nombre).toLowerCase();
+  if(!FORMATOS[extension])throw errorArchivo('Tipo de archivo no permitido.');
+  if(typeof mime!=='string'||mime!==FORMATOS[extension])throw errorArchivo('Formato MIME no permitido.');
+  if(!Number.isSafeInteger(tamano)||tamano<1||tamano>MAX_BYTES)throw errorArchivo('El archivo debe pesar entre 1 byte y 5 MB.',413);
+  return {nombre_archivo:nombre.trim(),mime_type:mime,extension,tamano};
+}
 function resolverRutaPrivada(nombre) {
   if (typeof nombre !== 'string' || !ARCHIVO_PRIVADO.test(nombre) || path.basename(nombre) !== nombre) {
     throw errorArchivo('El archivo no está disponible. Vuelva a cargarlo desde Documentos.', 404);
@@ -53,6 +64,11 @@ function resolverRutaPrivada(nombre) {
 }
 
 async function guardarArchivo(archivo) {
+  if(usarStorage()){
+    const nombrePrivado=randomUUID()+archivo.extension;
+    await storage.subirObjeto(nombrePrivado,archivo.contenido,archivo.mime_type);
+    return nombrePrivado;
+  }
   await fs.mkdir(DIRECTORIO, { recursive: true, mode: 0o700 });
   const nombrePrivado = randomUUID() + archivo.extension;
   const ruta = resolverRutaPrivada(nombrePrivado);
@@ -61,10 +77,15 @@ async function guardarArchivo(archivo) {
 }
 
 async function eliminarArchivo(nombre) {
+  if(usarStorage())return storage.eliminarObjeto(nombre);
   await fs.unlink(resolverRutaPrivada(nombre)).catch(error => { if (error.code !== 'ENOENT') throw error; });
 }
 
-async function obtenerArchivo(nombre) {
+async function obtenerArchivo(nombre, opciones={}) {
+  if(usarStorage())return {
+    url:await storage.urlDescarga(nombre,{download:opciones.descargar,filename:opciones.nombre||'documento'}),
+    mime_type:FORMATOS[path.extname(nombre).toLowerCase()] || 'application/octet-stream'
+  };
   const ruta = resolverRutaPrivada(nombre);
   try {
     // Rechazar enlaces simbólicos impide que una referencia salga de la carpeta privada.
@@ -87,9 +108,10 @@ function disposicionArchivo(nombre, descargar = false) {
 }
 
 async function disponible(nombre) {
-  if (!nombre) return false;
+  if(!nombre)return false;
+  if(usarStorage())return storage.existeObjeto(nombre);
   try { await obtenerArchivo(nombre); return true; }
   catch (error) { if (error.status === 404) return false; throw error; }
 }
 
-module.exports = { MAX_BYTES, validarArchivo, resolverRutaPrivada, guardarArchivo, eliminarArchivo, obtenerArchivo, disposicionArchivo, disponible };
+module.exports = { MAX_BYTES, validarArchivo, validarMetadatos, resolverRutaPrivada, guardarArchivo, eliminarArchivo, obtenerArchivo, disposicionArchivo, disponible };

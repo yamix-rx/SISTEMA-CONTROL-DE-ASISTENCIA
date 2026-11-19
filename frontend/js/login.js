@@ -4,20 +4,33 @@
   const form = $('formLogin'), fields = $('camposLogin'), button = $('btnIngresar');
   const connection = $('estadoConexion'), message = $('mensajeConexion'), link = $('enlaceServidor'), retry = $('btnReintentarConexion');
   const current = new URL(location.href);
-  const canonical = new URL('http://localhost:3000/login.html');
-  if (current.protocol === 'http:' || current.protocol === 'https:') {
-    canonical.protocol = current.protocol;
-    canonical.hostname = current.hostname;
+  // En Vercel se utiliza el mismo origen HTTPS, sin arrastrar el puerto
+  // 3000 reservado al servidor local de desarrollo.
+  const canonical = ['http:', 'https:'].includes(current.protocol)
+    ? new URL('/login.html', current.origin)
+    : new URL('http://localhost:3000/login.html');
+  // Live Server suele ejecutarse en un puerto local distinto: mantener la
+  // redirección de desarrollo a Express:3000, nunca en HTTPS de Vercel.
+  if (current.protocol === 'http:' && current.port && current.port !== '3000') {
+    canonical.port = '3000';
   }
   let serverReady = false, checking = false, submitting = false;
   link.href = canonical.href;
   link.textContent = 'Abrir SBSS: ' + canonical.host;
 
   function showError(text) { $('mensajeError').textContent = text; $('alertaError').classList.add('show'); }
+  // Advertir una sola vez si falló la revocación remota, aunque se haya salido del navegador.
+  try {
+    const warning = sessionStorage.getItem('sbss_logout_warning');
+    if (warning) {
+      sessionStorage.removeItem('sbss_logout_warning');
+      showError(warning);
+    }
+  } catch (_) { /* La página sigue operativa sin sessionStorage. */ }
   async function identifiesServer(origin) {
     try {
       const response = await fetch(origin + '/api/auth/disponibilidad', {
-        method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(8000)
+        method: 'GET', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(8000)
       });
       if (!response.ok || !(response.headers.get('content-type') || '').includes('application/json')) return false;
       const data = await response.json();
@@ -71,6 +84,11 @@
       }
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.mensaje || 'No se pudo iniciar sesión. Vuelve a intentar.');
+      if (data.requiere_cambio_clave === true && typeof data.token === 'string') {
+        sessionStorage.setItem('sbss_token_cambio', data.token);
+        location.replace(new URL('cambiar-clave.html', current.origin + '/').href);
+        return;
+      }
       const panels = ['Dashboard.html', 'RecursosHumanos.html', 'MiPanel.html'];
       if (!data.acceso || !panels.includes(data.acceso.panel) || data.redirectUrl !== data.acceso.panel || typeof data.token !== 'string' || !data.token || !data.usuario) {
         throw new Error('Tu cuenta no tiene un panel habilitado. Contacta al administrador.');

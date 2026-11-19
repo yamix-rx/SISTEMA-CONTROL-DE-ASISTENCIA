@@ -36,7 +36,19 @@
     if($(prefix+worker))options(prefix+worker,data.empleados.filter(x=>(!empresa||String(x.empresa_id)===empresa)&&(!areaActual||String(x.area_id)===areaActual)&&(!cargo||String(x.cargo_id)===cargo)),'colaborador','Todos los trabajadores');
   }
   function filters(prefix){const q=new URLSearchParams();for(const [suffix,key]of Object.entries({Empresa:'empresa_id',Area:'area_id',Cargo:'cargo_id',Trabajador:'empleado_id',Estado:'estado',Buscar:'buscar'})){const value=$(prefix+suffix)?.value;if(value)q.set(key,value);}return q;}
-  async function file(file){if(!file)return null;if(file.size>5*1024*1024)throw new Error('El archivo supera el máximo de 5 MB.');return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve({nombre:file.name,base64:String(reader.result).split(',')[1]});reader.onerror=()=>reject(new Error('No se pudo leer el archivo.'));reader.readAsDataURL(file);});}
+  async function file(file,empleadoId){
+    if(!file)return null;
+    if(!file.size||file.size>5*1024*1024)throw new Error('El archivo debe pesar hasta 5 MB.');
+    const formats={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',
+      doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'};
+    const mime=formats[file.name.split('.').pop().toLowerCase()];
+    if(!mime)throw new Error('Solo se permiten PDF, Word, PNG y JPG.');
+    const signed=await api('/api/asistencias/permisos/preparar-subida',{
+      method:'POST',body:JSON.stringify({empleado_id:empleadoId,nombre_archivo:file.name,mime_type:mime,tamano:file.size})});
+    const uploaded=await fetch(signed.url,{method:'PUT',body:file,headers:{'Content-Type':mime},redirect:'error'});
+    if(!uploaded.ok)throw new Error('No se pudo transferir el sustento al almacenamiento privado.');
+    return {ticket:signed.ticket};
+  }
   async function downloadPermission(permission,download=false){
     const response=await fetch(`/api/asistencias/permisos/${permission.id}/sustento${download?'?descargar=1':''}`,{headers:{Authorization:`Bearer ${localStorage.getItem('sbss_token')}`}});
     if(!response.ok){const error=await response.json().catch(()=>({}));throw new Error(error.mensaje||'No se pudo abrir el sustento.');}

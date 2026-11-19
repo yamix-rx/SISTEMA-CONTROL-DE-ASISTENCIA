@@ -33,8 +33,10 @@ function rango(inicio, fin, defecto = 'mensual') {
   if ((new Date(hasta) - new Date(desde)) / 86400000 > 366) throw error('Seleccione un rango de hasta 367 días.');
   return [desde, hasta];
 }
+const { patronBusqueda } = require('./busquedaTexto');
+
 function filtrosPersonal(query, alias = 'e') {
-  const condiciones = [], params = [];
+  const condiciones = [`LOWER(COALESCE(${alias}.tipo_vinculo,'')) <> 'sistema'`], params = [];
   for (const campo of ['empresa_id', 'area_id', 'cargo_id', 'empleado_id']) {
     if (query[campo]) { condiciones.push(`${alias}.${campo === 'empleado_id' ? 'id' : campo} = ?`); params.push(entero(query[campo], campo)); }
   }
@@ -46,8 +48,9 @@ function filtrosPersonal(query, alias = 'e') {
   }
   if (query.buscar) {
     const busqueda = texto(query.buscar, 'Búsqueda', 120, true);
-    condiciones.push(`(${alias}.nombres LIKE ? OR ${alias}.apellidos LIKE ? OR ${alias}.numero_documento LIKE ?)`);
-    params.push(...Array(3).fill(`%${busqueda}%`));
+    const patron = patronBusqueda(busqueda);
+    condiciones.push(`(LOWER(COALESCE(${alias}.nombres, '')) LIKE ? OR LOWER(COALESCE(${alias}.apellidos, '')) LIKE ? OR LOWER(COALESCE(${alias}.numero_documento, '')) LIKE ?)`);
+    params.push(...Array(3).fill(patron));
   }
   return { where: condiciones.length ? condiciones.join(' AND ') : '1=1', params };
 }

@@ -68,7 +68,7 @@ for (const [label, origin, destination] of [
   assert.deepEqual(p.redirects, [destination]);
   assert.equal(p.element('camposLogin').disabled, true);
   assert.ok(p.calls.every(call => call.method === 'GET' && call.body === undefined && !call.url.includes('clave-ficticia')));
-  assert.ok(p.calls.every(call => call.credentials === 'omit'));
+  assert.ok(p.calls.every(call => call.credentials === 'same-origin'));
   assert.equal(p.storage.size, 0);
 });
 

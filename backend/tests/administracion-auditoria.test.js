@@ -36,7 +36,11 @@ const pool = {
     if (/SELECT u.id, u.empleado_id, u.rol_id, u.email, u.activo/.test(sql)) {
       return [[...usuarios.values()].map(u => ({ id: u.id, empleado_id: u.empleado_id, rol_id: u.rol_id, email: u.email, activo: u.activo, colaborador: `Persona ${u.id}`, rol: roles.get(u.rol_id) }))];
     }
-    if (/WHERE u.activo=1 AND r.nombre=/.test(sql)) return [[...usuarios.values()].filter(u => u.activo === 1 && roles.get(u.rol_id) === params[0]).map(u => ({ id: u.id }))];
+    if (/WHERE u\.activo=(?:1|TRUE) AND r\.nombre=/i.test(sql)) return [[...usuarios.values()].filter(u => (u.activo === 1 || u.activo === true) && roles.get(u.rol_id) === params[0]).map(u => ({ id: u.id }))];
+    if (/SELECT u\.id, u\.rol_id, u\.activo, r\.nombre AS rol FROM usuarios/.test(sql)) {
+      const u = usuarios.get(params[0]);
+      return [u ? [{ id:u.id, rol_id:u.rol_id, activo:u.activo, rol:roles.get(u.rol_id) }] : []];
+    }
     if (/SELECT id, rol_id, activo FROM usuarios WHERE id/.test(sql)) return [usuarios.has(params[0]) ? [copy(usuarios.get(params[0]))] : []];
     if (/SELECT id, nombre FROM roles WHERE id/.test(sql)) return [roles.has(params[0]) ? [{ id: params[0], nombre: roles.get(params[0]) }] : []];
     if (/SELECT id FROM empleados WHERE id/.test(sql)) return [params[0] >= 101 && params[0] <= 110 ? [{ id: params[0] }] : []];
@@ -45,6 +49,10 @@ const pool = {
       const id = Math.max(...usuarios.keys()) + 1;
       usuarios.set(id, { id, empleado_id: params[0], rol_id: params[1], email: params[2], password: params[3], activo: 1, sesion_version: 0 });
       return [{ insertId: id }];
+    }
+    if (/DELETE FROM usuarios WHERE id/.test(sql)) {
+      const deleted = usuarios.delete(params[0]);
+      return [{ affectedRows: deleted ? 1 : 0 }];
     }
     if (/UPDATE usuarios SET email=/.test(sql)) {
       const u = usuarios.get(params[3]);
@@ -151,6 +159,45 @@ test('solo administrador gestiona cuentas y una escritura rechazada queda como D
   assert.ok(!sqlCalls.some(q => /^UPDATE usuarios/.test(q.sql)));
 });
 
+test('la lista administrativa devuelve todas las cuentas y todos los perfiles, sin credenciales', async () => {
+  const result = await request('/api/administracion/usuarios');
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.length, 3);
+  assert.deepEqual(new Set(result.body.data.map(u => u.rol)), new Set([ROLES.ADMIN, ROLES.RRHH, ROLES.COLABORADOR]));
+  assert.ok(result.body.data.every(u => !Object.hasOwn(u, 'password')));
+});
+
+test('elimina físicamente la cuenta de acceso, conserva la ficha del colaborador y audita DELETE', async () => {
+  const result = await request('/api/administracion/usuarios/2', { method: 'DELETE' });
+  assert.equal(result.status, 200);
+  assert.equal(usuarios.has(2), false);
+  assert.equal(usuarios.size, 2);
+  assert.ok(sqlCalls.some(q => /DELETE FROM usuarios WHERE id/.test(q.sql)));
+  assert.ok(!sqlCalls.some(q => /DELETE FROM empleados/.test(q.sql)));
+  assert.equal(logs.at(-1).accion, 'DELETE');
+  assert.equal(logs.at(-1).tabla, 'usuarios');
+  assert.equal(logs.at(-1).usuario_id, 1);
+  assert.equal(logs.at(-1).anterior.id, 2);
+  assert.equal(logs.at(-1).anterior.password, '[OCULTO]');
+  assert.equal((await request('/api/session', { usuario: 2 })).status, 401);
+});
+
+test('no permite eliminar la cuenta propia ni el último administrador activo', async () => {
+  const propia = await request('/api/administracion/usuarios/1', { method: 'DELETE' });
+  assert.equal(propia.status, 400);
+  assert.equal(usuarios.has(1), true);
+  await assert.rejects(servicio.eliminarUsuario(1, 999), /último administrador activo/);
+  assert.equal(usuarios.has(1), true);
+});
+
+test('permite eliminar otro administrador si permanece al menos uno activo', async () => {
+  usuarios.get(2).rol_id = 1;
+  const result = await request('/api/administracion/usuarios/2', { method: 'DELETE' });
+  assert.equal(result.status, 200);
+  assert.equal(usuarios.has(2), false);
+  assert.equal(usuarios.has(1), true);
+});
+
 test('crear cuenta almacena bcrypt y audita ID real sin exponer contraseña ni hash', async () => {
   const password = 'Password-fixture-123';
   const response = await request('/api/administracion/usuarios', { method: 'POST', body: { empleado_id: 104, rol_id: 3, email: ' NUEVA@FIXTURE.INVALID ', password } });
@@ -191,6 +238,28 @@ test('cambio de perfil registra antes/después y revoca el token anterior', asyn
   assert.equal((await request('/api/session', { usuario: 3 })).status, 401);
   assert.equal((await request('/api/session', { usuario: 3, sv: 1 })).status, 200);
   assert.deepEqual(transacciones, { inicios: 1, confirmaciones: 1, reversiones: 0, liberaciones: 1 });
+});
+
+test('retira privilegios a un segundo administrador sin borrar la cuenta ni la ficha del practicante', async () => {
+  usuarios.get(3).rol_id = 1;
+  const anterior = copy(usuarios.get(3));
+  const resultado = await request('/api/administracion/usuarios/3', {
+    method: 'PUT',
+    body: { email: anterior.email, rol_id: 3, activo: anterior.activo }
+  });
+  assert.equal(resultado.status, 200);
+  assert.equal(usuarios.size, 3);
+  assert.equal(usuarios.get(3).rol_id, 3);
+  assert.equal(usuarios.get(3).empleado_id, anterior.empleado_id);
+  assert.equal(usuarios.get(3).password, anterior.password);
+  assert.equal(usuarios.get(3).activo, anterior.activo);
+  assert.equal(usuarios.get(3).sesion_version, anterior.sesion_version + 1);
+  assert.equal(usuarios.get(1).rol_id, 1);
+  assert.ok(!sqlCalls.some(q => q.sql.includes('DELETE FROM') || q.sql.includes('UPDATE empleados')));
+  assert.equal((await request('/api/session', { usuario: 3 })).status, 401);
+  const nuevaSesion = await request('/api/session', { usuario: 3, sv: 1 });
+  assert.equal(nuevaSesion.status, 200);
+  assert.equal(nuevaSesion.body.usuario.rol, ROLES.COLABORADOR);
 });
 
 test('impide perder el acceso administrador propio y conservar cero administradores', async () => {

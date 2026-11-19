@@ -3,6 +3,7 @@ const pool = require('../config/database');
 const { idPositivo } = require('./documentoService');
 const { catalogoModelos, resolverModelo, resolverEmpresa, CAMPOS_MODELO } = require('./documentoModelosService');
 const plantillasPracticas = require('./documentoPlantillasPracticas');
+const logosDocumentos = require('./documentoLogoService');
 
 const CAMPOS = Object.freeze([...new Set(['trabajador', 'documento', 'empresa', 'ruc', 'fecha', 'fecha_ingreso', 'fecha_finalizacion', 'cargo', 'area', 'horas', 'horas_meta', 'formacion_academica', 'lugar_fecha', ...CAMPOS_MODELO.map(campo => campo.clave)])]);
 const CAMPOS_CALCULADOS_OPCIONALES = new Set(['formacion_academica', 'lugar_fecha', 'lema_anual']);
@@ -55,36 +56,66 @@ function validarPlantilla(body) {
   return { titulo, cuerpo };
 }
 function revision(plantilla) {
-  return createHash('sha256').update(plantilla.titulo + '\n' + plantilla.cuerpo).digest('hex');
+  return createHash('sha256').update(plantilla.titulo + '\n' + plantilla.cuerpo + '\nlogo:' + (plantilla.logo_path || '') + ':' + (plantilla.logo_mime || '')).digest('hex');
 }
 async function plantillas() {
-  const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos ORDER BY codigo');
+  const [rows] = await pool.query('SELECT p.codigo, p.titulo, p.cuerpo_html, p.logo_path, p.logo_mime, p.logo_nombre, l.id AS logo_id FROM plantillas_documentos p LEFT JOIN logos_documentos l ON l.ruta_archivo = p.logo_path ORDER BY p.codigo');
   const definiciones = [...Object.entries(PREDETERMINADAS), ...catalogoModelos().map(modelo => [modelo.id, { titulo: modelo.titulo, cuerpo: modelo.cuerpo }, modelo.codigo])];
   return definiciones.map(([codigo, predeterminada, tipo]) => {
     const almacenada = rows.find(row => row.codigo === codigo)
       || (Object.hasOwn(plantillasPracticas, tipo || '') ? rows.find(row => row.codigo === tipo) : null);
-    const plantilla = almacenada ? { titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html } : { ...predeterminada };
+    const plantilla = almacenada ? {
+      titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html,
+      logo_path: almacenada.logo_path || null, logo_mime: almacenada.logo_mime || null,
+      logo_nombre: almacenada.logo_nombre || null, logo_id: Number(almacenada.logo_id) || null
+    } : { ...predeterminada, logo_path: null, logo_mime: null, logo_nombre: null, logo_id: null };
     return { codigo, ...plantilla, personalizada: Boolean(almacenada), revision: revision(plantilla) };
   });
 }
 async function catalogos() {
-  const [templates, [empresas], [areas], [cargos]] = await Promise.all([
+  const [templates, [empresas], [areas], [cargos], logos] = await Promise.all([
     plantillas(),
     pool.query('SELECT id, razon_social, ruc, direccion FROM empresas ORDER BY razon_social'),
     pool.query('SELECT id, nombre, empresa_id FROM areas ORDER BY nombre'),
-    pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre')
+    pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre'),
+    logosDocumentos.listar()
   ]);
-  return { plantillas: templates, empresas: empresas.map(empresa => ({ ...empresa,
+  const plantillasPublicas = templates.map(({ logo_path, ...plantilla }) => plantilla);
+  return { plantillas: plantillasPublicas, empresas: empresas.map(empresa => ({ ...empresa,
     empresa_modelo_clave: resolverEmpresa({ empresa: empresa.razon_social, ruc: empresa.ruc })?.clave || null })),
-  areas, cargos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
+  areas, cargos, logos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
 }
 async function guardarPlantilla(codigo, body) {
   if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
   const plantilla = validarPlantilla(body);
-  const [result] = await pool.query(`INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
-    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`,
-  [codigo, plantilla.titulo, plantilla.cuerpo]);
-  return { id: Number(result.insertId) || null, codigo, ...plantilla, personalizada: true, revision: revision(plantilla) };
+  let logo = null;
+  if (body.logo_id === undefined) {
+    const [actuales] = await pool.query('SELECT logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+    if (actuales[0]?.logo_path) {
+      const [logos] = await pool.query('SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE ruta_archivo = ? LIMIT 1', [actuales[0].logo_path]);
+      logo = logos[0] || { ruta_archivo: actuales[0].logo_path, mime_type: actuales[0].logo_mime, nombre: actuales[0].logo_nombre };
+    }
+  } else if (body.logo_id !== null && body.logo_id !== '') {
+    const logoId = typeof body.logo_id === 'number' ? body.logo_id
+      : typeof body.logo_id === 'string' && /^\d+$/.test(body.logo_id) ? Number(body.logo_id) : NaN;
+    if (!Number.isSafeInteger(logoId) || logoId <= 0) throw error('Seleccione un logo válido.');
+    const [logos] = await pool.query('SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE id = ? LIMIT 1', [logoId]);
+    if (!logos.length) throw error('El logo seleccionado ya no existe. Actualiza la biblioteca e inténtalo nuevamente.', 404);
+    logo = logos[0];
+  }
+  const datosLogo = [logo?.ruta_archivo || null, logo?.mime_type || null, logo?.nombre || null];
+  const pgSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre)
+    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (codigo) DO UPDATE
+    SET titulo = EXCLUDED.titulo, cuerpo_html = EXCLUDED.cuerpo_html,
+      logo_path = EXCLUDED.logo_path, logo_mime = EXCLUDED.logo_mime, logo_nombre = EXCLUDED.logo_nombre RETURNING id`;
+  const mysqlSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre)
+    VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo),
+      cuerpo_html = VALUES(cuerpo_html), logo_path = VALUES(logo_path), logo_mime = VALUES(logo_mime), logo_nombre = VALUES(logo_nombre)`;
+  const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
+    [codigo, plantilla.titulo, plantilla.cuerpo, ...datosLogo]);
+  const guardada = { ...plantilla, logo_path: datosLogo[0], logo_mime: datosLogo[1], logo_nombre: datosLogo[2], logo_id: Number(logo?.id) || null };
+  const { logo_path, ...plantillaPublica } = guardada;
+  return { id: Number(result.insertId) || null, codigo, ...plantillaPublica, personalizada: true, revision: revision(guardada) };
 }
 function fechaValida(valor, nombre = 'La fecha de emisión') {
   if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw error(`${nombre} no es válida.`);
@@ -135,7 +166,7 @@ function comprobarDatosModelo(modelo, datos) {
     if (!/(?:\bupn\b|universidad privada del norte)/.test(institucion)) throw error('Este modelo corresponde a la Universidad Privada del Norte (UPN). Revisa la institución educativa del colaborador.');
   }
 }
-async function preparar(body = {}) {
+async function preparar(body = {}, { incluirLogo = false } = {}) {
   const codigo = codigoValido(body.codigo);
   if (body.modelo_id !== undefined && (typeof body.modelo_id !== 'string' || !body.modelo_id || body.modelo_id.length > 50)) throw error('El modelo de documento no es válido.');
   const empleadoId = idPositivo(body.empleado_id, 'colaborador');
@@ -153,7 +184,7 @@ async function preparar(body = {}) {
       e.direccion, e.fecha_nacimiento, e.puesto, pd.fecha_vencimiento_convenio,
       COALESCE(pd.horas_meta, e.horas_totales_asignadas, 0) AS horas_meta
       FROM empleados e LEFT JOIN practicante_detalles pd ON pd.empleado_id = e.id
-      WHERE e.id = ? LIMIT 1`, [empleadoId]),
+      WHERE e.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1`, [empleadoId]),
     pool.query(`SELECT emp.razon_social AS empresa, emp.ruc, emp.direccion AS empresa_direccion, ar.nombre AS area, c.nombre AS cargo
       FROM empresas emp INNER JOIN areas ar ON ar.empresa_id = emp.id
       INNER JOIN cargos c ON c.area_id = ar.id
@@ -210,12 +241,16 @@ async function preparar(body = {}) {
   const firmantesFuente = [identidad?.datos_predeterminados?.supervisor, identidad?.datos_predeterminados?.representante].filter(Boolean);
   const firma = identidad && firmante && firmantesFuente.some(nombre => normalizarNombre(nombre) === normalizarNombre(firmante)) ? identidad.clave : null;
   const completar = texto => texto.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_, campo) => String(campos[campo] ?? ''));
+  const logoPersonalizado = incluirLogo && plantilla.logo_path ? await logosDocumentos.obtenerContenido(plantilla.logo_path) : null;
   return {
     codigo, titulo: completar(plantilla.titulo), cuerpo: completar(plantilla.cuerpo),
     empresa: campos.empresa, trabajador: campos.trabajador, fecha,
     carrera: datos.carrera || '', institucion_educativa: datos.institucion_educativa || '', tipo_documento_nombre: NOMBRES_DOCUMENTOS[codigo],
     modelo_id: modelo?.id || null, modelo_nombre: diseno === 'convenio' ? modelo.nombre : `${NOMBRES_DOCUMENTOS[codigo]} · ${campos.empresa}`,
     estilo: 'formal', diseno, logo: identidad?.logo || modelo?.logo || null,
+    logo_personalizado: logoPersonalizado,
+    logo_personalizado_mime_type: plantilla.logo_mime || null,
+    logo_personalizado_nombre: plantilla.logo_nombre || null,
     lema_anual: datos.lema_anual || '',
     papel: codigo === 'culminacion' && identidad?.clave === 'ong' ? 'A4 horizontal · 297 × 210 mm' : 'A4 · 210 × 297 mm',
     firma, firmante_empresa: firmante || '',

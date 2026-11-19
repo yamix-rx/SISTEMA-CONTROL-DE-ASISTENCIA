@@ -81,7 +81,7 @@
   };
   $('formPermiso').onsubmit=async event=>{
     event.preventDefault();$('btnGuardarPermiso').disabled=true;
-    try{const payload={empleado_id:$('pTrabajador').value,tipo_permiso:$('pTipo').value,fecha_inicio:$('pInicio').value,fecha_fin:$('pFin').value,hora_desde:$('pHoraDesde').value,hora_hasta:$('pHoraHasta').value,motivo:$('pMotivo').value,observaciones:$('pObservaciones').value,sustento:await u.file($('pDocumento').files[0])};
+    try{const payload={empleado_id:$('pTrabajador').value,tipo_permiso:$('pTipo').value,fecha_inicio:$('pInicio').value,fecha_fin:$('pFin').value,hora_desde:$('pHoraDesde').value,hora_hasta:$('pHoraHasta').value,motivo:$('pMotivo').value,observaciones:$('pObservaciones').value,sustento_ticket:(await u.file($('pDocumento').files[0],$('pTrabajador').value))?.ticket};
       await api('/api/asistencias/permisos',{method:'POST',body:JSON.stringify(payload)});show('modalPermiso',false);toast('Permiso guardado.');await loadP();
     }catch(error){toast(error.message);}finally{$('btnGuardarPermiso').disabled=false;}
   };

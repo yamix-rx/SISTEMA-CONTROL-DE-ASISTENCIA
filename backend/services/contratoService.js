@@ -1,7 +1,14 @@
 const pool = require('../config/database');
+const { patronBusqueda } = require('./busquedaTexto');
 
+const POSTGRES = Boolean(process.env.DATABASE_URL);
+const HOY_SQL = POSTGRES ? "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date" : "CURDATE()";
 const ESTADOS = new Set(['borrador', 'vigente', 'finalizado', 'cancelado']);
 const ESTADOS_FILTRO = new Set([...ESTADOS, 'por_vencer', 'vencido']);
+// PostgreSQL necesita tipar explícitamente la fecha opcional para COALESCE.
+const LIMITE_FECHA_FIN_SQL = POSTGRES
+  ? "COALESCE(CAST(? AS date), DATE '9999-12-31')"
+  : "COALESCE(?, '9999-12-31')";
 const TIPOS_CONTRATO = [
   'Indeterminado',
   'Plazo fijo',
@@ -17,8 +24,8 @@ const ESTADO_VIGENCIA_SQL = `
     WHEN c.estado = 'borrador' THEN 'borrador'
     WHEN c.estado = 'cancelado' THEN 'cancelado'
     WHEN c.estado = 'finalizado' THEN 'finalizado'
-    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin < CURDATE() THEN 'vencido'
-    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'por_vencer'
+    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin < ${HOY_SQL} THEN 'vencido'
+    WHEN c.fecha_fin IS NOT NULL AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + 30)` : 'DATE_ADD(CURDATE(), INTERVAL 30 DAY)'} THEN 'por_vencer'
     ELSE 'vigente'
   END
 `;
@@ -110,7 +117,7 @@ function normalizarPayload(body, base = {}) {
 }
 
 async function empleadoExiste(connection, empleadoId) {
-  const [rows] = await connection.query('SELECT id, estado FROM empleados WHERE id = ? LIMIT 1', [empleadoId]);
+  const [rows] = await connection.query("SELECT id, estado FROM empleados WHERE id = ? AND LOWER(COALESCE(tipo_vinculo,'')) <> 'sistema' LIMIT 1", [empleadoId]);
   if (!rows.length) throw errorHttp(404, 'El colaborador no existe.');
   return rows[0];
 }
@@ -137,7 +144,7 @@ async function validarSolapamiento(connection, data, excluirId = null) {
     FROM contratos
     WHERE empleado_id = ?
       AND estado = 'vigente'
-      AND fecha_inicio <= COALESCE(?, '9999-12-31')
+      AND fecha_inicio <= ${LIMITE_FECHA_FIN_SQL}
       AND (fecha_fin IS NULL OR fecha_fin >= ?)
       ${excluir}
     LIMIT 1
@@ -155,7 +162,7 @@ async function catalogos() {
       FROM empleados e
       INNER JOIN empresas emp ON emp.id = e.empresa_id
       INNER JOIN cargos c ON c.id = e.cargo_id
-      WHERE e.estado = 'activo'
+      WHERE e.estado = 'activo' AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
       ORDER BY e.apellidos, e.nombres
     `).then(([rows]) => rows),
     pool.query(`SELECT id, razon_social FROM empresas WHERE estado = 'activo' ORDER BY razon_social`).then(([rows]) => rows)
@@ -169,7 +176,7 @@ async function catalogos() {
 }
 
 async function listar(filtros = {}) {
-  const where = ['1 = 1'];
+  const where = ["LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'"];
   const params = [];
   if (filtros.empresa_id) {
     where.push('e.empresa_id = ?');
@@ -186,8 +193,8 @@ async function listar(filtros = {}) {
     params.push(tipo);
   }
   if (filtros.buscar) {
-    const q = `%${String(filtros.buscar).trim().slice(0, 100)}%`;
-    where.push(`(c.codigo LIKE ? OR e.nombres LIKE ? OR e.apellidos LIKE ? OR e.numero_documento LIKE ? OR c.tipo_contrato LIKE ?)`);
+    const q = patronBusqueda(String(filtros.buscar).trim().slice(0, 100));
+    where.push(`(LOWER(COALESCE(c.codigo, '')) LIKE ? OR LOWER(COALESCE(e.nombres, '')) LIKE ? OR LOWER(COALESCE(e.apellidos, '')) LIKE ? OR LOWER(COALESCE(e.numero_documento, '')) LIKE ? OR LOWER(COALESCE(c.tipo_contrato, '')) LIKE ?)`);
     params.push(q, q, q, q, q);
   }
   if (filtros.estado) {
@@ -199,7 +206,7 @@ async function listar(filtros = {}) {
   if (filtros.vence_en_dias !== undefined && filtros.vence_en_dias !== '') {
     const dias = Number(filtros.vence_en_dias);
     if (!Number.isInteger(dias) || dias < 0 || dias > 3650) throw errorHttp(400, 'vence_en_dias no es válido.');
-    where.push(`c.estado = 'vigente' AND c.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`);
+    where.push(`c.estado = 'vigente' AND c.fecha_fin BETWEEN ${HOY_SQL} AND ${POSTGRES ? `(${HOY_SQL} + CAST(? AS integer))` : 'DATE_ADD(CURDATE(), INTERVAL ? DAY)'}`);
     params.push(dias);
   }
 
@@ -245,6 +252,8 @@ async function resumen() {
     FROM (
       SELECT ${ESTADO_VIGENCIA_SQL} AS estado_vigencia
       FROM contratos c
+      INNER JOIN empleados e ON e.id = c.empleado_id
+      WHERE LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema'
     ) x
     GROUP BY estado_vigencia
   `);
@@ -270,7 +279,7 @@ async function obtenerPorId(id, connection = pool) {
     INNER JOIN areas ar ON ar.id = e.area_id
     INNER JOIN cargos ca ON ca.id = e.cargo_id
     LEFT JOIN documentos_empleado de ON de.id = c.documento_empleado_id
-    WHERE c.id = ? LIMIT 1
+    WHERE c.id = ? AND LOWER(COALESCE(e.tipo_vinculo,'')) <> 'sistema' LIMIT 1
   `, [contratoId]);
   if (!rows.length) throw errorHttp(404, 'Contrato no encontrado.');
   return rows[0];
@@ -300,7 +309,7 @@ async function crear(body, usuarioId) {
     return obtenerPorId(result.insertId);
   } catch (error) {
     await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') throw errorHttp(409, 'Ya existe un contrato con ese código.');
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) throw errorHttp(409, 'Ya existe un contrato con ese código.');
     throw error;
   } finally {
     connection.release();
@@ -332,7 +341,7 @@ async function actualizar(id, body, usuarioId) {
     return obtenerPorId(contratoId);
   } catch (error) {
     await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') throw errorHttp(409, 'Ya existe un contrato con ese código.');
+    if (['ER_DUP_ENTRY','23505'].includes(error.code)) throw errorHttp(409, 'Ya existe un contrato con ese código.');
     throw error;
   } finally {
     connection.release();
@@ -364,5 +373,5 @@ module.exports = {
   actualizar,
   cambiarEstado,
   eliminar,
-  _internals: { normalizarPayload, ESTADO_VIGENCIA_SQL }
+  _internals: { normalizarPayload, ESTADO_VIGENCIA_SQL, validarSolapamiento }
 };

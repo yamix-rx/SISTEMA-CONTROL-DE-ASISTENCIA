@@ -20,6 +20,8 @@ CREATE TABLE empresas (
     razon_social VARCHAR(150) NOT NULL,
     ruc VARCHAR(11) NULL,
     direccion VARCHAR(255) NULL,
+    telefono VARCHAR(20) NULL,
+    email_contacto VARCHAR(120) NULL,
     logo_url VARCHAR(255) NULL,
     logo_data MEDIUMBLOB NULL,
     logo_iv VARBINARY(12) NULL,
@@ -204,7 +206,22 @@ CREATE TABLE plantillas_documentos (
     codigo VARCHAR(50) NOT NULL UNIQUE,
     titulo VARCHAR(150) NOT NULL,
     cuerpo_html LONGTEXT NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    logo_path VARCHAR(100) NULL,
+    logo_mime VARCHAR(40) NULL,
+    logo_nombre VARCHAR(200) NULL
+);
+
+CREATE TABLE logos_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    ruta_archivo VARCHAR(100) NOT NULL UNIQUE,
+    mime_type VARCHAR(40) NOT NULL,
+    tamano_bytes INT UNSIGNED NOT NULL,
+    creado_por_usuario_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_logos_documentos_nombre (nombre, id),
+    FOREIGN KEY (creado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 -- ==========================================================

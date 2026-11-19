@@ -1,0 +1,14 @@
+{
+  "name": "sbss-supabase-bootstrap",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Instalación inicial aislada de una base PostgreSQL nueva sin datos de demostración",
+  "scripts": {
+    "instalar": "node instalar-admin.js"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2"
+  }
+}

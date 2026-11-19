@@ -49,6 +49,7 @@ function filasPanel(sql, params) {
 }
 
 const pool = {
+  async beginRequestTransaction() { return { run: callback => callback(), complete: async () => {} }; },
   async query(sql, params = []) {
     consultas.push({ sql, params });
     if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
@@ -71,7 +72,15 @@ const pool = {
       if (esquemaFalla && /de.observacion/.test(sql)) throw Object.assign(new Error('Fixture missing column'), { code: 'ER_BAD_FIELD_ERROR' });
       return [filasPanel(sql, params)];
     }
-    if (/FROM documentos_empleado WHERE id/.test(sql)) return [registros.filter(d => d.id === params[0] && (!/AND empleado_id = \?/.test(sql) || d.empleado_id === params[1]))];
+    if (sql.includes('SELECT id, ruta_archivo, nombre_archivo, estado FROM documentos_empleado WHERE empleado_id = ? AND tipo_documento_id = ? ORDER BY id DESC')) {
+      return [registros.filter(d => d.empleado_id === params[0] && d.tipo_documento_id === params[1]).sort((a,b)=>b.id-a.id)];
+    }
+    if (sql.includes('DELETE FROM documentos_empleado WHERE empleado_id = ? AND tipo_documento_id = ?')) {
+      const eliminados = registros.filter(d => d.empleado_id === params[0] && d.tipo_documento_id === params[1]);
+      for (const d of eliminados) registros.splice(registros.indexOf(d), 1);
+      return [{ affectedRows: eliminados.length }];
+    }
+    if (/FROM documentos_empleado de INNER JOIN empleados e/.test(sql)) return [registros.filter(d => d.id === params[0] && (!/AND de\.empleado_id = \?/.test(sql) || d.empleado_id === params[1]))];
     if (/SELECT id FROM empleados/.test(sql)) return [empleados.filter(e => e.id === params[0])];
     if (/SELECT id FROM tipo_documentos/.test(sql)) return [tipos.filter(t => t.id === params[0])];
     if (/FROM empleados e/.test(sql)) return [empleados];
@@ -122,7 +131,7 @@ function carga(extra = {}) {
 }
 
 test('Documentos exige sesión válida y rechaza colaboradores en todas las operaciones', async () => {
-  for (const [method, ruta] of [['GET', ''], ['GET', '/catalogos'], ['POST', ''], ['GET', '/1/archivo'], ['GET', '/1/descargar'], ['PATCH', '/1/revision']]) {
+  for (const [method, ruta] of [['GET', ''], ['GET', '/catalogos'], ['POST', ''], ['GET', '/1/archivo'], ['GET', '/1/descargar'], ['PATCH', '/1/revision'], ['DELETE', '/1']]) {
     const options = { method, ...(method !== 'GET' ? { body: {} } : {}) };
     assert.equal((await request(ruta, { ...options, usuario: null })).status, 401);
     assert.equal((await request(ruta, { ...options, usuario: 3, claims: { rol: ROLES.ADMIN } })).status, 403);
@@ -347,10 +356,36 @@ test('colaborador puede abrir y descargar sus archivos; IDs ajenos devuelven 404
     assert.equal((await request(`/mios/3/${ruta}?empleado_id=102`, { usuario: 3 })).status, 404);
     assert.equal((await request(`/mios/${id}/${ruta}`, { usuario: null })).status, 401);
   }
-  const lecturas = consultas.filter(q => /FROM documentos_empleado WHERE id.*AND empleado_id/.test(q.sql));
+  const lecturas = consultas.filter(q => /FROM documentos_empleado de INNER JOIN empleados e.*WHERE de\.id.*AND de\.empleado_id/.test(q.sql));
   assert.ok(lecturas.length >= 4);
   assert.ok(lecturas.every(q => q.params[1] === 101));
   assert.equal((await request('/mios/3/descargar', { usuario: 2 })).status, 403);
   assert.equal((await request('/3/descargar', { usuario: 3 })).status, 403);
   assert.equal((await request('', { usuario: 3 })).status, 403);
+});
+
+
+test('eliminar el documento vigente elimina todas las versiones, el archivo privado y restablece Sin entregar', async () => {
+  const subida = await request('', { usuario: 2, method: 'POST', body: carga() });
+  assert.equal(subida.status, 201);
+  const documento = registros.find(r => r.id === subida.body.documento_id);
+  const ruta = archivos.resolverRutaPrivada(documento.ruta_archivo);
+  await fs.stat(ruta);
+  const eliminacion = await request('/' + documento.id, { usuario: 2, method: 'DELETE' });
+  assert.equal(eliminacion.status, 200, JSON.stringify(eliminacion.body));
+  assert.equal(eliminacion.body.deletedCount, 3);
+  assert.equal(eliminacion.body.cleanupFailed, false);
+  assert.equal(registros.filter(r => r.empleado_id === 101 && r.tipo_documento_id === 1).length, 0);
+  await assert.rejects(fs.stat(ruta), { code: 'ENOENT' });
+  const listado = await request('?empleado_id=101&tipo_documento_id=1');
+  assert.equal(listado.body.documentos[0].documento_id, null);
+  assert.equal(listado.body.documentos[0].estado, 'sin_entregar');
+  assert.equal(listado.body.resumen.sin_entregar, 1);
+});
+
+test('rechaza eliminaciones de versiones antiguas y documentos inexistentes', async () => {
+  assert.equal((await request('/1', { usuario: 3, method: 'DELETE' })).status, 403);
+  assert.equal((await request('/999', { usuario: 2, method: 'DELETE' })).status, 404);
+  assert.equal((await request('/1', { usuario: 2, method: 'DELETE' })).status, 409);
+  assert.equal(registros.length, 5);
 });

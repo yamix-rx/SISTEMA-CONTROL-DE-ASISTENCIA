@@ -21,7 +21,7 @@
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
     listRevision: 0, previewRevision: 0, previewUrl: null,
     listController: null, previewController: null, loading: false,
-    uploading: false, reviewing: false, generating: false
+    uploading: false, reviewing: false, deleting: false, generating: false, uploadingLogo: false
   };
 
   function node(tag, className, value) {
@@ -114,6 +114,67 @@
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', abortFromCaller);
     }
+  }
+
+
+  // Historial servidor: no se almacena ninguna copia de los PDF en localStorage.
+  async function loadRecentGenerated() {
+    const status=$('estadoGenerados');
+    const table=$('tablaGenerados');
+    const update=$('btnActualizarGenerados');
+    update.disabled=true;
+    status.hidden=false;
+    status.textContent='Cargando los documentos guardados…';
+    table.hidden=true;
+    try {
+      const result=await request('/documentos/generados/recientes');
+      if(!Array.isArray(result.documentos))throw new Error('El historial tiene un formato inválido.');
+      const rows=result.documentos;
+      const fragment=document.createDocumentFragment();
+      rows.forEach(item=>{
+        const tr=node('tr');
+        const type=node('td','recent-document');
+        type.append(node('strong','',item.tipo_nombre),
+          node('small','',item.nombre_archivo));
+        const person=node('td','',item.colaborador);
+        const company=node('td','',item.empresa);
+        const date=node('td','date-cell',displayDate(item.created_at));
+        const actions=node('td','actions-cell');
+        const button=actionButton('Descargar de nuevo '+item.tipo_nombre,'download',
+          ()=>downloadRecentGenerated(item,button),'button button-outline');
+        button.append(node('span','',' Descargar'));
+        actions.append(button);
+        tr.append(type,person,company,date,actions);
+        fragment.append(tr);
+      });
+      $('filasGenerados').replaceChildren(fragment);
+      status.hidden=rows.length>0;
+      status.textContent=rows.length ? '' : 'Todavía no hay documentos generados. Cuando abras la vista previa de un PDF, se guardará aquí automáticamente.';
+      table.hidden=!rows.length;
+    }catch(error){
+      status.hidden=false;
+      status.textContent=friendlyError(error)+' Pulsa Actualizar para reintentar.';
+    }finally{update.disabled=false;}
+  }
+
+  async function downloadRecentGenerated(item,button) {
+    if(button.disabled)return;
+    button.disabled=true;
+    try {
+      // El servidor comprueba el rol y devuelve un enlace privado de 60 segundos.
+      const result=await request('/documentos/generados/'+encodeURIComponent(item.id)+'/descarga');
+      const signed=new URL(result.url);
+      if(signed.protocol!=='https:' || !signed.hostname.endsWith('.supabase.co')
+          || !signed.pathname.includes('/storage/v1/object/sign/sbss-documentos/'))
+        throw new Error('El enlace de descarga no es válido.');
+      const anchor=node('a');
+      anchor.href=signed.href;
+      anchor.rel='noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }catch(error){notify('No se pudo descargar el documento guardado: '+friendlyError(error),true);}
+    finally{button.disabled=false;}
   }
 
   function setListStatus(message, error = false) {
@@ -282,6 +343,11 @@
         upload.appendChild(node('span', '', 'Subir'));
         actions.appendChild(upload);
       }
+      if (row.documento_id) {
+        const remove = actionButton('Eliminar ' + row.tipo_documento + ' de ' + row.colaborador, 'trash', event => deleteDocument(row, event.currentTarget), 'icon-button danger-icon-button');
+        remove.dataset.action = 'eliminar';
+        actions.appendChild(remove);
+      }
       tr.append(person, doc, date, status, actions);
       fragment.appendChild(tr);
     });
@@ -304,6 +370,7 @@
     $('vistaDetalle').hidden = true;
     $('vistaVacia').hidden = false;
     $('btnCerrarVista').hidden = true;
+    $('btnEliminarDocumento').hidden = true;
     $('observacion').value = '';
     document.querySelectorAll('#filasDocumentos tr').forEach(tr => tr.classList.remove('selected'));
     if (restoreFocus && previous) {
@@ -331,8 +398,12 @@
     $('btnDescargar').hidden = !row.documento_id || row.archivo_disponible===false;
     $('revisionCampos').hidden = !row.documento_id || row.archivo_disponible===false;
     $('btnNuevaVersion').replaceChildren(icon('upload'), document.createTextNode(row.documento_id ? 'Subir nueva versión' : 'Subir documento'));
-    $('btnObservar').disabled = state.reviewing;
-    $('btnValidar').disabled = state.reviewing;
+    $('btnEliminarDocumento').hidden = !row.documento_id;
+    $('btnEliminarDocumento').disabled = state.deleting;
+    $('btnObservar').disabled = state.reviewing || state.deleting;
+    $('btnValidar').disabled = state.reviewing || state.deleting;
+    $('btnNuevaVersion').disabled = state.deleting;
+    $('btnDescargar').disabled = state.deleting;
     document.querySelectorAll('#filasDocumentos tr').forEach(tr => tr.classList.toggle('selected', tr.dataset.clave === row.clave));
     if (focus) {
       $('panelVista').focus({ preventScroll: true });
@@ -452,10 +523,25 @@
     setDialogBusy('modalSubir', true);
     $('btnGuardarArchivo').textContent = 'Guardando…';
     try {
-      const contenido = await readFileBase64(file);
-      const data = await request('/documentos', {
+      const mimeByExtension = {
+        pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      };
+      const extension = file.name.split('.').pop().toLowerCase();
+      const mime = mimeByExtension[extension];
+      const autorizacion = await request('/documentos/preparar-subida', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empleado_id: empleadoId, tipo_documento_id: tipoId, nombre_archivo: file.name, contenido_base64: contenido })
+        body: JSON.stringify({empleado_id:empleadoId,tipo_documento_id:tipoId,
+          nombre_archivo:file.name,mime_type:mime,tamano:file.size})
+      });
+      // El archivo viaja directamente a Supabase: no atraviesa el límite de 4.5 MB de Vercel.
+      const subida = await fetch(autorizacion.url, {
+        method:'PUT', headers:{'Content-Type':mime}, body:file, redirect:'error'
+      });
+      if(!subida.ok)throw new Error('No se pudo transferir el archivo al almacenamiento privado.');
+      const data = await request('/documentos/confirmar-subida', {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ticket:autorizacion.ticket})
       });
       $('modalSubir').close();
       notify(data.mensaje || 'Documento guardado. Quedó pendiente de revisión.');
@@ -480,6 +566,35 @@
         delete element.dataset.previousDisabled;
       }
     });
+  }
+
+  async function deleteDocument(row, button = null) {
+    if (!row || !row.documento_id || state.deleting) return;
+    const confirmar = window.confirm('¿Eliminar ' + row.tipo_documento + ' de ' + row.colaborador + '?\n\nSe eliminarán todas las versiones de este requisito y sus archivos almacenados. El documento volverá a figurar como “Sin entregar” y podrá subirse nuevamente.');
+    if (!confirmar) return;
+    state.deleting = true;
+    if (button) button.disabled = true;
+    $('btnEliminarDocumento').disabled = true;
+    $('btnObservar').disabled = true;
+    $('btnValidar').disabled = true;
+    $('btnNuevaVersion').disabled = true;
+    try {
+      const data = await request('/documentos/' + row.documento_id, { method: 'DELETE' });
+      $('fEstado').value = '';
+      state.page = 1;
+      await loadDocuments({ preserveSelection: false });
+      notify(data.cleanupFailed ? 'El registro fue eliminado, pero no se pudo retirar uno o más archivos del almacenamiento privado. Contacte al administrador.' : (data.mensaje || 'Documento eliminado. El requisito vuelve a Sin entregar.'), Boolean(data.cleanupFailed));
+    } catch (error) { notify(friendlyError(error), true); }
+    finally {
+      state.deleting = false;
+      if (state.selected && state.selected.documento_id) {
+        $('btnEliminarDocumento').disabled = false;
+        $('btnObservar').disabled = state.reviewing;
+        $('btnValidar').disabled = state.reviewing;
+        $('btnNuevaVersion').disabled = false;
+        $('btnDescargar').disabled = false;
+      }
+    }
   }
 
   async function reviewDocument(estado) {
@@ -517,7 +632,7 @@
       const modelos = (catalogs.modelos || []).filter(model => GENERATION_TYPES.has(model.codigo));
       const templateCodes = new Set([...GENERATION_TYPES, ...modelos.map(model => model.id)]);
       state.generationCatalogs = {
-        ...catalogs, modelos,
+        ...catalogs, modelos, logos: Array.isArray(catalogs.logos) ? catalogs.logos : [],
         plantillas: catalogs.plantillas.filter(template => templateCodes.has(template.codigo))
       };
     }
@@ -751,6 +866,8 @@
         tipo_documento_nombre: documento.tipo_documento_nombre || $('generarTipo').selectedOptions[0]?.textContent || documento.titulo,
         papel: documento.papel || 'A4 · 210 × 297 mm'
       });
+      // La vista previa ya se archivó en Supabase. Refrescar sin cerrar el PDF.
+      loadRecentGenerated();
     } catch (error) { formError('errorGenerar', friendlyError(error)); }
     finally {
       state.generating = false;
@@ -847,10 +964,29 @@
     finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
   }
 
+  function fillTemplateLogos(selectedId = '') {
+    const select = $('plantillaLogo');
+    const placeholder = node('option', '', 'Usar membrete predeterminado de empresa/modelo');
+    placeholder.value = '';
+    const options = [placeholder, ...(state.generationCatalogs?.logos || []).map(logo => {
+      const option = node('option', '', logo.nombre);
+      option.value = String(logo.id);
+      return option;
+    })];
+    select.replaceChildren(...options);
+    select.value = selectedId ? String(selectedId) : '';
+  }
+
   function fillTemplateEditor() {
     const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
     $('plantillaTitulo').value = template?.titulo || '';
     $('plantillaCuerpo').value = template?.cuerpo || '';
+    fillTemplateLogos(template?.logo_id || '');
+    $('plantillaLogoNombre').value = '';
+    $('plantillaLogoArchivo').value = '';
+    $('estadoLogoPlantilla').textContent = state.generationCatalogs?.logos?.length
+      ? 'Biblioteca disponible: selecciona un logo existente o sube uno nuevo.'
+      : 'Todavía no hay logos guardados. Sube una imagen PNG o JPG para crear la biblioteca.';
     formError('errorPlantilla');
   }
 
@@ -877,13 +1013,50 @@
     finally { setDialogBusy('modalPlantillas', false); }
   }
 
+  async function uploadTemplateLogo() {
+    if (state.uploadingLogo) return;
+    const file = $('plantillaLogoArchivo').files[0];
+    if (!file) { formError('errorPlantilla', 'Selecciona primero una imagen PNG o JPG.'); return; }
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      formError('errorPlantilla', 'El logo debe ser una imagen PNG o JPG.');
+      return;
+    }
+    if (!file.size || file.size > 2 * 1024 * 1024) {
+      formError('errorPlantilla', 'El logo debe tener contenido y pesar como máximo 2 MB.');
+      return;
+    }
+    state.uploadingLogo = true;
+    const boton = $('btnSubirLogo');
+    boton.disabled = true;
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const form = new FormData();
+      form.append('nombre', $('plantillaLogoNombre').value.trim());
+      form.append('logo', file, file.name);
+      const { logo } = await request('/documentos/logos', { method: 'POST', body: form });
+      state.generationCatalogs.logos = [...(state.generationCatalogs.logos || []), logo]
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      fillTemplateLogos(logo.id);
+      $('plantillaLogoNombre').value = '';
+      $('plantillaLogoArchivo').value = '';
+      $('estadoLogoPlantilla').textContent = 'Logo guardado en la biblioteca y seleccionado. Guarda la plantilla para aplicar el cambio.';
+    } catch (error) {
+      formError('errorPlantilla', friendlyError(error));
+    } finally {
+      state.uploadingLogo = false;
+      setDialogBusy('modalPlantillas', false);
+      boton.disabled = false;
+    }
+  }
+
   async function saveTemplate(event) {
     event.preventDefault();
-    if (state.savingTemplate) return;
+    if (state.savingTemplate || state.uploadingLogo) return;
     state.savingTemplate = true;
     formError('errorPlantilla');
     const codigo = $('plantillaCodigo').value;
-    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value };
+    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value, logo_id: $('plantillaLogo').value || null };
     setDialogBusy('modalPlantillas', true);
     try {
       const { plantilla } = await request('/documentos/plantillas/' + encodeURIComponent(codigo), {
@@ -929,6 +1102,7 @@
     $('btnSiguiente').addEventListener('click', () => { if (state.page * state.limit < state.total && !state.loading) { state.page++; loadDocuments({ preserveSelection: false }); } });
     $('btnReintentar').addEventListener('click', () => loadDocuments());
     $('btnActualizarLista').addEventListener('click', () => loadDocuments());
+    $('btnActualizarGenerados').addEventListener('click',loadRecentGenerated);
     $('btnCerrarVista').addEventListener('click', () => clearPreview());
     $('btnAbrirVistaCompleta').addEventListener('click', () => {
       if (!state.previewBlob || !state.selected) return;
@@ -941,6 +1115,7 @@
     $('btnDescargar').addEventListener('click', event => downloadFile(state.selected, event.currentTarget));
     $('btnSubir').addEventListener('click', () => openUpload());
     $('btnNuevaVersion').addEventListener('click', () => openUpload(state.selected));
+    $('btnEliminarDocumento').addEventListener('click', event => deleteDocument(state.selected, event.currentTarget));
     $('formSubir').addEventListener('submit', submitUpload);
     $('btnObservar').addEventListener('click', () => reviewDocument('rechazado'));
     $('btnValidar').addEventListener('click', () => reviewDocument('validado'));
@@ -985,8 +1160,9 @@
     $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
     $('btnPlantillas').addEventListener('click', openTemplateEditor);
     $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('btnSubirLogo').addEventListener('click', uploadTemplateLogo);
     $('formPlantilla').addEventListener('submit', saveTemplate);
-    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate || state.uploadingLogo) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
@@ -1015,6 +1191,7 @@
     if (Object.hasOwn(STATES, initialState)) $('fEstado').value = initialState;
     setCatalogButtons();
     await loadDocuments();
+    await loadRecentGenerated();
     const initialTemplate = new URLSearchParams(location.search).get('generar');
     if ((initialTemplate || generationView) && state.catalogs) await openGenerate(initialTemplate || 'aceptacion');
   }

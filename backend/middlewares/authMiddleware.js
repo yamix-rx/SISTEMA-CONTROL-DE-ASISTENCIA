@@ -25,6 +25,15 @@ exports.verificarToken = async (req, res, next) => {
     if (!acceso) {
       return res.status(403).json({ ok: false, mensaje: 'Su rol no tiene acceso habilitado. Contacte al administrador.' });
     }
+    // Una clave inicial temporal no habilita ninguna función del sistema.
+    // Solo permite cambiar la contraseña mediante la ruta de rotación.
+    if (Boolean(usuario.debe_cambiar_clave) && !(decoded.provisional === true
+        && req.originalUrl?.split('?')[0] === '/api/auth/cambiar-clave-inicial')) {
+      return res.status(403).json({ ok: false, mensaje: 'Debe establecer una contraseña nueva antes de utilizar el sistema.' });
+    }
+    if (decoded.provisional === true && !Boolean(usuario.debe_cambiar_clave)) {
+      return res.status(401).json({ ok: false, mensaje: 'El acceso temporal ha caducado.' });
+    }
     req.usuario = usuarioPublico(usuario);
     req.acceso = acceso;
     return next();

@@ -9,6 +9,7 @@ const asistenciaRoutes = require('./routes/asistenciaRoutes');
 const empresaRoutes = require('./routes/empresaRoutes'); 
 const reporteRoutes = require('./routes/reporteRoutes');
 const personalRoutes = require('./routes/personalRoutes'); 
+const practicanteRoutes = require('./routes/practicanteRoutes');
 const horarioRoutes = require('./routes/horarioRoutes');
 const miPanelRoutes = require('./routes/miPanelRoutes');
 const documentoRoutes = require('./routes/documentoRoutes');
@@ -19,8 +20,10 @@ const administracionRoutes = require('./routes/administracionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+if (process.env.VERCEL) app.set('trust proxy', 1);
 
-app.use(cors());
+// Vercel sirve frontend y API en el mismo origen; no abrir CORS a sitios externos.
+if (!process.env.VERCEL) app.use(cors());
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
   res.set('Referrer-Policy', 'same-origin');
@@ -41,6 +44,7 @@ app.use('/api/administracion', administracionRoutes);
 app.use('/api/empresas', empresaRoutes);
 app.use('/api/reportes', reporteRoutes);
 app.use('/api/personal', personalRoutes); 
+app.use('/api/practicantes', practicanteRoutes);
 app.use('/api/horarios', horarioRoutes);
 app.use('/api/mi-panel', miPanelRoutes);
 app.use('/api/contratos', contratoRoutes);

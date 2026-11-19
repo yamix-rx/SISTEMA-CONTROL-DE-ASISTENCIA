@@ -1,5 +1,6 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 
 // Membretes extraídos de los modelos proporcionados por el usuario.
 const MEMBRETES = Object.freeze({
@@ -49,7 +50,22 @@ function generarPdfFormal(documento) {
         doc.text(valor, margen, doc.y, settings);
       };
       const membrete = Object.hasOwn(MEMBRETES, documento.logo || '') ? MEMBRETES[documento.logo] : null;
-      if (carta && membrete) {
+      if (documento.logo_personalizado) {
+        if (carta && membrete) {
+          const caja = { x: membrete.banda ? 0 : margen, y: membrete.banda ? 0 : 30,
+            width: membrete.ancho, height: membrete.alto };
+          dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, {
+            horizontal: membrete.banda ? 'center' : 'left',
+            vertical: membrete.banda ? 'center' : 'top'
+          });
+          // Conserva el espacio reservado para el membrete original.
+          doc.y = membrete.banda ? 82 : Math.max(110, 42 + membrete.alto);
+        } else {
+          const caja = { x: (doc.page.width - 230) / 2, y: 18, width: 230, height: 58 };
+          const logo = dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, { horizontal: 'center' });
+          doc.y = Math.max(doc.y, 18 + logo.height + 16);
+        }
+      } else if (carta && membrete) {
         doc.image(path.join(__dirname, '../assets/documentos', documento.logo + '.png'), membrete.banda ? 0 : margen,
           membrete.banda ? 0 : 30, { width: membrete.ancho, height: membrete.alto });
         doc.y = membrete.banda ? 82 : Math.max(110, 42 + membrete.alto);

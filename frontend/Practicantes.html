@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBSS · Listado Practicantes</title>
+  <link rel="stylesheet" href="css/session.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/practicantes.css">
+  <script src="js/navigation.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/sidebar.js" defer></script>
+  <script src="js/practicantes.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5L2 9Zm4 2v6c3 3 9 3 12 0v-6M22 9v7"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 17.9 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+  </defs></svg>
+
+  <header class="sbss-header module-header">
+    <div class="sbss-brand">SBSS</div><span class="header-context"></span>
+    <div class="user-details"><strong id="nombreUsuarioSesion">Usuario</strong><span id="rolUsuarioSesion"></span></div>
+    <span class="avatar" id="avatarLetra">U</span>
+    <button class="logout-button" id="btnCerrarSesion" type="button">Salir</button>
+  </header>
+
+  <div class="sbss-navigation-layout">
+    <button id="btnAbrirSidebar" class="sbss-sidebar-open hidden" type="button" aria-label="Mostrar menú lateral"></button>
+    <aside id="sidebarMenu" class="sbss-sidebar" aria-label="Menú de módulos"></aside>
+
+    <main class="module-main" id="contenido">
+      <section class="page-heading">
+        <div class="heading-copy">
+          <span class="title-icon"><svg class="icon"><use href="#i-cap"/></svg></span>
+          <div><h1>Listado Practicantes</h1><p>Consulta todos los practicantes, su avance de horas y el vencimiento de sus convenios.</p></div>
+        </div>
+      </section>
+
+      <div id="mensajePracticantes" class="notice" hidden role="status"></div>
+
+      <section class="filters panel" aria-label="Filtros de practicantes">
+        <label class="search-field">Buscar
+          <span class="search-box"><svg class="icon"><use href="#i-search"/></svg><input id="buscarPracticante" type="search" placeholder="Nombre, documento, carrera o institución..."></span>
+        </label>
+        <label>Empresa<select id="filtroEmpresaPrac"><option value="">Todas las empresas</option></select></label>
+        <label>Estado<select id="filtroEstadoPrac"><option value="">Todos los estados</option></select></label>
+        <label>Avance de horas<select id="filtroAvancePrac">
+          <option value="">Todos</option><option value="en_curso">Menos del 80 %</option>
+          <option value="por_completar">Desde el 80 %</option><option value="completado">Meta completada</option>
+        </select></label>
+        <label>Convenio<select id="filtroConvenioPrac">
+          <option value="">Todos</option><option value="por_vencer">Vence en 30 días</option><option value="vencido">Vencido</option>
+        </select></label>
+        <div class="filter-actions"><button class="button button-primary" id="btnBuscarPrac" type="button"><svg class="icon"><use href="#i-search"/></svg>Buscar</button><button class="button button-outline" id="btnLimpiarPrac" type="button"><svg class="icon"><use href="#i-refresh"/></svg>Limpiar</button></div>
+      </section>
+
+      <section class="summary-grid" aria-label="Resumen de practicantes">
+        <button class="summary-card tone-blue" data-resumen-avance="" data-resumen-convenio="" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-cap"/></svg></span><span><small>Total de practicantes</small><strong id="pracTotal">0</strong></span></button>
+        <button class="summary-card tone-green" data-resumen-avance="completado" data-resumen-convenio="" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-check"/></svg></span><span><small>Meta de horas completada</small><strong id="pracCompletados">0</strong></span></button>
+        <button class="summary-card tone-amber" data-resumen-avance="por_completar" data-resumen-convenio="" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-clock"/></svg></span><span><small>Próximos a completar (≥ 80 %)</small><strong id="pracPorCompletar">0</strong></span></button>
+        <button class="summary-card tone-violet" data-resumen-avance="" data-resumen-convenio="por_vencer" type="button"><span class="summary-icon"><svg class="icon"><use href="#i-calendar"/></svg></span><span><small>Convenios por vencer (30 días)</small><strong id="pracConvenios">0</strong></span></button>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="panel-heading"><div><h2>Practicantes registrados</h2><p id="contadorPracticantes">Cargando...</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Practicante</th><th>Empresa / área</th><th>Carrera / institución</th><th>Horas</th><th>Avance</th><th>Convenio vence</th><th>Estado</th><th>Ficha</th></tr></thead>
+            <tbody id="tablaPracticantes"><tr><td colspan="9" class="table-message">Cargando practicantes...</td></tr></tbody>
+          </table>
+        </div>
+        <footer class="pagination"><span id="textoPaginacionPrac">Mostrando 0 registros</span><div><button id="paginaAnteriorPrac" type="button" aria-label="Página anterior">‹</button><span id="paginasPracticantes"></span><button id="paginaSiguientePrac" type="button" aria-label="Página siguiente">›</button></div></footer>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -20,5 +20,6 @@ router.get('/:id/logo', empresaController.obtenerLogo);
 router.post('/', autorizarRoles(ROLES.ADMIN), empresaController.guardarEmpresa);
 router.post('/:id/logo', uploadLogo.single('logo'), autorizarRoles(ROLES.ADMIN), empresaController.subirLogo);
 router.patch('/:id/estado', autorizarRoles(ROLES.ADMIN), empresaController.cambiarEstado);
+router.delete('/:id', autorizarRoles(ROLES.ADMIN), empresaController.eliminarEmpresa);
 
 module.exports = router;
