@@ -1,6 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const PDFDocument = require('pdfkit');
+const { cajaLogoOriginal, dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 
 // Las dimensiones de los sellos no son las del membrete. La altura del logo
 // se obtiene de su imagen para conservar la proporción de cada empresa.
@@ -42,13 +43,21 @@ function generarPdfCarta(documento) {
       const espacio = height => { if (doc.y + height > doc.page.height - 45) doc.addPage(); };
       const marca = Object.hasOwn(MARCAS, documento.logo || '') ? MARCAS[documento.logo] : null;
       if (documento.logo_personalizado) {
-        const imagenLogo = doc.openImage(documento.logo_personalizado);
-        const escala = Math.min(Math.min(230, ancho) / imagenLogo.width, 58 / imagenLogo.height);
-        const anchoLogo = imagenLogo.width * escala;
-        const altoLogo = imagenLogo.height * escala;
-        const xLogo = (doc.page.width - anchoLogo) / 2;
-        doc.image(documento.logo_personalizado, xLogo, 18, { width: anchoLogo, height: altoLogo });
-        doc.y = Math.max(101, 18 + altoLogo + 12);
+        if (marca) {
+          const archivoLogo = path.join(__dirname, '../assets/documentos', documento.logo + '.png');
+          const anchoLogo = marca.banda ? doc.page.width : marca.width;
+          const caja = cajaLogoOriginal(doc, archivoLogo, { x: marca.x, y: marca.y, width: anchoLogo });
+          dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, {
+            horizontal: marca.banda ? 'center' : 'left',
+            vertical: marca.banda ? 'center' : 'top'
+          });
+          // El cuerpo conserva el mismo inicio que el membrete original.
+          doc.y = Math.max(marca.banda ? 82 : 96, marca.y + caja.height + 10);
+        } else {
+          const caja = { x: (doc.page.width - 230) / 2, y: 18, width: 230, height: 58 };
+          const logo = dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, { horizontal: 'center' });
+          doc.y = Math.max(101, 18 + logo.height + 12);
+        }
       } else if (marca) {
         const archivoLogo = path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
         const imagenLogo = doc.openImage(archivoLogo);
