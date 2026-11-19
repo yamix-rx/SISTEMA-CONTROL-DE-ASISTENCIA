@@ -52,8 +52,8 @@ function generarPdfAceptacion(documento) {
       const fecha = y => {
         if (fechaCabecera) doc.font(cursiva).fontSize(tamano).text(fechaCabecera, margen, y, { ...opciones, align: 'right' });
       };
-      doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
-        { width: formato.banda ? doc.page.width : formato.width });
+      const archivoLogo = documento.logo_personalizado || path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
+      doc.image(archivoLogo, formato.x, formato.y, { width: formato.banda ? doc.page.width : formato.width });
       let tituloY = formato.tituloY;
       if (nanas && fechaCabecera) {
         fecha(formato.fechaY);
