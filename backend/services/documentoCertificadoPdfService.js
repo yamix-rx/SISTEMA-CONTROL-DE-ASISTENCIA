@@ -6,15 +6,15 @@ const { dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 const FORMATOS = Object.freeze({
   // Coordenadas en puntos A4 del logo incrustado en cada fondo original.
   sbss: { titulo: 210, cuerpo: 292, margen: 85, derecha: 85, inferior: 125, firmaX: 355, fuente: 'Times-Roman',
-    logoCaja: { x: 58, y: 24, width: 155, height: 65, horizontal: 'left', vertical: 'center' } },
+    logoCaja: { x: 65, y: 34, width: 140, height: 60, horizontal: 'left', vertical: 'top' } },
   nanas: { titulo: 122, cuerpo: 174, margen: 72, derecha: 54, inferior: 110, fuente: 'Times-Roman',
-    logoCaja: { x: 438, y: 18, width: 130, height: 55, horizontal: 'right', vertical: 'center' } },
+    logoCaja: { x: 430, y: 28, width: 125, height: 45, horizontal: 'right', vertical: 'top' } },
   silsan: { titulo: 156, cuerpo: 215, margen: 85, derecha: 85, inferior: 135, fuente: 'Helvetica',
-    logoCaja: { x: 18, y: 28, width: 250, height: 95, horizontal: 'left', vertical: 'center' } },
+    logoCaja: { x: 23, y: 45, width: 235, height: 83, horizontal: 'left', vertical: 'top' } },
   camara: { titulo: 176, cuerpo: 236, margen: 85, derecha: 85, inferior: 125, fuente: 'Helvetica',
-    logoCaja: { x: 40, y: 28, width: 310, height: 100, horizontal: 'left', vertical: 'center' } },
+    logoCaja: { x: 46, y: 46, width: 290, height: 90, horizontal: 'left', vertical: 'top' } },
   ong: { titulo: 136, cuerpo: 180, margen: 94, derecha: 94, inferior: 40, horizontal: true, fuente: 'Times-Roman',
-    logoCaja: { x: 710, y: 10, width: 115, height: 115, horizontal: 'right', vertical: 'center' } }
+    logoCaja: { x: 710, y: 23, width: 100, height: 95, horizontal: 'right', vertical: 'top' } }
 });
 
 function generarPdfCertificado(documento) {
