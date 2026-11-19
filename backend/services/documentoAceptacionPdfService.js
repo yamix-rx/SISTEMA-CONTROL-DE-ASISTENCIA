@@ -52,9 +52,19 @@ function generarPdfAceptacion(documento) {
       const fecha = y => {
         if (fechaCabecera) doc.font(cursiva).fontSize(tamano).text(fechaCabecera, margen, y, { ...opciones, align: 'right' });
       };
-      doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
-        { width: formato.banda ? doc.page.width : formato.width });
       let tituloY = formato.tituloY;
+      if (documento.logo_personalizado) {
+        const imagenLogo = doc.openImage(documento.logo_personalizado);
+        const escala = Math.min(Math.min(240, doc.page.width - 108) / imagenLogo.width, 58 / imagenLogo.height);
+        const anchoLogo = imagenLogo.width * escala;
+        const altoLogo = imagenLogo.height * escala;
+        const xLogo = (doc.page.width - anchoLogo) / 2;
+        doc.image(documento.logo_personalizado, xLogo, 16, { width: anchoLogo, height: altoLogo });
+        tituloY = Math.max(tituloY, 16 + altoLogo + 14);
+      } else {
+        doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
+          { width: formato.banda ? doc.page.width : formato.width });
+      }
       if (nanas && fechaCabecera) {
         fecha(formato.fechaY);
         tituloY = Math.max(tituloY, doc.y + 10);
