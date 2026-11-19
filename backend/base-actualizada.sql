@@ -206,6 +206,9 @@ CREATE TABLE plantillas_documentos (
     codigo VARCHAR(50) NOT NULL UNIQUE,
     titulo VARCHAR(150) NOT NULL,
     cuerpo_html LONGTEXT NOT NULL,
+    logo_path VARCHAR(100) NULL,
+    logo_mime VARCHAR(40) NULL,
+    logo_nombre VARCHAR(200) NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
