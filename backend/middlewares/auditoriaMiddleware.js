@@ -7,7 +7,7 @@ const MODULOS = [
   ['/administracion/tipos-documento', 'tipo_documentos'], ['/administracion/tipos-permiso', 'tipo_permisos'],
   ['/administracion/usuarios', 'usuarios'], ['/administracion/areas', 'areas'],
   ['/administracion/cargos', 'cargos'], ['/documentos/plantillas', 'plantillas_documentos'],
-  ['/asistencias/permisos', 'permisos'], ['/personal', 'empleados'],
+  ['/documentos/logos', 'logos_documentos'], ['/asistencias/permisos', 'permisos'], ['/personal', 'empleados'],
   ['/asistencias', 'asistencias'], ['/empresas', 'empresas'], ['/horarios', 'horarios'],
   ['/documentos', 'documentos_empleado'], ['/contratos', 'contratos'], ['/capacitaciones', 'capacitaciones']
 ];
@@ -16,7 +16,10 @@ const idValido = value => Number.isSafeInteger(Number(value)) && Number(value) >
 
 async function leerRegistro(tabla, id) {
   if (!TABLAS.has(tabla) || !id) return null;
-  const [rows] = await pool.query(`SELECT * FROM \`${tabla}\` WHERE id = ? LIMIT 1`, [id]);
+  const consulta = tabla === 'logos_documentos'
+    ? 'SELECT id, nombre, mime_type, created_at FROM logos_documentos WHERE id = ? LIMIT 1'
+    : `SELECT * FROM \`${tabla}\` WHERE id = ? LIMIT 1`;
+  const [rows] = await pool.query(consulta, [id]);
   return rows[0] || null;
 }
 
