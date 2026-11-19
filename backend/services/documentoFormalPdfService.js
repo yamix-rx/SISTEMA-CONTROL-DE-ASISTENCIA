@@ -49,7 +49,15 @@ function generarPdfFormal(documento) {
         doc.text(valor, margen, doc.y, settings);
       };
       const membrete = Object.hasOwn(MEMBRETES, documento.logo || '') ? MEMBRETES[documento.logo] : null;
-      if (carta && membrete) {
+      if (documento.logo_personalizado) {
+        const imagenLogo = doc.openImage(documento.logo_personalizado);
+        const escala = Math.min(Math.min(230, ancho) / imagenLogo.width, 58 / imagenLogo.height);
+        const anchoLogo = imagenLogo.width * escala;
+        const altoLogo = imagenLogo.height * escala;
+        doc.image(documento.logo_personalizado, (doc.page.width - anchoLogo) / 2, 18,
+          { width: anchoLogo, height: altoLogo });
+        doc.y = Math.max(doc.y, 18 + altoLogo + 16);
+      } else if (carta && membrete) {
         doc.image(path.join(__dirname, '../assets/documentos', documento.logo + '.png'), membrete.banda ? 0 : margen,
           membrete.banda ? 0 : 30, { width: membrete.ancho, height: membrete.alto });
         doc.y = membrete.banda ? 82 : Math.max(110, 42 + membrete.alto);
