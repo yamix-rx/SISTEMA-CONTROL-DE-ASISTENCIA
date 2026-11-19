@@ -41,15 +41,22 @@ function generarPdfCarta(documento) {
       const tamano = documento.logo === 'nanas' ? 11 : 12;
       const espacio = height => { if (doc.y + height > doc.page.height - 45) doc.addPage(); };
       const marca = Object.hasOwn(MARCAS, documento.logo || '') ? MARCAS[documento.logo] : null;
-      if (marca || documento.logo_personalizado) {
-        const archivoLogo = documento.logo_personalizado || path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
-        const imagenLogo = doc.openImage(archivoLogo);
-        const anchoLogo = marca?.banda ? doc.page.width : Math.min(marca?.width || 160, ancho);
-        const xLogo = marca?.banda ? 0 : marca?.x ?? margen;
-        const yLogo = marca?.banda ? 0 : marca?.y ?? 24;
+      if (documento.logo_personalizado) {
+        const imagenLogo = doc.openImage(documento.logo_personalizado);
+        const maxAncho = marca?.banda ? doc.page.width : Math.min(marca?.width || 160, ancho);
+        const anchoLogo = Math.min(maxAncho, 60 * imagenLogo.width / imagenLogo.height);
         const altoLogo = anchoLogo * imagenLogo.height / imagenLogo.width;
-        doc.image(archivoLogo, xLogo, yLogo, { width: anchoLogo });
+        const xLogo = marca?.banda ? (doc.page.width - anchoLogo) / 2 : marca?.x ?? margen;
+        const yLogo = marca?.banda ? 12 : marca?.y ?? 24;
+        doc.image(documento.logo_personalizado, xLogo, yLogo, { width: anchoLogo });
         doc.y = Math.max(marca?.banda ? 82 : 96, yLogo + altoLogo + 10);
+      } else if (marca) {
+        const archivoLogo = path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
+        const imagenLogo = doc.openImage(archivoLogo);
+        const anchoLogo = marca.banda ? doc.page.width : marca.width;
+        const altoLogo = anchoLogo * imagenLogo.height / imagenLogo.width;
+        doc.image(archivoLogo, marca.x, marca.y, { width: anchoLogo });
+        doc.y = Math.max(marca.banda ? 82 : 96, marca.y + altoLogo + 10);
       } else {
         doc.font(negrita).fontSize(14).text(documento.empresa, margen, 35, { width: ancho, align: 'left' });
         doc.y = Math.max(101, doc.y + 20);
