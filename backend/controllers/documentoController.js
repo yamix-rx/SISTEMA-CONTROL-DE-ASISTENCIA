@@ -2,13 +2,14 @@ const documentos = require('../services/documentoService');
 const subidas = require('../services/subidaDirectaService');
 const archivos = require('../services/documentoArchivoService');
 const generacion = require('../services/documentoGeneracionService');
+const logosDocumentos = require('../services/documentoLogoService');
 const { generarPdf } = require('../services/documentoPdfService');
 const generados = require('../services/documentosGeneradosService');
 
 function responderError(res, error) {
   if (res.headersSent) return;
   if (error.status) return res.status(error.status).json({ ok: false, mensaje: error.message });
-  if (['ER_BAD_FIELD_ERROR', 'ER_NO_SUCH_TABLE'].includes(error.code)) {
+  if (['ER_BAD_FIELD_ERROR', 'ER_NO_SUCH_TABLE', '42703', '42P01'].includes(error.code)) {
     return res.status(503).json({ ok: false, mensaje: 'Falta preparar la base de datos de Documentos. Ejecute npm run migrar:documentos desde la carpeta backend y compruebe la tabla plantillas_documentos del esquema base.' });
   }
   if (error.code === 'ER_NO_REFERENCED_ROW_2') {
@@ -92,6 +93,14 @@ exports.catalogosGeneracion = async (req, res) => {
   try { return res.json({ ok: true, ...await generacion.catalogos() }); }
   catch (error) { return responderError(res, error); }
 };
+exports.subirLogo = async (req, res) => {
+  try {
+    const logo = await logosDocumentos.guardar(req.file, req.body?.nombre, req.usuario.id);
+    res.locals.auditoria = { tabla: 'logos_documentos', registroId: logo.id, nuevos: logo };
+    return res.status(201).json({ ok: true, logo });
+  } catch (error) { return responderError(res, error); }
+};
+
 exports.guardarPlantilla = async (req, res) => {
   try {
     const plantilla = await generacion.guardarPlantilla(req.params.codigo, req.body || {});
@@ -106,7 +115,7 @@ exports.vistaGenerada = async (req, res) => {
 };
 exports.pdfGenerado = async (req, res) => {
   try {
-    const documento = await generacion.preparar(req.body || {});
+    const documento = await generacion.preparar(req.body || {}, { incluirLogo: true });
     const pdf=await generarPdf(documento);
     // Se archiva al abrir la vista previa, aunque el usuario cierre el navegador
     // sin pulsar Descargar. Jamás depende de localStorage ni de /tmp de Vercel.
