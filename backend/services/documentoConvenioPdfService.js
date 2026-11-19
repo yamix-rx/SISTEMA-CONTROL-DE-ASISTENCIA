@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const { dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 const { rutaFirma } = require('./documentoCartaPdfService');
 
 // Composición de los ocho modelos UPN: A4, Arial equivalente, títulos
@@ -20,20 +21,15 @@ function generarPdfConvenio(documento) {
     try {
       const ancho = doc.page.width - margen * 2;
       if (documento.logo_personalizado) {
-        const imagenLogo = doc.openImage(documento.logo_personalizado);
-        const escala = Math.min(Math.min(165, ancho) / imagenLogo.width, 48 / imagenLogo.height);
-        const anchoLogo = imagenLogo.width * escala;
-        const altoLogo = imagenLogo.height * escala;
-        const yLogo = 12;
+        const cajaLogo = { x: (doc.page.width - 165) / 2, y: 12, width: 165, height: 48 };
         const dibujarLogo = () => {
-          doc.image(documento.logo_personalizado, (doc.page.width - anchoLogo) / 2, yLogo,
-            { width: anchoLogo, height: altoLogo });
+          dibujarLogoEnCaja(doc, documento.logo_personalizado, cajaLogo, { horizontal: 'center', vertical: 'center' });
+          doc.on('pageAdded', dibujarLogo);
+          dibujarLogo();
+          // El logo no cambia el margen ni la posición del texto del convenio.
           doc.x = margen;
-          doc.y = Math.max(doc.y, yLogo + altoLogo + 16);
-        };
-        doc.page.margins.top = Math.max(doc.page.margins.top, yLogo + altoLogo + 16);
-        doc.on('pageAdded', dibujarLogo);
-        dibujarLogo();
+          doc.y = doc.page.margins.top;
+        }
       }
       const limite = () => doc.page.height - doc.page.margins.bottom;
       const nuevaPagina = () => { doc.addPage(); doc.x = margen; };
