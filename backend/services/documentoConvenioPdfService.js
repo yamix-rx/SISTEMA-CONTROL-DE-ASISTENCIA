@@ -1,5 +1,6 @@
 const PDFDocument = require('pdfkit');
 const { rutaFirma } = require('./documentoCartaPdfService');
+const { dibujarLogoPersonalizado } = require('./documentoLogoPdfService');
 
 // Composición de los ocho modelos UPN: A4, Arial equivalente, títulos
 // subrayados, cuadros blancos y firmas de estudiante/empresa en paralelo.
@@ -38,6 +39,10 @@ function generarPdfConvenio(documento) {
         doc.y += after;
       };
       const titulo = valor => texto(valor, { bold: true, size: 11.5, align: 'center', underline: true, after: 18, mantener: 55 });
+      if (Buffer.isBuffer(documento.logo_personalizado_buffer)) {
+        dibujarLogoPersonalizado(doc, documento, { x: margen, y: 12, maxWidth: ancho, maxHeight: 55 });
+        doc.y = Math.max(doc.y, 77);
+      }
 
       function tabla(filas, { cabecera = false, proporcion = 0.53, enfasisIzquierda = false } = {}) {
         const columnas = Math.max(...filas.map(fila => fila.length));
