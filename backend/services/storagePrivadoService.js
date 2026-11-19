@@ -56,6 +56,14 @@ async function existeObjeto(name){
   try{await request('HEAD','/object/authenticated/'+BUCKET+'/'+objectPath(name),{expect:'none'});return true;}
   catch(e){if(e.storageStatus===404)return false;throw e;}
 }
+async function obtenerObjeto(name){
+  const resp=await request('GET','/object/authenticated/'+BUCKET+'/'+objectPath(name),{expect:'response'});
+  const size=Number(resp.headers.get('content-length')||0);
+  if(size>5242880)throw Object.assign(new Error('Archivo demasiado grande'),{status:413});
+  const buffer=Buffer.from(await resp.arrayBuffer());
+  if(!buffer.length||buffer.length>5242880)throw Object.assign(new Error('Archivo inválido o demasiado grande'),{status:413});
+  return buffer;
+}
 async function urlDescarga(name,{download=false,filename='documento'}={}){
   const data=await request('POST','/object/sign/'+BUCKET+'/'+objectPath(name),{body:{expiresIn:60}});
   if(typeof data.signedURL!=='string'||!data.signedURL.startsWith('/object/sign/'))throw new Error('URL de descarga no disponible');
@@ -63,4 +71,4 @@ async function urlDescarga(name,{download=false,filename='documento'}={}){
   if(download)u.searchParams.set('download',String(filename).slice(0,200));
   return u.href;
 }
-module.exports={BUCKET,firmarSubida,verificarContenido,subirObjeto,eliminarObjeto,existeObjeto,urlDescarga};
+module.exports={BUCKET,firmarSubida,verificarContenido,subirObjeto,eliminarObjeto,existeObjeto,obtenerObjeto,urlDescarga};
