@@ -100,13 +100,58 @@ exports.guardarPlantilla = async (req, res) => {
   }
   catch (error) { return responderError(res, error); }
 };
+exports.logoPlantilla = async (req, res) => {
+  try {
+    const { buffer, mime_type } = await generacion.obtenerLogoPlantilla(req.params.codigo);
+    return res.set({
+      'Content-Type': mime_type, 'Content-Length': String(buffer.length),
+      'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store'
+    }).send(buffer);
+  } catch (error) { return responderError(res, error); }
+};
+exports.guardarLogoPlantilla = async (req, res) => {
+  try {
+    const resultado = await generacion.guardarLogoPlantilla(req.params.codigo, req.body || {});
+    const { logo_anterior_path, accion, ...plantilla } = resultado;
+    res.locals.auditoria = {
+      tabla: 'plantillas_documentos', registroId: plantilla.id, accion,
+      nuevos: { codigo: plantilla.codigo, logo_nombre: plantilla.logo_nombre, logo_personalizado: true }
+    };
+    if (logo_anterior_path) {
+      res.locals.afterCommit = async () => {
+        await generacion.eliminarObjetoLogo(logo_anterior_path);
+        return { cleanupFailed: false };
+      };
+    }
+    return res.json({ ok: true, plantilla });
+  } catch (error) { return responderError(res, error); }
+};
+exports.eliminarLogoPlantilla = async (req, res) => {
+  try {
+    const resultado = await generacion.eliminarLogoPlantilla(req.params.codigo);
+    const { logo_anterior_path, accion, ...plantilla } = resultado;
+    res.locals.auditoria = {
+      tabla: 'plantillas_documentos', registroId: plantilla.id, accion,
+      nuevos: { codigo: plantilla.codigo, logo_personalizado: false }
+    };
+    res.locals.afterCommit = async () => {
+      await generacion.eliminarObjetoLogo(logo_anterior_path);
+      return { cleanupFailed: false };
+    };
+    return res.json({ ok: true, plantilla });
+  } catch (error) { return responderError(res, error); }
+};
 exports.vistaGenerada = async (req, res) => {
-  try { return res.json({ ok: true, documento: await generacion.preparar(req.body || {}) }); }
-  catch (error) { return responderError(res, error); }
+  try {
+    const documento = await generacion.preparar(req.body || {});
+    const { logo_personalizado_path, logo_personalizado_mime, logo_personalizado_nombre, ...publico } = documento;
+    return res.json({ ok: true, documento: { ...publico, logo_personalizado: Boolean(logo_personalizado_path) } });
+  } catch (error) { return responderError(res, error); }
 };
 exports.pdfGenerado = async (req, res) => {
   try {
-    const documento = await generacion.preparar(req.body || {});
+    const preparado = await generacion.preparar(req.body || {});
+    const documento = await generacion.cargarLogoPersonalizado(preparado);
     const pdf=await generarPdf(documento);
     // Se archiva al abrir la vista previa, aunque el usuario cierre el navegador
     // sin pulsar Descargar. Jamás depende de localStorage ni de /tmp de Vercel.
