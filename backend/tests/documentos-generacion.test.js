@@ -43,6 +43,9 @@ const pool = { async query(sql, params = []) {
   if (/SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE id = \? LIMIT 1/.test(sql)) {
     return [[logos.get(Number(params[0]))].filter(Boolean)];
   }
+  if (/SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE ruta_archivo = \? LIMIT 1/.test(sql)) {
+    return [[...logos.values()].find(logo => logo.ruta_archivo === params[0])].filter(Boolean);
+  }
   if (/INSERT INTO logos_documentos/.test(sql)) {
     const id = logos.size + 1;
     logos.set(id, { id, nombre: params[0], ruta_archivo: params[1], mime_type: params[2],
@@ -192,28 +195,34 @@ test('sube logos a la biblioteca privada, los asigna a una plantilla y los inser
   assert.equal(objetos.size, 1);
 
   const logoId = subida.body.logo.id;
-  const plantilla = await request('/plantillas/aceptacion', { usuario: 2, method: 'PUT', body: {
-    titulo: 'Aceptación personalizada', cuerpo: 'Se acepta a {{trabajador}}.', logo_id: logoId
-  } });
-  assert.equal(plantilla.status, 200);
-  assert.equal(plantilla.body.plantilla.logo_id, logoId);
-  assert.equal(guardadas.get('aceptacion').logo_path, [...objetos.keys()][0]);
+  assert.equal(guardadas.size, 0);
+  for (const codigo of ['aceptacion', 'constancia_practicas', 'culminacion']) {
+    const plantilla = await request('/plantillas/' + codigo, { usuario: 2, method: 'PUT', body: {
+      titulo: 'Documento personalizado de {{empresa}}', cuerpo: 'Se emite para {{trabajador}}.', logo_id: logoId
+    } });
+    assert.equal(plantilla.status, 200);
+    assert.equal(plantilla.body.plantilla.logo_id, logoId);
+    assert.equal(guardadas.get(codigo).logo_path, [...objetos.keys()][0]);
+  }
 
   const catalogos = await request('/generacion/catalogos', { usuario: 2 });
   assert.equal(catalogos.status, 200);
   assert.equal(catalogos.body.logos[0].id, logoId);
   assert.equal(catalogos.body.plantillas.find(item => item.codigo === 'aceptacion').logo_id, logoId);
+  assert.equal(Object.hasOwn(catalogos.body.plantillas.find(item => item.codigo === 'aceptacion'), 'logo_path'), false);
 
-  const body = payload();
-  const preview = await request('/generar/vista-previa', { usuario: 2, method: 'POST', body });
-  assert.equal(preview.status, 200);
-  assert.equal(preview.body.documento.logo_personalizado, null);
-  const pdf = await request('/generar/pdf', { usuario: 2, method: 'POST', body: {
-    ...body, revision_plantilla: preview.body.documento.revision_plantilla
-  } });
-  assert.equal(pdf.status, 200);
-  assert.match(pdf.body.toString('ascii'), /\/Subtype \/Image/);
-  comprobarPdf(pdf.body);
+  for (const codigo of ['aceptacion', 'constancia_practicas', 'culminacion']) {
+    const body = payload({ codigo });
+    const preview = await request('/generar/vista-previa', { usuario: 2, method: 'POST', body });
+    assert.equal(preview.status, 200);
+    assert.equal(preview.body.documento.logo_personalizado, null);
+    const pdf = await request('/generar/pdf', { usuario: 2, method: 'POST', body: {
+      ...body, revision_plantilla: preview.body.documento.revision_plantilla
+    } });
+    assert.equal(pdf.status, 200);
+    assert.match(pdf.body.toString('ascii'), /\/Subtype \/Image/);
+    comprobarPdf(pdf.body);
+  }
 });
 
 test('rechaza logos no válidos y bloquea la biblioteca para colaboradores y cuentas anónimas', async () => {
