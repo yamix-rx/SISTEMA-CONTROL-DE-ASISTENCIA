@@ -80,7 +80,8 @@ async function catalogos() {
     pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre'),
     logosDocumentos.listar()
   ]);
-  return { plantillas: templates, empresas: empresas.map(empresa => ({ ...empresa,
+  const plantillasPublicas = templates.map(({ logo_path, ...plantilla }) => plantilla);
+  return { plantillas: plantillasPublicas, empresas: empresas.map(empresa => ({ ...empresa,
     empresa_modelo_clave: resolverEmpresa({ empresa: empresa.razon_social, ruc: empresa.ruc })?.clave || null })),
   areas, cargos, logos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
 }
@@ -92,7 +93,8 @@ async function guardarPlantilla(codigo, body) {
     const [actuales] = await pool.query('SELECT logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
     if (actuales[0]?.logo_path) logo = { ruta_archivo: actuales[0].logo_path, mime_type: actuales[0].logo_mime, nombre: actuales[0].logo_nombre };
   } else if (body.logo_id !== null && body.logo_id !== '') {
-    const logoId = Number(body.logo_id);
+    const logoId = typeof body.logo_id === 'number' ? body.logo_id
+      : typeof body.logo_id === 'string' && /^\\d+$/.test(body.logo_id) ? Number(body.logo_id) : NaN;
     if (!Number.isSafeInteger(logoId) || logoId <= 0) throw error('Seleccione un logo válido.');
     const [logos] = await pool.query('SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE id = ? LIMIT 1', [logoId]);
     if (!logos.length) throw error('El logo seleccionado ya no existe. Actualiza la biblioteca e inténtalo nuevamente.', 404);
@@ -109,7 +111,8 @@ async function guardarPlantilla(codigo, body) {
   const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
     [codigo, plantilla.titulo, plantilla.cuerpo, ...datosLogo]);
   const guardada = { ...plantilla, logo_path: datosLogo[0], logo_mime: datosLogo[1], logo_nombre: datosLogo[2], logo_id: Number(logo?.id) || null };
-  return { id: Number(result.insertId) || null, codigo, ...guardada, personalizada: true, revision: revision(guardada) };
+  const { logo_path, ...plantillaPublica } = guardada;
+  return { id: Number(result.insertId) || null, codigo, ...plantillaPublica, personalizada: true, revision: revision(guardada) };
 }
 function fechaValida(valor, nombre = 'La fecha de emisión') {
   if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw error(`${nombre} no es válida.`);
