@@ -10,7 +10,7 @@ function validar(body = {}) {
   const nombre = body.nombre;
   const mime_type = body.mime_type;
   const base64 = body.contenido_base64;
-  if (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 100 || /[\\u0000-\\u001f\\u007f]/.test(nombre)) {
+  if (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 100 || /[\u0000-\u001f\u007f]/.test(nombre)) {
     throw error('El nombre del logo es obligatorio y admite hasta 100 caracteres.');
   }
   if (!['image/png', 'image/jpeg'].includes(mime_type)) {
