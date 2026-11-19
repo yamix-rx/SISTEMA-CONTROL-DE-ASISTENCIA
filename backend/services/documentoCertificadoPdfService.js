@@ -1,5 +1,6 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { dibujarLogoCertificado } = require('./documentoLogoPdfService');
 
 // Fondos extraídos de los modelos, sin textos ni firmas del ejemplo.
 const FORMATOS = Object.freeze({
@@ -52,6 +53,7 @@ function generarPdfCertificado(documento) {
         const y = doc.y;
         let tituloY = formato.titulo;
         if (marca) doc.image(path.join(__dirname, '../assets/documentos/certificados', `${marca}.png`), 0, 0, { width: doc.page.width, height: doc.page.height });
+        if (Buffer.isBuffer(documento.logo_personalizado_buffer)) dibujarLogoCertificado(doc, documento, marca);
         if (lema) {
           doc.font(formato.fuente).fontSize(10).fillColor('#111111')
             .text(lema, formato.margen, formato.titulo - 45, { width: ancho, align: 'center' });
