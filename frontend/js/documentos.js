@@ -21,7 +21,8 @@
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
     listRevision: 0, previewRevision: 0, previewUrl: null,
     listController: null, previewController: null, loading: false,
-    uploading: false, reviewing: false, deleting: false, generating: false
+    uploading: false, reviewing: false, deleting: false, generating: false,
+    templateLogoUrl: null, templateLogoRevision: 0, savingLogo: false
   };
 
   function node(tag, className, value) {
@@ -964,11 +965,37 @@
     finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
   }
 
-  function fillTemplateEditor() {
+  async function fillTemplateEditor() {
     const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
     $('plantillaTitulo').value = template?.titulo || '';
     $('plantillaCuerpo').value = template?.cuerpo || '';
     formError('errorPlantilla');
+    $('plantillaLogoArchivo').value = '';
+    $('btnGuardarLogo').disabled = true;
+    $('btnQuitarLogo').disabled = !template?.logo_personalizado;
+    const preview = $('plantillaLogoPreview');
+    const placeholder = $('plantillaLogoPlaceholder');
+    const revision = ++state.templateLogoRevision;
+    if (state.templateLogoUrl) URL.revokeObjectURL(state.templateLogoUrl);
+    state.templateLogoUrl = null;
+    preview.removeAttribute('src');
+    preview.hidden = true;
+    placeholder.hidden = false;
+    placeholder.textContent = template?.logo_personalizado
+      ? 'Cargando logo guardado…'
+      : 'Se conservará el logo predeterminado del documento, si corresponde.';
+    if (!template?.logo_personalizado) return;
+    try {
+      const blob = await request('/documentos/plantillas/' + encodeURIComponent(template.codigo) + '/logo', {}, true);
+      if (revision !== state.templateLogoRevision) return;
+      if (!blob.type.startsWith('image/')) throw new Error('El servidor no devolvió una imagen válida.');
+      state.templateLogoUrl = URL.createObjectURL(blob);
+      preview.src = state.templateLogoUrl;
+      preview.hidden = false;
+      placeholder.hidden = true;
+    } catch (_) {
+      if (revision === state.templateLogoRevision) placeholder.textContent = 'No se pudo cargar la vista del logo. Puedes volver a seleccionarlo.';
+    }
   }
 
   async function openTemplateEditor() {
@@ -979,7 +1006,6 @@
     try {
       const catalogs = await loadGenerationCatalogs(true);
       $('plantillaCodigo').value = catalogs.plantillas[0]?.codigo || '';
-      fillTemplateEditor();
       $('plantillaCampos').replaceChildren(...catalogs.campos.map(campo => {
         const button = node('button', '', '{{' + campo + '}}');
         button.type = 'button';
@@ -992,11 +1018,91 @@
       }));
     } catch (error) { formError('errorPlantilla', friendlyError(error)); }
     finally { setDialogBusy('modalPlantillas', false); }
+    await fillTemplateEditor();
+  }
+
+  async function fileToBase64(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  async function saveTemplateLogo() {
+    if (state.savingLogo || state.savingTemplate) return;
+    const codigo = $('plantillaCodigo').value;
+    const file = $('plantillaLogoArchivo').files?.[0];
+    if (!codigo || !file) {
+      formError('errorPlantilla', 'Selecciona una imagen antes de guardar el logo.');
+      return;
+    }
+    if (!file.size || file.size > MAX_FILE_SIZE) {
+      formError('errorPlantilla', 'El logo debe pesar como máximo 5 MB.');
+      return;
+    }
+    const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const mime = file.type || (extension === '.png' ? 'image/png' : ['.jpg', '.jpeg'].includes(extension) ? 'image/jpeg' : '');
+    if (!['image/png', 'image/jpeg'].includes(mime)
+        || (mime === 'image/png' && extension !== '.png')
+        || (mime === 'image/jpeg' && !['.jpg', '.jpeg'].includes(extension))) {
+      formError('errorPlantilla', 'Selecciona una imagen PNG o JPG/JPEG.');
+      return;
+    }
+    state.savingLogo = true;
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    let saved = false;
+    try {
+      const contenido_base64 = await fileToBase64(file);
+      await request('/documentos/plantillas/' + encodeURIComponent(codigo) + '/logo', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre_archivo: file.name, mime_type: mime, contenido_base64 })
+      });
+      await loadGenerationCatalogs(true);
+      $('plantillaCodigo').value = codigo;
+      saved = true;
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally {
+      state.savingLogo = false;
+      setDialogBusy('modalPlantillas', false);
+    }
+    if (saved) {
+      await fillTemplateEditor();
+      notify('Logo guardado para esta plantilla. No modifica los logos de las demás.');
+    }
+  }
+
+  async function removeTemplateLogo() {
+    if (state.savingLogo || state.savingTemplate) return;
+    const codigo = $('plantillaCodigo').value;
+    const template = state.generationCatalogs?.plantillas.find(item => item.codigo === codigo);
+    if (!template?.logo_personalizado) return;
+    if (!window.confirm('¿Quitar el logo personalizado de esta plantilla? Se usará el logo predeterminado del documento, si corresponde.')) return;
+    state.savingLogo = true;
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    let removed = false;
+    try {
+      await request('/documentos/plantillas/' + encodeURIComponent(codigo) + '/logo', { method: 'DELETE' });
+      await loadGenerationCatalogs(true);
+      $('plantillaCodigo').value = codigo;
+      removed = true;
+    } catch (error) { formError('errorPlantilla', friendlyError(error)); }
+    finally {
+      state.savingLogo = false;
+      setDialogBusy('modalPlantillas', false);
+    }
+    if (removed) {
+      await fillTemplateEditor();
+      notify('Logo personalizado quitado. Se conservará el predeterminado, si existe.');
+    }
   }
 
   async function saveTemplate(event) {
     event.preventDefault();
-    if (state.savingTemplate) return;
+    if (state.savingTemplate || state.savingLogo) return;
     state.savingTemplate = true;
     formError('errorPlantilla');
     const codigo = $('plantillaCodigo').value;
@@ -1103,9 +1209,15 @@
     });
     $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
     $('btnPlantillas').addEventListener('click', openTemplateEditor);
-    $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('plantillaCodigo').addEventListener('change', () => { fillTemplateEditor(); });
+    $('plantillaLogoArchivo').addEventListener('change', () => {
+      $('btnGuardarLogo').disabled = !$('plantillaLogoArchivo').files?.length;
+      formError('errorPlantilla');
+    });
+    $('btnGuardarLogo').addEventListener('click', saveTemplateLogo);
+    $('btnQuitarLogo').addEventListener('click', removeTemplateLogo);
     $('formPlantilla').addEventListener('submit', saveTemplate);
-    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate || state.savingLogo) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
@@ -1113,6 +1225,8 @@
       state.listController?.abort();
       state.previewController?.abort();
       if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+      if (state.templateLogoUrl) URL.revokeObjectURL(state.templateLogoUrl);
+      state.templateLogoRevision++;
       releasePdfViewer();
     });
   }
