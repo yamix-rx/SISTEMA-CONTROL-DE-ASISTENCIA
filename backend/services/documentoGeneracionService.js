@@ -1,5 +1,6 @@
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const pool = require('../config/database');
+const storage = require('./storagePrivadoService');
 const { idPositivo } = require('./documentoService');
 const { catalogoModelos, resolverModelo, resolverEmpresa, CAMPOS_MODELO } = require('./documentoModelosService');
 const plantillasPracticas = require('./documentoPlantillasPracticas');
@@ -34,6 +35,12 @@ function codigoValido(codigo) {
   if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || ['convenio_pasantia', 'plan_capacitacion'].includes(codigo))) throw error('El tipo de documento no está disponible.');
   return codigo;
 }
+function codigoPlantillaValido(codigo) {
+  if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo)
+      || ['convenio_pasantia', 'plan_capacitacion'].includes(codigo)
+      || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
+  return codigo;
+}
 function textoPlano(valor, nombre, maximo, saltosPagina = false) {
   if (typeof valor !== 'string' || !valor.trim() || valor.length > maximo) throw error(`${nombre} es obligatorio y admite hasta ${maximo} caracteres.`);
   const limpio = valor.replace(/\r\n?/g, '\n').trim();
@@ -55,16 +62,27 @@ function validarPlantilla(body) {
   return { titulo, cuerpo };
 }
 function revision(plantilla) {
-  return createHash('sha256').update(plantilla.titulo + '\n' + plantilla.cuerpo).digest('hex');
+  return createHash('sha256').update([plantilla.titulo, plantilla.cuerpo, plantilla.logo_path || '', plantilla.logo_mime || ''].join('\n')).digest('hex');
 }
 async function plantillas() {
-  const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos ORDER BY codigo');
+  const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre FROM plantillas_documentos ORDER BY codigo');
   const definiciones = [...Object.entries(PREDETERMINADAS), ...catalogoModelos().map(modelo => [modelo.id, { titulo: modelo.titulo, cuerpo: modelo.cuerpo }, modelo.codigo])];
   return definiciones.map(([codigo, predeterminada, tipo]) => {
     const almacenada = rows.find(row => row.codigo === codigo)
       || (Object.hasOwn(plantillasPracticas, tipo || '') ? rows.find(row => row.codigo === tipo) : null);
-    const plantilla = almacenada ? { titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html } : { ...predeterminada };
-    return { codigo, ...plantilla, personalizada: Boolean(almacenada), revision: revision(plantilla) };
+    const plantilla = almacenada ? {
+      titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html,
+      logo_path: almacenada.logo_path || null, logo_mime: almacenada.logo_mime || null,
+      logo_nombre: almacenada.logo_nombre || null
+    } : { ...predeterminada, logo_path: null, logo_mime: null, logo_nombre: null };
+    return {
+      codigo, titulo: plantilla.titulo, cuerpo: plantilla.cuerpo,
+      personalizada: Boolean(almacenada), logo_path: plantilla.logo_path,
+      logo_mime: plantilla.logo_mime, logo_nombre: plantilla.logo_nombre,
+      logo_personalizado: Boolean(plantilla.logo_path),
+      logo_url: plantilla.logo_path ? `/api/documentos/plantillas/${encodeURIComponent(codigo)}/logo` : null,
+      revision: revision(plantilla)
+    };
   });
 }
 async function catalogos() {
@@ -74,12 +92,15 @@ async function catalogos() {
     pool.query('SELECT id, nombre, empresa_id FROM areas ORDER BY nombre'),
     pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre')
   ]);
-  return { plantillas: templates, empresas: empresas.map(empresa => ({ ...empresa,
+  return { plantillas: templates.map(template => {
+    const { logo_path, logo_mime, ...publico } = template;
+    return publico;
+  }), empresas: empresas.map(empresa => ({ ...empresa,
     empresa_modelo_clave: resolverEmpresa({ empresa: empresa.razon_social, ruc: empresa.ruc })?.clave || null })),
   areas, cargos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
 }
 async function guardarPlantilla(codigo, body) {
-  if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
+  codigoPlantillaValido(codigo);
   const plantilla = validarPlantilla(body);
   const pgSql = `INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
     VALUES (?, ?, ?) ON CONFLICT (codigo) DO UPDATE
@@ -88,8 +109,113 @@ async function guardarPlantilla(codigo, body) {
     VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`;
   const [result] = await pool.query(process.env.DATABASE_URL ? pgSql : mysqlSql,
   [codigo, plantilla.titulo, plantilla.cuerpo]);
-  return { id: Number(result.insertId) || null, codigo, ...plantilla, personalizada: true, revision: revision(plantilla) };
+  const [rows] = await pool.query('SELECT id, logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+  const actual = rows[0] || {};
+  const guardada = { ...plantilla, logo_path: actual.logo_path || null, logo_mime: actual.logo_mime || null };
+  return { id: Number(result.insertId) || Number(actual.id) || null, codigo, ...plantilla,
+    personalizada: true, logo_personalizado: Boolean(actual.logo_path), logo_nombre: actual.logo_nombre || null,
+    revision: revision(guardada) };
 }
+function validarLogo(body = {}) {
+  const nombre = body.nombre_archivo;
+  const mime = body.mime_type;
+  if (typeof nombre !== 'string' || !nombre.trim() || nombre.length > 200 || /[\\/\u0000-\u001f\u007f]/.test(nombre)) {
+    throw error('El nombre del logo no es válido.');
+  }
+  const extension = nombre.slice(nombre.lastIndexOf('.')).toLowerCase();
+  if (!['image/png', 'image/jpeg'].includes(mime) || !['.png', '.jpg', '.jpeg'].includes(extension)
+      || (mime === 'image/png' && extension !== '.png')
+      || (mime === 'image/jpeg' && !['.jpg', '.jpeg'].includes(extension))) {
+    throw error('El logo debe ser una imagen PNG o JPG/JPEG válida.');
+  }
+  const base64 = body.contenido_base64;
+  if (typeof base64 !== 'string' || !base64 || base64.length > Math.ceil(5 * 1024 * 1024 / 3) * 4 + 4
+      || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) throw error('El archivo del logo está vacío o no es válido.');
+  const buffer = Buffer.from(base64, 'base64');
+  if (!buffer.length || buffer.length > 5 * 1024 * 1024 || buffer.toString('base64') !== base64) {
+    throw error('El logo debe pesar como máximo 5 MB.');
+  }
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const esPng = buffer.length >= 8 && buffer.subarray(0, 8).equals(png);
+  const esJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  if ((mime === 'image/png' && !esPng) || (mime === 'image/jpeg' && !esJpeg)) {
+    throw error('El contenido de la imagen no coincide con su formato.');
+  }
+  return { nombre: nombre.trim(), mime, extension: mime === 'image/png' ? '.png' : '.jpg', buffer };
+}
+
+async function guardarLogoPlantilla(codigo, body) {
+  codigoPlantillaValido(codigo);
+  const logo = validarLogo(body);
+  const [rows] = await pool.query('SELECT id, titulo, cuerpo_html, logo_path FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+  const actual = rows[0] || null;
+  const definicion = actual ? null : (await plantillas()).find(item => item.codigo === codigo);
+  if (!actual && !definicion) throw error('La plantilla no está disponible.', 404);
+  const titulo = actual?.titulo || definicion.titulo;
+  const cuerpo = actual?.cuerpo_html || definicion.cuerpo;
+  const ruta = randomUUID() + logo.extension;
+  await storage.subirObjeto(ruta, logo.buffer, logo.mime);
+  try {
+    if (actual) {
+      await pool.query('UPDATE plantillas_documentos SET logo_path = ?, logo_mime = ?, logo_nombre = ? WHERE codigo = ?',
+        [ruta, logo.mime, logo.nombre, codigo]);
+    } else {
+      await pool.query('INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre) VALUES (?, ?, ?, ?, ?, ?)',
+        [codigo, titulo, cuerpo, ruta, logo.mime, logo.nombre]);
+    }
+  } catch (errorGuardado) {
+    await storage.eliminarObjeto(ruta).catch(() => {});
+    throw errorGuardado;
+  }
+  if (actual?.logo_path && actual.logo_path !== ruta) {
+    await storage.eliminarObjeto(actual.logo_path).catch(errorStorage => {
+      if (errorStorage.status !== 404) console.error('No se pudo limpiar el logo anterior de la plantilla.');
+    });
+  }
+  const [guardadas] = await pool.query('SELECT id, titulo, cuerpo_html, logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+  const guardada = guardadas[0];
+  return {
+    id: Number(guardada.id) || null, codigo, titulo: guardada.titulo, cuerpo: guardada.cuerpo_html,
+    personalizada: true, logo_personalizado: true, logo_nombre: guardada.logo_nombre,
+    revision: revision({ titulo: guardada.titulo, cuerpo: guardada.cuerpo_html, logo_path: guardada.logo_path, logo_mime: guardada.logo_mime })
+  };
+}
+
+async function eliminarLogoPlantilla(codigo) {
+  codigoPlantillaValido(codigo);
+  const [rows] = await pool.query('SELECT id, logo_path FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+  const actual = rows[0];
+  if (!actual) {
+    const definicion = (await plantillas()).find(item => item.codigo === codigo);
+    return { id: null, codigo, logo_personalizado: false, revision: definicion?.revision || null };
+  }
+  await pool.query('UPDATE plantillas_documentos SET logo_path = NULL, logo_mime = NULL, logo_nombre = NULL WHERE codigo = ?', [codigo]);
+  if (actual.logo_path) {
+    await storage.eliminarObjeto(actual.logo_path).catch(errorStorage => {
+      if (errorStorage.status !== 404) console.error('No se pudo limpiar el logo quitado de la plantilla.');
+    });
+  }
+  const definicion = (await plantillas()).find(item => item.codigo === codigo);
+  return { id: Number(actual.id) || null, codigo, logo_personalizado: false, logo_nombre: null, revision: definicion?.revision || null };
+}
+
+async function obtenerLogoPlantilla(codigo) {
+  codigoPlantillaValido(codigo);
+  const [rows] = await pool.query('SELECT logo_path, logo_mime FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
+  const actual = rows[0];
+  if (!actual?.logo_path) throw error('Esta plantilla no tiene un logo personalizado.', 404);
+  const mime = actual.logo_mime || (actual.logo_path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+  return { buffer: await storage.obtenerObjeto(actual.logo_path), mime_type: mime };
+}
+
+async function cargarLogoPersonalizado(documento) {
+  if (!documento.logo_personalizado_path) return documento;
+  return {
+    ...documento,
+    logo_personalizado_buffer: await storage.obtenerObjeto(documento.logo_personalizado_path)
+  };
+}
+
 function fechaValida(valor, nombre = 'La fecha de emisión') {
   if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw error(`${nombre} no es válida.`);
   const date = new Date(`${valor}T12:00:00Z`);
@@ -220,6 +346,8 @@ async function preparar(body = {}) {
     carrera: datos.carrera || '', institucion_educativa: datos.institucion_educativa || '', tipo_documento_nombre: NOMBRES_DOCUMENTOS[codigo],
     modelo_id: modelo?.id || null, modelo_nombre: diseno === 'convenio' ? modelo.nombre : `${NOMBRES_DOCUMENTOS[codigo]} · ${campos.empresa}`,
     estilo: 'formal', diseno, logo: identidad?.logo || modelo?.logo || null,
+    logo_personalizado_path: plantilla.logo_path || null, logo_personalizado_mime: plantilla.logo_mime || null,
+    logo_personalizado_nombre: plantilla.logo_nombre || null, logo_personalizado: Boolean(plantilla.logo_path),
     lema_anual: datos.lema_anual || '',
     papel: codigo === 'culminacion' && identidad?.clave === 'ong' ? 'A4 horizontal · 297 × 210 mm' : 'A4 · 210 × 297 mm',
     firma, firmante_empresa: firmante || '',
@@ -228,4 +356,4 @@ async function preparar(body = {}) {
   };
 }
 
-module.exports = { catalogos, guardarPlantilla, preparar, validarPlantilla, CAMPOS, PREDETERMINADAS };
+module.exports = { catalogos, guardarPlantilla, guardarLogoPlantilla, eliminarLogoPlantilla, obtenerLogoPlantilla, cargarLogoPersonalizado, preparar, validarPlantilla, CAMPOS, PREDETERMINADAS };
