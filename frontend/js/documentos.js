@@ -21,7 +21,7 @@
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
     listRevision: 0, previewRevision: 0, previewUrl: null,
     listController: null, previewController: null, loading: false,
-    uploading: false, reviewing: false, generating: false
+    uploading: false, reviewing: false, generating: false, uploadingLogo: false
   };
 
   function node(tag, className, value) {
@@ -517,7 +517,7 @@
       const modelos = (catalogs.modelos || []).filter(model => GENERATION_TYPES.has(model.codigo));
       const templateCodes = new Set([...GENERATION_TYPES, ...modelos.map(model => model.id)]);
       state.generationCatalogs = {
-        ...catalogs, modelos,
+        ...catalogs, modelos, logos: Array.isArray(catalogs.logos) ? catalogs.logos : [],
         plantillas: catalogs.plantillas.filter(template => templateCodes.has(template.codigo))
       };
     }
@@ -847,10 +847,29 @@
     finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
   }
 
+  function fillTemplateLogos(selectedId = '') {
+    const select = $('plantillaLogo');
+    const options = [node('option', '', 'Usar logo predeterminado de la empresa')];
+    options[0].value = '';
+    (state.generationCatalogs?.logos || []).forEach(logo => {
+      const option = node('option', '', logo.nombre);
+      option.value = String(logo.id);
+      options.push(option);
+    });
+    select.replaceChildren(...options);
+    select.value = selectedId ? String(selectedId) : '';
+  }
+
   function fillTemplateEditor() {
     const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
     $('plantillaTitulo').value = template?.titulo || '';
     $('plantillaCuerpo').value = template?.cuerpo || '';
+    fillTemplateLogos(template?.logo_id || '');
+    $('plantillaLogoNombre').value = '';
+    $('plantillaLogoArchivo').value = '';
+    $('estadoLogoPlantilla').textContent = state.generationCatalogs?.logos?.length
+      ? 'Puedes reutilizar cualquiera de los logos guardados en la biblioteca.'
+      : 'Aún no hay logos cargados. Sube uno para comenzar tu biblioteca.';
     formError('errorPlantilla');
   }
 
@@ -877,13 +896,65 @@
     finally { setDialogBusy('modalPlantillas', false); }
   }
 
+  async function uploadTemplateLogo() {
+    if (state.uploadingLogo) return;
+    const file = $('plantillaLogoArchivo').files[0];
+    if (!file) { formError('errorPlantilla', 'Selecciona primero una imagen PNG o JPG.'); return; }
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      formError('errorPlantilla', 'El logo debe ser una imagen PNG o JPG.');
+      return;
+    }
+    if (file.size <= 0 || file.size > 2 * 1024 * 1024) {
+      formError('errorPlantilla', 'El logo debe tener contenido y pesar como máximo 2 MB.');
+      return;
+    }
+    state.uploadingLogo = true;
+    const boton = $('btnSubirLogo');
+    boton.disabled = true;
+    formError('errorPlantilla');
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado.'));
+        reader.onload = () => {
+          const result = String(reader.result || '');
+          const separator = result.indexOf(',');
+          if (separator < 0) reject(new Error('No se pudo procesar la imagen.'));
+          else resolve(result.slice(separator + 1));
+        };
+        reader.readAsDataURL(file);
+      });
+      const nombre = $('plantillaLogoNombre').value.trim() || file.name.replace(/\\.[^.]+$/, '');
+      setDialogBusy('modalPlantillas', true);
+      const { logo } = await request('/documentos/logos', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, mime_type: file.type, contenido_base64: base64 })
+      });
+      state.generationCatalogs.logos = [...(state.generationCatalogs.logos || []), logo]
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      fillTemplateLogos(logo.id);
+      $('plantillaLogoNombre').value = '';
+      $('plantillaLogoArchivo').value = '';
+      $('estadoLogoPlantilla').textContent = 'Logo guardado en la biblioteca y seleccionado para esta plantilla. Guarda la plantilla para aplicar el cambio.';
+    } catch (error) {
+      formError('errorPlantilla', friendlyError(error));
+    } finally {
+      state.uploadingLogo = false;
+      setDialogBusy('modalPlantillas', false);
+      boton.disabled = false;
+    }
+  }
+
   async function saveTemplate(event) {
     event.preventDefault();
     if (state.savingTemplate) return;
     state.savingTemplate = true;
     formError('errorPlantilla');
     const codigo = $('plantillaCodigo').value;
-    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value };
+    const payload = {
+      titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value,
+      logo_id: $('plantillaLogo').value || null
+    };
     setDialogBusy('modalPlantillas', true);
     try {
       const { plantilla } = await request('/documentos/plantillas/' + encodeURIComponent(codigo), {
@@ -985,8 +1056,9 @@
     $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
     $('btnPlantillas').addEventListener('click', openTemplateEditor);
     $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('btnSubirLogo').addEventListener('click', uploadTemplateLogo);
     $('formPlantilla').addEventListener('submit', saveTemplate);
-    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate || state.uploadingLogo) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
