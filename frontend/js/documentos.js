@@ -21,7 +21,7 @@
     employeeId: /^\d+$/.test(initialEmployee || '') ? initialEmployee : '',
     listRevision: 0, previewRevision: 0, previewUrl: null,
     listController: null, previewController: null, loading: false,
-    uploading: false, reviewing: false, deleting: false, generating: false
+    uploading: false, reviewing: false, deleting: false, generating: false, uploadingLogo: false
   };
 
   function node(tag, className, value) {
@@ -632,7 +632,7 @@
       const modelos = (catalogs.modelos || []).filter(model => GENERATION_TYPES.has(model.codigo));
       const templateCodes = new Set([...GENERATION_TYPES, ...modelos.map(model => model.id)]);
       state.generationCatalogs = {
-        ...catalogs, modelos,
+        ...catalogs, modelos, logos: Array.isArray(catalogs.logos) ? catalogs.logos : [],
         plantillas: catalogs.plantillas.filter(template => templateCodes.has(template.codigo))
       };
     }
@@ -964,10 +964,29 @@
     finally { state.downloadingGenerated = false; $('btnPdfGenerado').disabled = false; }
   }
 
+  function fillTemplateLogos(selectedId = '') {
+    const select = $('plantillaLogo');
+    const placeholder = node('option', '', 'Usar membrete predeterminado de la empresa');
+    placeholder.value = '';
+    const options = [placeholder, ...(state.generationCatalogs?.logos || []).map(logo => {
+      const option = node('option', '', logo.nombre);
+      option.value = String(logo.id);
+      return option;
+    })];
+    select.replaceChildren(...options);
+    select.value = selectedId ? String(selectedId) : '';
+  }
+
   function fillTemplateEditor() {
     const template = state.generationCatalogs?.plantillas.find(item => item.codigo === $('plantillaCodigo').value);
     $('plantillaTitulo').value = template?.titulo || '';
     $('plantillaCuerpo').value = template?.cuerpo || '';
+    fillTemplateLogos(template?.logo_id || '');
+    $('plantillaLogoNombre').value = '';
+    $('plantillaLogoArchivo').value = '';
+    $('estadoLogoPlantilla').textContent = state.generationCatalogs?.logos?.length
+      ? 'Biblioteca disponible: selecciona un logo existente o sube uno nuevo.'
+      : 'Todavía no hay logos guardados. Sube una imagen PNG o JPG para crear la biblioteca.';
     formError('errorPlantilla');
   }
 
@@ -994,13 +1013,50 @@
     finally { setDialogBusy('modalPlantillas', false); }
   }
 
+  async function uploadTemplateLogo() {
+    if (state.uploadingLogo) return;
+    const file = $('plantillaLogoArchivo').files[0];
+    if (!file) { formError('errorPlantilla', 'Selecciona primero una imagen PNG o JPG.'); return; }
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      formError('errorPlantilla', 'El logo debe ser una imagen PNG o JPG.');
+      return;
+    }
+    if (!file.size || file.size > 2 * 1024 * 1024) {
+      formError('errorPlantilla', 'El logo debe tener contenido y pesar como máximo 2 MB.');
+      return;
+    }
+    state.uploadingLogo = true;
+    const boton = $('btnSubirLogo');
+    boton.disabled = true;
+    formError('errorPlantilla');
+    setDialogBusy('modalPlantillas', true);
+    try {
+      const form = new FormData();
+      form.append('nombre', $('plantillaLogoNombre').value.trim());
+      form.append('logo', file, file.name);
+      const { logo } = await request('/documentos/logos', { method: 'POST', body: form });
+      state.generationCatalogs.logos = [...(state.generationCatalogs.logos || []), logo]
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      fillTemplateLogos(logo.id);
+      $('plantillaLogoNombre').value = '';
+      $('plantillaLogoArchivo').value = '';
+      $('estadoLogoPlantilla').textContent = 'Logo guardado en la biblioteca y seleccionado. Guarda la plantilla para aplicar el cambio.';
+    } catch (error) {
+      formError('errorPlantilla', friendlyError(error));
+    } finally {
+      state.uploadingLogo = false;
+      setDialogBusy('modalPlantillas', false);
+      boton.disabled = false;
+    }
+  }
+
   async function saveTemplate(event) {
     event.preventDefault();
-    if (state.savingTemplate) return;
+    if (state.savingTemplate || state.uploadingLogo) return;
     state.savingTemplate = true;
     formError('errorPlantilla');
     const codigo = $('plantillaCodigo').value;
-    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value };
+    const payload = { titulo: $('plantillaTitulo').value, cuerpo: $('plantillaCuerpo').value, logo_id: $('plantillaLogo').value || null };
     setDialogBusy('modalPlantillas', true);
     try {
       const { plantilla } = await request('/documentos/plantillas/' + encodeURIComponent(codigo), {
@@ -1104,8 +1160,9 @@
     $('btnVolverGenerar').addEventListener('click', () => { $('modalDocumentoGenerado').close(); $('modalGenerar').showModal(); });
     $('btnPlantillas').addEventListener('click', openTemplateEditor);
     $('plantillaCodigo').addEventListener('change', fillTemplateEditor);
+    $('btnSubirLogo').addEventListener('click', uploadTemplateLogo);
     $('formPlantilla').addEventListener('submit', saveTemplate);
-    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate) event.preventDefault(); });
+    $('modalPlantillas').addEventListener('cancel', event => { if (state.savingTemplate || state.uploadingLogo) event.preventDefault(); });
     document.querySelectorAll('[data-cerrar]').forEach(button => button.addEventListener('click', () => $(button.dataset.cerrar).close()));
     $('modalSubir').addEventListener('cancel', event => { if (state.uploading) event.preventDefault(); });
     $('modalGenerar').addEventListener('cancel', event => { if (state.generating) event.preventDefault(); });
