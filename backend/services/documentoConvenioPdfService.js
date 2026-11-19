@@ -19,6 +19,22 @@ function generarPdfConvenio(documento) {
 
     try {
       const ancho = doc.page.width - margen * 2;
+      if (documento.logo_personalizado) {
+        const imagenLogo = doc.openImage(documento.logo_personalizado);
+        const escala = Math.min(Math.min(165, ancho) / imagenLogo.width, 48 / imagenLogo.height);
+        const anchoLogo = imagenLogo.width * escala;
+        const altoLogo = imagenLogo.height * escala;
+        const yLogo = 12;
+        const dibujarLogo = () => {
+          doc.image(documento.logo_personalizado, (doc.page.width - anchoLogo) / 2, yLogo,
+            { width: anchoLogo, height: altoLogo });
+          doc.x = margen;
+          doc.y = Math.max(doc.y, yLogo + altoLogo + 16);
+        };
+        doc.page.margins.top = Math.max(doc.page.margins.top, yLogo + altoLogo + 16);
+        doc.on('pageAdded', dibujarLogo);
+        dibujarLogo();
+      }
       const limite = () => doc.page.height - doc.page.margins.bottom;
       const nuevaPagina = () => { doc.addPage(); doc.x = margen; };
       const espacio = alto => { if (doc.y + alto > limite()) nuevaPagina(); };
