@@ -849,7 +849,7 @@
 
   function fillTemplateLogos(selectedId = '') {
     const select = $('plantillaLogo');
-    const options = [node('option', '', 'Usar logo predeterminado de la empresa')];
+    const options = [node('option', '', 'Usar membrete predeterminado de empresa/modelo')];
     options[0].value = '';
     (state.generationCatalogs?.logos || []).forEach(logo => {
       const option = node('option', '', logo.nombre);
@@ -910,6 +910,7 @@
     }
     state.uploadingLogo = true;
     const boton = $('btnSubirLogo');
+    let dialogBusy = false;
     boton.disabled = true;
     formError('errorPlantilla');
     try {
@@ -926,6 +927,7 @@
       });
       const nombre = $('plantillaLogoNombre').value.trim() || file.name.replace(/\\.[^.]+$/, '');
       setDialogBusy('modalPlantillas', true);
+      dialogBusy = true;
       const { logo } = await request('/documentos/logos', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, mime_type: file.type, contenido_base64: base64 })
@@ -940,14 +942,14 @@
       formError('errorPlantilla', friendlyError(error));
     } finally {
       state.uploadingLogo = false;
-      setDialogBusy('modalPlantillas', false);
+      if (dialogBusy) setDialogBusy('modalPlantillas', false);
       boton.disabled = false;
     }
   }
 
   async function saveTemplate(event) {
     event.preventDefault();
-    if (state.savingTemplate) return;
+    if (state.savingTemplate || state.uploadingLogo) return;
     state.savingTemplate = true;
     formError('errorPlantilla');
     const codigo = $('plantillaCodigo').value;
