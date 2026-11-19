@@ -7,6 +7,7 @@ const { textoPdf } = require('./helpers/pdf');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
 let guardadas;
+let logos;
 let consultas;
 const cuentas = new Map([
   [1, { usuario_id: 1, activo: 1, rol_nombre: ROLES.ADMIN, empleado_id: 101 }],
@@ -24,11 +25,29 @@ const pool = { async query(sql, params = []) {
   consultas.push({ sql, params });
   if (/FROM usuarios u/.test(sql)) return [cuentas.has(params[0]) ? [cuentas.get(params[0])] : []];
   if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
+  if (/SELECT id, nombre, mime_type, created_at FROM logos_documentos ORDER BY nombre, id/.test(sql)) {
+    return [[...logos.values()].map(({ id, nombre, mime_type, created_at }) => ({ id, nombre, mime_type, created_at }))];
+  }
+  if (/SELECT id FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+    return [[logos.has(Number(params[0])) ? { id: Number(params[0]) } : null].filter(Boolean)];
+  }
+  if (/SELECT id, nombre, mime_type, contenido FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+    return [[logos.get(Number(params[0]))].filter(Boolean)];
+  }
+  if (/SELECT id, nombre, mime_type, created_at FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+    const logo = logos.get(Number(params[0]));
+    return [[logo ? { id: logo.id, nombre: logo.nombre, mime_type: logo.mime_type, created_at: logo.created_at } : null].filter(Boolean)];
+  }
+  if (/INSERT INTO logos_documentos/.test(sql)) {
+    const id = logos.size + 1;
+    logos.set(id, { id, nombre: params[0], mime_type: params[1], contenido: params[2], created_at: '2026-11-19 12:00:00' });
+    return [{ insertId: id }];
+  }
   if (/SELECT \*/.test(sql) && /plantillas_documentos/.test(sql)) return [[...guardadas.values()].filter(x => x.codigo === params[0])];
   if (/SELECT \*/.test(sql) && /documentos_empleado/.test(sql)) return [[]];
-  if (/SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos/.test(sql)) return [[...guardadas.values()]];
+  if (/SELECT codigo, titulo, cuerpo_html, logo_id FROM plantillas_documentos/.test(sql)) return [[...guardadas.values()]];
   if (/INSERT INTO plantillas_documentos/.test(sql)) {
-    guardadas.set(params[0], { codigo: params[0], titulo: params[1], cuerpo_html: params[2] });
+    guardadas.set(params[0], { codigo: params[0], titulo: params[1], cuerpo_html: params[2], logo_id: params[3] ?? null });
     return [{ affectedRows: 1, insertId: 1 }];
   }
   if (/FROM empleados e LEFT JOIN practicante_detalles/.test(sql)) return [params[0] === 101 ? [empleado] : []];
@@ -51,7 +70,7 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}/api/documentos`;
 });
 after(async () => { await new Promise(resolve => server.close(resolve)); });
-beforeEach(() => { guardadas = new Map(); consultas = []; });
+beforeEach(() => { guardadas = new Map(); logos = new Map(); consultas = []; });
 async function request(path, { usuario = 1, method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (usuario) headers.Authorization = `Bearer ${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}`;
@@ -92,6 +111,7 @@ test('catálogos incluyen tres plantillas editables y estructura seleccionable, 
     assert.equal(response.body.areas[0].empresa_id, 10);
     assert.equal(response.body.cargos[0].area_id, 20);
     assert.ok(response.body.campos.includes('horas'));
+    assert.deepEqual(response.body.logos, []);
   }
   for (const [method, path, body] of [['GET', '/generacion/catalogos'], ['PUT', '/plantillas/aceptacion', { titulo: 'Título', cuerpo: 'Texto' }], ['POST', '/generar/vista-previa', payload()], ['POST', '/generar/pdf', payload()]]) {
     assert.equal((await request(path, { method, body, usuario: 3 })).status, 403);
@@ -126,6 +146,7 @@ test('guardar una plantilla persiste y cambia futuros documentos; rechaza placeh
   const body = { titulo: 'Constancia de {{empresa}}', cuerpo: 'Para {{trabajador}}. Horas: {{horas}}. Cargo: {{cargo}}.\nFecha: {{fecha}}.' };
   assert.equal((await request('/plantillas/constancia_practicas', { usuario: 2, method: 'PUT', body })).status, 200);
   assert.equal(guardadas.get('constancia_practicas').cuerpo_html, body.cuerpo);
+  assert.equal(guardadas.get('constancia_practicas').logo_id, null);
   const result = await request('/generar/vista-previa', { method: 'POST', body: payload({ codigo: 'constancia_practicas' }) });
   assert.equal(result.body.documento.titulo, 'Constancia de Organización SBSS');
   assert.match(result.body.documento.cuerpo, /^Para María José Núñez Agüero/);
@@ -134,6 +155,44 @@ test('guardar una plantilla persiste y cambia futuros documentos; rechaza placeh
     assert.equal((await request('/plantillas/aceptacion', { method: 'PUT', body: { titulo: 'Documento', cuerpo } })).status, 400);
   }
   assert.equal((await request('/plantillas/otro', { method: 'PUT', body })).status, 400);
+});
+
+
+test('guarda logos PNG en la biblioteca y los aplica al PDF de la plantilla seleccionada', async () => {
+  const contenido = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+  const subida = await request('/logos', { method: 'POST', usuario: 2, body: {
+    nombre: 'Logo de prueba', mime_type: 'image/png', contenido_base64: contenido
+  } });
+  assert.equal(subida.status, 201);
+  assert.equal(subida.body.logo.id, 1);
+  assert.equal(subida.body.logo.nombre, 'Logo de prueba');
+  assert.equal(logos.get(1).contenido.toString('base64'), contenido);
+  assert.equal((await request('/generacion/catalogos')).body.logos[0].id, 1);
+
+  const plantilla = await request('/plantillas/aceptacion', { method: 'PUT', usuario: 2, body: {
+    titulo: 'Aceptación personalizada', cuerpo: 'Se acepta a {{trabajador}}.', logo_id: 1
+  } });
+  assert.equal(plantilla.status, 200);
+  assert.equal(plantilla.body.plantilla.logo_id, 1);
+  const preview = await request('/generar/vista-previa', { method: 'POST', body: payload() });
+  assert.equal(preview.body.documento.logo_personalizado_id, 1);
+  const pdf = await request('/generar/pdf', { method: 'POST', body: {
+    ...payload(), revision_plantilla: preview.body.documento.revision_plantilla
+  } });
+  assert.equal(pdf.status, 200);
+  assert.match(pdf.body.toString('ascii'), /\\/Subtype \\/Image/);
+  assert.match(textoPdf(pdf.body), /Se acepta a María José Núñez Agüero/);
+});
+
+test('rechaza imágenes que no coinciden con el MIME y referencias de logo inexistentes', async () => {
+  const invalido = await request('/logos', { method: 'POST', body: {
+    nombre: 'No es imagen', mime_type: 'image/png', contenido_base64: Buffer.from('texto').toString('base64')
+  } });
+  assert.equal(invalido.status, 400);
+  const plantilla = await request('/plantillas/aceptacion', { method: 'PUT', body: {
+    titulo: 'Título', cuerpo: 'Texto para {{trabajador}}.', logo_id: 999
+  } });
+  assert.equal(plantilla.status, 400);
 });
 
 test('validación impide fechas inexistentes, horas inválidas y cruces de empresa/área/cargo', async () => {
