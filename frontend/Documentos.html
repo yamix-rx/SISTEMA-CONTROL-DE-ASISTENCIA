@@ -157,6 +157,21 @@
     <form id="formPlantilla"><div class="dialog-heading"><h2 id="tituloEditorPlantillas">Editar plantillas</h2><button type="button" class="icon-button" data-cerrar="modalPlantillas" aria-label="Cerrar editor"><svg class="icon"><use href="#i-close"/></svg></button></div>
       <p>Los cambios se usarán en los próximos documentos. Escribe el contenido y coloca los campos disponibles donde necesites los datos del expediente.</p>
       <label for="plantillaCodigo">Documento</label><select id="plantillaCodigo" required></select>
+      <section class="template-logo-editor" aria-label="Logo personalizado de la plantilla">
+        <div class="template-logo-preview">
+          <img id="plantillaLogoPreview" alt="Logo personalizado seleccionado" hidden>
+          <p id="plantillaLogoPlaceholder">Se conservará el logo predeterminado del documento, si corresponde.</p>
+        </div>
+        <div class="template-logo-controls">
+          <label for="plantillaLogoArchivo">Logo de esta plantilla</label>
+          <input id="plantillaLogoArchivo" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg">
+          <p class="field-help">PNG o JPG/JPEG · Máximo 5 MB. El logo solo se aplicará a esta plantilla.</p>
+          <div class="template-logo-actions">
+            <button id="btnGuardarLogo" type="button" class="button button-outline" disabled>Guardar logo</button>
+            <button id="btnQuitarLogo" type="button" class="button button-outline" disabled>Quitar logo personalizado</button>
+          </div>
+        </div>
+      </section>
       <label for="plantillaTitulo">Título</label><input id="plantillaTitulo" maxlength="150" required>
       <label for="plantillaCuerpo">Contenido</label><textarea id="plantillaCuerpo" rows="13" maxlength="50000" required></textarea>
       <p class="field-help">Campos disponibles (pulsa para insertar en el contenido):</p><div id="plantillaCampos" class="template-fields"></div>
