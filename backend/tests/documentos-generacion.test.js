@@ -4,6 +4,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { ROLES } = require('../config/accessPolicy');
 const { textoPdf } = require('./helpers/pdf');
+const { cajaLogoOriginal, dibujarLogoEnCaja } = require('../services/documentoLogoPdfService');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
 process.env.DATABASE_URL = ''; // Estas pruebas usan dobles; nunca escriben en Supabase.
@@ -131,6 +132,23 @@ function comprobarPdf(buffer) {
     assert.equal(text.slice(start + Number(match[1]), start + Number(match[1]) + 10), '\nendstream');
   }
 }
+
+test('el logo reemplazo conserva proporción y se alinea dentro de la caja original', () => {
+  const imagenes = new Map([
+    ['membrete-original', { width: 400, height: 200 }],
+    ['logo-personalizado', { width: 100, height: 100 }]
+  ]);
+  const dibujados = [];
+  const doc = {
+    openImage(archivo) { return imagenes.get(archivo); },
+    image(archivo, x, y, opciones) { dibujados.push({ archivo, x, y, ...opciones }); }
+  };
+  const caja = cajaLogoOriginal(doc, 'membrete-original', { x: 50, y: 20, width: 160 });
+  assert.deepEqual(caja, { x: 50, y: 20, width: 160, height: 80 });
+  const logo = dibujarLogoEnCaja(doc, 'logo-personalizado', caja, { horizontal: 'center', vertical: 'center' });
+  assert.deepEqual(logo, { x: 90, y: 20, width: 80, height: 80 });
+  assert.deepEqual(dibujados[0], { archivo: 'logo-personalizado', x: 90, y: 20, width: 80, height: 80 });
+});
 
 test('catálogos incluyen tres plantillas editables y estructura seleccionable, solo para gestión', async () => {
   for (const usuario of [1, 2]) {
