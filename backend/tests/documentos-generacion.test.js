@@ -44,7 +44,7 @@ const pool = { async query(sql, params = []) {
     return [[logos.get(Number(params[0]))].filter(Boolean)];
   }
   if (/SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE ruta_archivo = \? LIMIT 1/.test(sql)) {
-    return [[...logos.values()].find(logo => logo.ruta_archivo === params[0])].filter(Boolean);
+    return [[...logos.values()].filter(logo => logo.ruta_archivo === params[0])];
   }
   if (/INSERT INTO logos_documentos/.test(sql)) {
     const id = logos.size + 1;
@@ -97,7 +97,7 @@ async function request(path, { usuario = 1, method = 'GET', body } = {}) {
 }
 async function subirLogo({ usuario = 2, nombre = 'Logo de prueba', mime = 'image/png', contenido } = {}) {
   const headers = {};
-  if (usuario) headers.Authorization = \`Bearer \${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}\`;
+  if (usuario) headers.Authorization = `Bearer ${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}`;
   const form = new FormData();
   form.append('nombre', nombre);
   form.append('logo', new Blob([contenido], { type: mime }), mime === 'image/jpeg' ? 'logo.jpg' : 'logo.png');
