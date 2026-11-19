@@ -1,13 +1,17 @@
 const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { ROLES } = require('../config/accessPolicy');
 const { textoPdf } = require('./helpers/pdf');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
+delete process.env.DATABASE_URL;
 let guardadas;
 let consultas;
+let objetos = new Map();
 const cuentas = new Map([
   [1, { usuario_id: 1, activo: 1, rol_nombre: ROLES.ADMIN, empleado_id: 101 }],
   [2, { usuario_id: 2, activo: 1, rol_nombre: ROLES.RRHH, empleado_id: 101 }],
@@ -20,24 +24,75 @@ const empleado = {
   carrera: 'Ingeniería de Sistemas', institucion_educativa: 'Universidad Privada del Norte',
   direccion: 'Domicilio de prueba 123', fecha_nacimiento: '2002-01-10'
 };
-const pool = { async query(sql, params = []) {
-  consultas.push({ sql, params });
-  if (/FROM usuarios u/.test(sql)) return [cuentas.has(params[0]) ? [cuentas.get(params[0])] : []];
-  if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
-  if (/SELECT \*/.test(sql) && /plantillas_documentos/.test(sql)) return [[...guardadas.values()].filter(x => x.codigo === params[0])];
-  if (/SELECT \*/.test(sql) && /documentos_empleado/.test(sql)) return [[]];
-  if (/SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos/.test(sql)) return [[...guardadas.values()]];
-  if (/INSERT INTO plantillas_documentos/.test(sql)) {
-    guardadas.set(params[0], { codigo: params[0], titulo: params[1], cuerpo_html: params[2] });
-    return [{ affectedRows: 1, insertId: 1 }];
+const pool = {
+  async query(sql, params = []) {
+    consultas.push({ sql, params });
+    if (/FROM usuarios u/.test(sql)) return [cuentas.has(params[0]) ? [cuentas.get(params[0])] : []];
+    if (/INSERT INTO historial_cambios/.test(sql)) return [{ insertId: 1 }];
+    if (/FROM plantillas_documentos/.test(sql) && /^\\s*SELECT/i.test(sql)) {
+      if (/ORDER BY codigo/i.test(sql)) return [[...guardadas.values()]];
+      const row = [...guardadas.values()].find(item => item.codigo === params[0] || Number(item.id) === Number(params[0]));
+      return [row ? [row] : []];
+    }
+    if (/SELECT \\*/.test(sql) && /documentos_empleado/.test(sql)) return [[]];
+    if (/UPDATE plantillas_documentos SET titulo = \\?, cuerpo_html = \\? WHERE codigo = \\?/i.test(sql)) {
+      const row = guardadas.get(params[2]);
+      if (row) { row.titulo = params[0]; row.cuerpo_html = params[1]; }
+      return [{ affectedRows: 1 }];
+    }
+    if (/UPDATE plantillas_documentos SET logo_path = \\?, logo_mime = \\?, logo_nombre = \\? WHERE codigo = \\?/i.test(sql)) {
+      const row = guardadas.get(params[3]);
+      if (row) { row.logo_path = params[0]; row.logo_mime = params[1]; row.logo_nombre = params[2]; }
+      return [{ affectedRows: 1 }];
+    }
+    if (/UPDATE plantillas_documentos SET logo_path = NULL/i.test(sql)) {
+      const row = guardadas.get(params[0]);
+      if (row) { row.logo_path = null; row.logo_mime = null; row.logo_nombre = null; }
+      return [{ affectedRows: 1 }];
+    }
+    if (/INSERT INTO plantillas_documentos/i.test(sql)) {
+      const current = guardadas.get(params[0]);
+      const id = current?.id || guardadas.size + 1;
+      if (/logo_path, logo_mime, logo_nombre/i.test(sql)) {
+        guardadas.set(params[0], { id, codigo: params[0], titulo: params[1], cuerpo_html: params[2],
+          logo_path: params[3], logo_mime: params[4], logo_nombre: params[5] });
+      } else if (current) {
+        current.titulo = params[1];
+        current.cuerpo_html = params[2];
+      } else {
+        guardadas.set(params[0], { id, codigo: params[0], titulo: params[1], cuerpo_html: params[2],
+          logo_path: null, logo_mime: null, logo_nombre: null });
+      }
+      return [{ affectedRows: 1, insertId: id }];
+    }
+    if (/FROM empleados e LEFT JOIN practicante_detalles/.test(sql)) return [params[0] === 101 ? [empleado] : []];
+    if (/FROM empresas emp INNER JOIN areas/.test(sql)) return [params.join(',') === '10,20,30' ? [{ empresa: 'Organización SBSS', ruc: '20000000001', area: 'Administración', cargo: 'Asistente' }] : []];
+    if (/FROM empresas ORDER BY/.test(sql)) return [[{ id: 10, razon_social: 'Organización SBSS' }]];
+    if (/FROM areas ORDER BY/.test(sql)) return [[{ id: 20, nombre: 'Administración', empresa_id: 10 }]];
+    if (/FROM cargos ORDER BY/.test(sql)) return [[{ id: 30, nombre: 'Asistente', area_id: 20 }]];
+    throw new Error('Consulta no prevista: ' + sql);
+  },
+  async beginRequestTransaction() {
+    return { run: callback => callback(), complete: async () => {} };
   }
-  if (/FROM empleados e LEFT JOIN practicante_detalles/.test(sql)) return [params[0] === 101 ? [empleado] : []];
-  if (/FROM empresas emp INNER JOIN areas/.test(sql)) return [params.join(',') === '10,20,30' ? [{ empresa: 'Organización SBSS', ruc: '20000000001', area: 'Administración', cargo: 'Asistente' }] : []];
-  if (/FROM empresas ORDER BY/.test(sql)) return [[{ id: 10, razon_social: 'Organización SBSS' }]];
-  if (/FROM areas ORDER BY/.test(sql)) return [[{ id: 20, nombre: 'Administración', empresa_id: 10 }]];
-  if (/FROM cargos ORDER BY/.test(sql)) return [[{ id: 30, nombre: 'Asistente', area_id: 20 }]];
-  throw new Error('Consulta no prevista: ' + sql);
-} };
+};
+const storageMock = {
+  BUCKET: 'sbss-documentos',
+  async subirObjeto(name, buffer, mime) { objetos.set(name, { buffer: Buffer.from(buffer), mime }); },
+  async eliminarObjeto(name) { objetos.delete(name); },
+  async obtenerObjeto(name) {
+    const item = objetos.get(name);
+    if (!item) throw Object.assign(new Error('Archivo no encontrado'), { status: 404, storageStatus: 404 });
+    return Buffer.from(item.buffer);
+  },
+  async existeObjeto(name) { return objetos.has(name); },
+  async urlDescarga(name) { return 'https://storage.test/' + encodeURIComponent(name); },
+  async firmarSubida(name) { return 'https://storage.test/upload/' + encodeURIComponent(name); },
+  async verificarContenido(name) { return storageMock.obtenerObjeto(name); }
+};
+const storagePath = require.resolve('../services/storagePrivadoService');
+require.cache[storagePath] = { id: storagePath, filename: storagePath, loaded: true, exports: storageMock };
+
 const databasePath = require.resolve('../config/database');
 require.cache[databasePath] = { id: databasePath, filename: databasePath, loaded: true, exports: pool };
 const app = express();
@@ -51,7 +106,7 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}/api/documentos`;
 });
 after(async () => { await new Promise(resolve => server.close(resolve)); });
-beforeEach(() => { guardadas = new Map(); consultas = []; });
+beforeEach(() => { guardadas = new Map(); consultas = []; objetos = new Map(); });
 async function request(path, { usuario = 1, method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (usuario) headers.Authorization = `Bearer ${jwt.sign({ usuario_id: usuario }, process.env.JWT_SECRET, { expiresIn: '1h' })}`;
@@ -93,7 +148,7 @@ test('catálogos incluyen tres plantillas editables y estructura seleccionable, 
     assert.equal(response.body.cargos[0].area_id, 20);
     assert.ok(response.body.campos.includes('horas'));
   }
-  for (const [method, path, body] of [['GET', '/generacion/catalogos'], ['PUT', '/plantillas/aceptacion', { titulo: 'Título', cuerpo: 'Texto' }], ['POST', '/generar/vista-previa', payload()], ['POST', '/generar/pdf', payload()]]) {
+  for (const [method, path, body] of [['GET', '/generacion/catalogos'], ['PUT', '/plantillas/aceptacion', { titulo: 'Título', cuerpo: 'Texto' }], ['PUT', '/plantillas/aceptacion/logo', {}], ['DELETE', '/plantillas/aceptacion/logo'], ['POST', '/generar/vista-previa', payload()], ['POST', '/generar/pdf', payload()]]) {
     assert.equal((await request(path, { method, body, usuario: 3 })).status, 403);
     assert.equal((await request(path, { method, body, usuario: null })).status, 401);
   }
@@ -134,6 +189,55 @@ test('guardar una plantilla persiste y cambia futuros documentos; rechaza placeh
     assert.equal((await request('/plantillas/aceptacion', { method: 'PUT', body: { titulo: 'Documento', cuerpo } })).status, 400);
   }
   assert.equal((await request('/plantillas/otro', { method: 'PUT', body })).status, 400);
+});
+
+test('guarda un logo privado por plantilla, lo aplica al PDF y permite quitarlo', async () => {
+  const buffer = fs.readFileSync(path.join(__dirname, '../assets/documentos/sbss.png'));
+  const body = { nombre_archivo: 'marca-sbss.png', mime_type: 'image/png', contenido_base64: buffer.toString('base64') };
+  const upload = await request('/plantillas/aceptacion/logo', { method: 'PUT', body });
+  assert.equal(upload.status, 200);
+  assert.equal(upload.body.plantilla.logo_personalizado, true);
+  assert.equal(upload.body.plantilla.logo_nombre, 'marca-sbss.png');
+  const guardada = guardadas.get('aceptacion');
+  assert.equal(guardada.logo_mime, 'image/png');
+  assert.ok(guardada.logo_path);
+  assert.deepEqual(objetos.get(guardada.logo_path).buffer, buffer);
+
+  const imagen = await request('/plantillas/aceptacion/logo');
+  assert.equal(imagen.status, 200);
+  assert.equal(imagen.headers.get('content-type'), 'image/png');
+  assert.deepEqual(imagen.body, buffer);
+
+  const catalogos = await request('/generacion/catalogos');
+  const plantilla = catalogos.body.plantillas.find(item => item.codigo === 'aceptacion');
+  assert.equal(plantilla.logo_personalizado, true);
+  assert.equal(Object.hasOwn(plantilla, 'logo_path'), false);
+
+  const preview = await request('/generar/vista-previa', { method: 'POST', body: payload() });
+  assert.equal(preview.body.documento.logo_personalizado, true);
+  assert.equal(Object.hasOwn(preview.body.documento, 'logo_personalizado_path'), false);
+  const pdf = await request('/generar/pdf', { method: 'POST', body: payload() });
+  assert.equal(pdf.status, 200);
+  assert.match(pdf.body.toString('latin1'), /\\/Subtype \\/Image/);
+  comprobarPdf(pdf.body);
+
+  const remove = await request('/plantillas/aceptacion/logo', { method: 'DELETE' });
+  assert.equal(remove.status, 200);
+  assert.equal(guardadas.get('aceptacion').logo_path, null);
+  assert.equal(guardadas.get('aceptacion').logo_mime, null);
+  assert.equal(objetos.size, 0);
+  const previewSinLogo = await request('/generar/vista-previa', { method: 'POST', body: payload() });
+  assert.equal(previewSinLogo.body.documento.logo_personalizado, false);
+});
+
+test('rechaza logos que no son PNG/JPEG o que exceden el tamaño permitido', async () => {
+  const invalid = await request('/plantillas/aceptacion/logo', {
+    method: 'PUT',
+    body: { nombre_archivo: 'marca.svg', mime_type: 'image/svg+xml', contenido_base64: Buffer.from('<svg/>').toString('base64') }
+  });
+  assert.equal(invalid.status, 400);
+  assert.equal(guardadas.size, 0);
+  assert.equal(objetos.size, 0);
 });
 
 test('validación impide fechas inexistentes, horas inválidas y cruces de empresa/área/cargo', async () => {
