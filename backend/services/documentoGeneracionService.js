@@ -94,7 +94,7 @@ async function guardarPlantilla(codigo, body) {
     if (actuales[0]?.logo_path) logo = { ruta_archivo: actuales[0].logo_path, mime_type: actuales[0].logo_mime, nombre: actuales[0].logo_nombre };
   } else if (body.logo_id !== null && body.logo_id !== '') {
     const logoId = typeof body.logo_id === 'number' ? body.logo_id
-      : typeof body.logo_id === 'string' && /^\\d+$/.test(body.logo_id) ? Number(body.logo_id) : NaN;
+      : typeof body.logo_id === 'string' && /^\d+$/.test(body.logo_id) ? Number(body.logo_id) : NaN;
     if (!Number.isSafeInteger(logoId) || logoId <= 0) throw error('Seleccione un logo válido.');
     const [logos] = await pool.query('SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE id = ? LIMIT 1', [logoId]);
     if (!logos.length) throw error('El logo seleccionado ya no existe. Actualiza la biblioteca e inténtalo nuevamente.', 404);
