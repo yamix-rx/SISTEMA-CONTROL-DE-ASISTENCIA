@@ -28,13 +28,13 @@ const pool = { async query(sql, params = []) {
   if (/SELECT id, nombre, mime_type, created_at FROM logos_documentos ORDER BY nombre, id/.test(sql)) {
     return [[...logos.values()].map(({ id, nombre, mime_type, created_at }) => ({ id, nombre, mime_type, created_at }))];
   }
-  if (/SELECT id FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+  if (/SELECT id FROM logos_documentos WHERE id = \? LIMIT 1/.test(sql)) {
     return [[logos.has(Number(params[0])) ? { id: Number(params[0]) } : null].filter(Boolean)];
   }
-  if (/SELECT id, nombre, mime_type, contenido FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+  if (/SELECT id, nombre, mime_type, contenido FROM logos_documentos WHERE id = \? LIMIT 1/.test(sql)) {
     return [[logos.get(Number(params[0]))].filter(Boolean)];
   }
-  if (/SELECT id, nombre, mime_type, created_at FROM logos_documentos WHERE id = \\? LIMIT 1/.test(sql)) {
+  if (/SELECT id, nombre, mime_type, created_at FROM logos_documentos WHERE id = \? LIMIT 1/.test(sql)) {
     const logo = logos.get(Number(params[0]));
     return [[logo ? { id: logo.id, nombre: logo.nombre, mime_type: logo.mime_type, created_at: logo.created_at } : null].filter(Boolean)];
   }
@@ -180,7 +180,7 @@ test('guarda logos PNG en la biblioteca y los aplica al PDF de la plantilla sele
     ...payload(), revision_plantilla: preview.body.documento.revision_plantilla
   } });
   assert.equal(pdf.status, 200);
-  assert.match(pdf.body.toString('ascii'), /\\/Subtype \\/Image/);
+  assert.match(pdf.body.toString('ascii'), /\/Subtype \/Image/);
   assert.match(textoPdf(pdf.body), /Se acepta a María José Núñez Agüero/);
 });
 
