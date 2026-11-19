@@ -91,7 +91,10 @@ async function guardarPlantilla(codigo, body) {
   let logo = null;
   if (body.logo_id === undefined) {
     const [actuales] = await pool.query('SELECT logo_path, logo_mime, logo_nombre FROM plantillas_documentos WHERE codigo = ? LIMIT 1', [codigo]);
-    if (actuales[0]?.logo_path) logo = { ruta_archivo: actuales[0].logo_path, mime_type: actuales[0].logo_mime, nombre: actuales[0].logo_nombre };
+    if (actuales[0]?.logo_path) {
+      const [logos] = await pool.query('SELECT id, nombre, ruta_archivo, mime_type FROM logos_documentos WHERE ruta_archivo = ? LIMIT 1', [actuales[0].logo_path]);
+      logo = logos[0] || { ruta_archivo: actuales[0].logo_path, mime_type: actuales[0].logo_mime, nombre: actuales[0].logo_nombre };
+    }
   } else if (body.logo_id !== null && body.logo_id !== '') {
     const logoId = typeof body.logo_id === 'number' ? body.logo_id
       : typeof body.logo_id === 'string' && /^\d+$/.test(body.logo_id) ? Number(body.logo_id) : NaN;
