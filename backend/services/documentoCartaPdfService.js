@@ -41,7 +41,15 @@ function generarPdfCarta(documento) {
       const tamano = documento.logo === 'nanas' ? 11 : 12;
       const espacio = height => { if (doc.y + height > doc.page.height - 45) doc.addPage(); };
       const marca = Object.hasOwn(MARCAS, documento.logo || '') ? MARCAS[documento.logo] : null;
-      if (marca) {
+      if (documento.logo_personalizado) {
+        const imagenLogo = doc.openImage(documento.logo_personalizado);
+        const escala = Math.min(Math.min(230, ancho) / imagenLogo.width, 58 / imagenLogo.height);
+        const anchoLogo = imagenLogo.width * escala;
+        const altoLogo = imagenLogo.height * escala;
+        const xLogo = (doc.page.width - anchoLogo) / 2;
+        doc.image(documento.logo_personalizado, xLogo, 18, { width: anchoLogo, height: altoLogo });
+        doc.y = Math.max(101, 18 + altoLogo + 12);
+      } else if (marca) {
         const archivoLogo = path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
         const imagenLogo = doc.openImage(archivoLogo);
         const anchoLogo = marca.banda ? doc.page.width : marca.width;
