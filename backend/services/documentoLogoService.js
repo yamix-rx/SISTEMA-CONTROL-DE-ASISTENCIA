@@ -56,8 +56,10 @@ async function guardar(archivo, nombre, usuarioId) {
       'INSERT INTO logos_documentos (nombre, ruta_archivo, mime_type, tamano_bytes, creado_por_usuario_id) VALUES (?, ?, ?, ?, ?)',
       [etiqueta, ruta, mime, archivo.buffer.length, Number(usuarioId) || null]
     );
+    const id = Number(insertado.insertId);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('No se pudo registrar el logo en la biblioteca.');
     return {
-      id: Number(insertado.insertId), nombre: etiqueta, mime_type: mime,
+      id, nombre: etiqueta, mime_type: mime,
       tamano_bytes: archivo.buffer.length, created_at: new Date().toISOString()
     };
   } catch (cause) {
