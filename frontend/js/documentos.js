@@ -966,7 +966,7 @@
 
   function fillTemplateLogos(selectedId = '') {
     const select = $('plantillaLogo');
-    const placeholder = node('option', '', 'Usar membrete predeterminado de la empresa');
+    const placeholder = node('option', '', 'Usar membrete predeterminado de empresa/modelo');
     placeholder.value = '';
     const options = [placeholder, ...(state.generationCatalogs?.logos || []).map(logo => {
       const option = node('option', '', logo.nombre);
