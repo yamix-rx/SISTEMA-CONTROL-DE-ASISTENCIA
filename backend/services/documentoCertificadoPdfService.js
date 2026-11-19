@@ -57,7 +57,7 @@ function generarPdfCertificado(documento) {
 
       const cabecera = () => {
         const y = doc.y;
-        const tituloY = formato.titulo;
+        let tituloY = formato.titulo;
         if (marca) doc.image(path.join(__dirname, '../assets/documentos/certificados', `${marca}.png`), 0, 0, { width: doc.page.width, height: doc.page.height });
         if (documento.logo_personalizado) {
           const cajaLogo = formato.logoCaja || { x: (doc.page.width - 190) / 2, y: 12, width: 190, height: 54, horizontal: 'center', vertical: 'center' };
@@ -69,8 +69,7 @@ function generarPdfCertificado(documento) {
           });
         }
         if (lema) {
-          const lemaY = documento.logo_personalizado
-            ? Math.max(formato.titulo - 45, finLogoPersonalizado + 8) : formato.titulo - 45;
+          const lemaY = formato.titulo - 45;
           doc.font(formato.fuente).fontSize(10).fillColor('#111111')
             .text(lema, formato.margen, lemaY, { width: ancho, align: 'center' });
           tituloY = Math.max(tituloY, doc.y + 12);
