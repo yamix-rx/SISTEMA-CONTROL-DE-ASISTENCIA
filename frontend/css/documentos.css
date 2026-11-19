@@ -111,3 +111,5 @@
 .danger-icon-button{color:#bd1e3a}
 .danger-icon-button:hover{background:#ffe7ed}
 .preview-detail>.button-danger{margin-top:8px}
+
+.template-logo-upload{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px;align-items:end;margin:10px 0;padding:12px;border:1px solid #d8e5f0;border-radius:6px;background:#f8fbfe}.template-logo-upload label{margin:0}.template-logo-upload input[type=file]{margin-top:5px;padding:9px 7px;font-size:10px}.template-logo-upload .button{grid-column:2;justify-self:end}@media(max-width:580px){.template-logo-upload{grid-template-columns:1fr}.template-logo-upload .button{grid-column:1;justify-self:stretch}}
