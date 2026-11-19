@@ -157,6 +157,14 @@
     <form id="formPlantilla"><div class="dialog-heading"><h2 id="tituloEditorPlantillas">Editar plantillas</h2><button type="button" class="icon-button" data-cerrar="modalPlantillas" aria-label="Cerrar editor"><svg class="icon"><use href="#i-close"/></svg></button></div>
       <p>Los cambios se usarán en los próximos documentos. Escribe el contenido y coloca los campos disponibles donde necesites los datos del expediente.</p>
       <label for="plantillaCodigo">Documento</label><select id="plantillaCodigo" required></select>
+      <label for="plantillaLogo">Logo del documento</label><select id="plantillaLogo"><option value="">Usar membrete predeterminado de la empresa</option></select>
+      <p class="field-help">El logo seleccionado se guardará con esta plantilla y se usará al generar sus próximos PDF.</p>
+      <div class="template-logo-upload">
+        <label for="plantillaLogoNombre">Nombre para la biblioteca<input id="plantillaLogoNombre" maxlength="200" placeholder="Ej. Logo institucional"></label>
+        <label for="plantillaLogoArchivo">Subir logo PNG o JPG<input id="plantillaLogoArchivo" type="file" accept="image/png,image/jpeg"></label>
+        <button id="btnSubirLogo" type="button" class="button button-outline">Guardar logo en biblioteca</button>
+      </div>
+      <p id="estadoLogoPlantilla" class="field-help" role="status" aria-live="polite"></p>
       <label for="plantillaTitulo">Título</label><input id="plantillaTitulo" maxlength="150" required>
       <label for="plantillaCuerpo">Contenido</label><textarea id="plantillaCuerpo" rows="13" maxlength="50000" required></textarea>
       <p class="field-help">Campos disponibles (pulsa para insertar en el contenido):</p><div id="plantillaCampos" class="template-fields"></div>
