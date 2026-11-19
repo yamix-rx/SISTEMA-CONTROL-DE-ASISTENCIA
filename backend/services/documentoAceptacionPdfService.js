@@ -1,5 +1,6 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { cajaLogoOriginal, dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 const { rutaFirma } = require('./documentoCartaPdfService');
 
 // Coordenadas en puntos de los originales A4. Los anclajes son mínimos:
@@ -54,13 +55,14 @@ function generarPdfAceptacion(documento) {
       };
       let tituloY = formato.tituloY;
       if (documento.logo_personalizado) {
-        const imagenLogo = doc.openImage(documento.logo_personalizado);
-        const escala = Math.min(Math.min(240, doc.page.width - 108) / imagenLogo.width, 58 / imagenLogo.height);
-        const anchoLogo = imagenLogo.width * escala;
-        const altoLogo = imagenLogo.height * escala;
-        const xLogo = (doc.page.width - anchoLogo) / 2;
-        doc.image(documento.logo_personalizado, xLogo, 16, { width: anchoLogo, height: altoLogo });
-        tituloY = Math.max(tituloY, 16 + altoLogo + 14);
+        const archivoLogo = path.join(__dirname, '../assets/documentos', documento.logo + '.png');
+        const anchoLogo = formato.banda ? doc.page.width : formato.width;
+        const caja = cajaLogoOriginal(doc, archivoLogo, { x: formato.x, y: formato.y, width: anchoLogo });
+        dibujarLogoEnCaja(doc, documento.logo_personalizado, caja, {
+          horizontal: formato.banda ? 'center' : 'left',
+          vertical: formato.banda ? 'center' : 'top'
+        });
+        // No se desplaza el título: conserva las coordenadas del modelo original.
       } else {
         doc.image(path.join(__dirname, '../assets/documentos', `${documento.logo}.png`), formato.x, formato.y,
           { width: formato.banda ? doc.page.width : formato.width });
