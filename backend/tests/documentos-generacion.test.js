@@ -6,6 +6,7 @@ const { ROLES } = require('../config/accessPolicy');
 const { textoPdf } = require('./helpers/pdf');
 
 process.env.JWT_SECRET = 'clave-aislada-solo-para-pruebas-de-generacion';
+process.env.DATABASE_URL = ''; // Estas pruebas usan dobles; nunca escriben en Supabase.
 let guardadas;
 let logos;
 let objetos;
