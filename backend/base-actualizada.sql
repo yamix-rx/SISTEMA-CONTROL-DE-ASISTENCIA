@@ -199,12 +199,24 @@ CREATE TABLE documentos_empleado (
     FOREIGN KEY (tipo_documento_id) REFERENCES tipo_documentos(id) ON DELETE CASCADE
 );
 
+CREATE TABLE logos_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    mime_type VARCHAR(30) NOT NULL,
+    contenido MEDIUMBLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_logos_documentos_nombre (nombre)
+);
+
 CREATE TABLE plantillas_documentos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     codigo VARCHAR(50) NOT NULL UNIQUE,
     titulo VARCHAR(150) NOT NULL,
     cuerpo_html LONGTEXT NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    logo_id INT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_plantillas_documentos_logo (logo_id),
+    FOREIGN KEY (logo_id) REFERENCES logos_documentos(id) ON DELETE SET NULL
 );
 
 -- ==========================================================
