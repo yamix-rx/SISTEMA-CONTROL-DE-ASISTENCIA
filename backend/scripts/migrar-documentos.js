@@ -25,6 +25,39 @@ async function migrar(pool, informar = console.log) {
     const faltantes = requeridas.filter(columna => !actuales.has(columna));
     if (faltantes.length) throw new Error(`La tabla ${tabla} no tiene las columnas requeridas: ${faltantes.join(', ')}.`);
   }
+  await pool.query(`CREATE TABLE IF NOT EXISTS plantillas_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    titulo VARCHAR(150) NOT NULL,
+    cuerpo_html LONGTEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    logo_path VARCHAR(100) NULL,
+    logo_mime VARCHAR(40) NULL,
+    logo_nombre VARCHAR(200) NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+  const [columnasPlantillas] = await pool.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plantillas_documentos'`);
+  for (const [nombre, definicion] of Object.entries({
+    logo_path: 'VARCHAR(100) NULL',
+    logo_mime: 'VARCHAR(40) NULL',
+    logo_nombre: 'VARCHAR(200) NULL'
+  })) {
+    if (!columnasPlantillas.some(columna => columna.COLUMN_NAME === nombre)) {
+      await pool.query(`ALTER TABLE plantillas_documentos ADD COLUMN ${nombre} ${definicion}`);
+      informar(`Columna agregada a plantillas_documentos: ${nombre}.`);
+    }
+  }
+  await pool.query(`CREATE TABLE IF NOT EXISTS logos_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    ruta_archivo VARCHAR(100) NOT NULL UNIQUE,
+    mime_type VARCHAR(40) NOT NULL,
+    tamano_bytes INT UNSIGNED NOT NULL,
+    creado_por_usuario_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_logos_documentos_nombre (nombre, id),
+    FOREIGN KEY (creado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
   const documentos = porTabla.get('documentos_empleado');
   if (!documentos.has('ruta_archivo') && !documentos.has('ruta_almacenamiento')) {
     throw new Error('documentos_empleado no tiene ruta_archivo ni ruta_almacenamiento. Revise el esquema existente.');
