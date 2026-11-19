@@ -3,6 +3,7 @@ const pool = require('../config/database');
 const { idPositivo } = require('./documentoService');
 const { catalogoModelos, resolverModelo, resolverEmpresa, CAMPOS_MODELO } = require('./documentoModelosService');
 const plantillasPracticas = require('./documentoPlantillasPracticas');
+const logosDocumentos = require('./documentoLogoService');
 
 const CAMPOS = Object.freeze([...new Set(['trabajador', 'documento', 'empresa', 'ruc', 'fecha', 'fecha_ingreso', 'fecha_finalizacion', 'cargo', 'area', 'horas', 'horas_meta', 'formacion_academica', 'lugar_fecha', ...CAMPOS_MODELO.map(campo => campo.clave)])]);
 const CAMPOS_CALCULADOS_OPCIONALES = new Set(['formacion_academica', 'lugar_fecha', 'lema_anual']);
@@ -55,35 +56,41 @@ function validarPlantilla(body) {
   return { titulo, cuerpo };
 }
 function revision(plantilla) {
-  return createHash('sha256').update(plantilla.titulo + '\n' + plantilla.cuerpo).digest('hex');
+  return createHash('sha256').update(plantilla.titulo + '\n' + plantilla.cuerpo + '\nlogo:' + (plantilla.logo_id || '')).digest('hex');
 }
 async function plantillas() {
-  const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html FROM plantillas_documentos ORDER BY codigo');
+  const [rows] = await pool.query('SELECT codigo, titulo, cuerpo_html, logo_id FROM plantillas_documentos ORDER BY codigo');
   const definiciones = [...Object.entries(PREDETERMINADAS), ...catalogoModelos().map(modelo => [modelo.id, { titulo: modelo.titulo, cuerpo: modelo.cuerpo }, modelo.codigo])];
   return definiciones.map(([codigo, predeterminada, tipo]) => {
     const almacenada = rows.find(row => row.codigo === codigo)
       || (Object.hasOwn(plantillasPracticas, tipo || '') ? rows.find(row => row.codigo === tipo) : null);
-    const plantilla = almacenada ? { titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html } : { ...predeterminada };
+    const plantilla = almacenada
+      ? { titulo: almacenada.titulo, cuerpo: almacenada.cuerpo_html, logo_id: Number(almacenada.logo_id) || null }
+      : { ...predeterminada, logo_id: null };
     return { codigo, ...plantilla, personalizada: Boolean(almacenada), revision: revision(plantilla) };
   });
 }
 async function catalogos() {
-  const [templates, [empresas], [areas], [cargos]] = await Promise.all([
+  const [templates, [empresas], [areas], [cargos], logos] = await Promise.all([
     plantillas(),
     pool.query('SELECT id, razon_social, ruc, direccion FROM empresas ORDER BY razon_social'),
     pool.query('SELECT id, nombre, empresa_id FROM areas ORDER BY nombre'),
-    pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre')
+    pool.query('SELECT id, nombre, area_id FROM cargos ORDER BY nombre'),
+    logosDocumentos.listar()
   ]);
   return { plantillas: templates, empresas: empresas.map(empresa => ({ ...empresa,
     empresa_modelo_clave: resolverEmpresa({ empresa: empresa.razon_social, ruc: empresa.ruc })?.clave || null })),
-  areas, cargos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
+  areas, cargos, logos, campos: CAMPOS, modelos: catalogoModelos(), campos_modelo: CAMPOS_MODELO };
 }
 async function guardarPlantilla(codigo, body) {
   if (typeof codigo !== 'string' || !(Object.hasOwn(PREDETERMINADAS, codigo) || catalogoModelos().some(modelo => modelo.id === codigo))) throw error('La plantilla no está disponible.');
-  const plantilla = validarPlantilla(body);
-  const [result] = await pool.query(`INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html)
-    VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html)`,
-  [codigo, plantilla.titulo, plantilla.cuerpo]);
+  const logoId = body.logo_id === undefined || body.logo_id === null || body.logo_id === '' ? null : Number(body.logo_id);
+  if (logoId !== null && (!Number.isSafeInteger(logoId) || logoId <= 0)) throw error('Seleccione un logo válido.');
+  if (logoId !== null && !await logosDocumentos.existe(logoId)) throw error('El logo seleccionado no existe.');
+  const plantilla = { ...validarPlantilla(body), logo_id: logoId };
+  const [result] = await pool.query(`INSERT INTO plantillas_documentos (codigo, titulo, cuerpo_html, logo_id)
+    VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), titulo = VALUES(titulo), cuerpo_html = VALUES(cuerpo_html), logo_id = VALUES(logo_id)`,
+  [codigo, plantilla.titulo, plantilla.cuerpo, plantilla.logo_id]);
   return { id: Number(result.insertId) || null, codigo, ...plantilla, personalizada: true, revision: revision(plantilla) };
 }
 function fechaValida(valor, nombre = 'La fecha de emisión') {
@@ -211,7 +218,7 @@ async function preparar(body = {}) {
   const firma = identidad && firmante && firmantesFuente.some(nombre => normalizarNombre(nombre) === normalizarNombre(firmante)) ? identidad.clave : null;
   const completar = texto => texto.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_, campo) => String(campos[campo] ?? ''));
   return {
-    codigo, titulo: completar(plantilla.titulo), cuerpo: completar(plantilla.cuerpo),
+    codigo, titulo: completar(plantilla.titulo), cuerpo: completar(plantilla.cuerpo), logo_personalizado_id: plantilla.logo_id || null,
     empresa: campos.empresa, trabajador: campos.trabajador, fecha,
     carrera: datos.carrera || '', institucion_educativa: datos.institucion_educativa || '', tipo_documento_nombre: NOMBRES_DOCUMENTOS[codigo],
     modelo_id: modelo?.id || null, modelo_nombre: diseno === 'convenio' ? modelo.nombre : `${NOMBRES_DOCUMENTOS[codigo]} · ${campos.empresa}`,
