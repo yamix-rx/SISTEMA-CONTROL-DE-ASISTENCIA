@@ -1,13 +1,20 @@
 const path = require('node:path');
 const PDFDocument = require('pdfkit');
+const { dibujarLogoEnCaja } = require('./documentoLogoPdfService');
 
 // Fondos extraídos de los modelos, sin textos ni firmas del ejemplo.
 const FORMATOS = Object.freeze({
-  sbss: { titulo: 210, cuerpo: 292, margen: 85, derecha: 85, inferior: 125, firmaX: 355, fuente: 'Times-Roman' },
-  nanas: { titulo: 122, cuerpo: 174, margen: 72, derecha: 54, inferior: 110, fuente: 'Times-Roman' },
-  silsan: { titulo: 156, cuerpo: 215, margen: 85, derecha: 85, inferior: 135, fuente: 'Helvetica' },
-  camara: { titulo: 176, cuerpo: 236, margen: 85, derecha: 85, inferior: 125, fuente: 'Helvetica' },
-  ong: { titulo: 136, cuerpo: 180, margen: 94, derecha: 94, inferior: 40, horizontal: true, fuente: 'Times-Roman' }
+  // Coordenadas en puntos A4 del logo incrustado en cada fondo original.
+  sbss: { titulo: 210, cuerpo: 292, margen: 85, derecha: 85, inferior: 125, firmaX: 355, fuente: 'Times-Roman',
+    logoCaja: { x: 58, y: 24, width: 155, height: 65, horizontal: 'left', vertical: 'center' } },
+  nanas: { titulo: 122, cuerpo: 174, margen: 72, derecha: 54, inferior: 110, fuente: 'Times-Roman',
+    logoCaja: { x: 438, y: 18, width: 130, height: 55, horizontal: 'right', vertical: 'center' } },
+  silsan: { titulo: 156, cuerpo: 215, margen: 85, derecha: 85, inferior: 135, fuente: 'Helvetica',
+    logoCaja: { x: 18, y: 28, width: 250, height: 95, horizontal: 'left', vertical: 'center' } },
+  camara: { titulo: 176, cuerpo: 236, margen: 85, derecha: 85, inferior: 125, fuente: 'Helvetica',
+    logoCaja: { x: 40, y: 28, width: 310, height: 100, horizontal: 'left', vertical: 'center' } },
+  ong: { titulo: 136, cuerpo: 180, margen: 94, derecha: 94, inferior: 40, horizontal: true, fuente: 'Times-Roman',
+    logoCaja: { x: 710, y: 10, width: 115, height: 115, horizontal: 'right', vertical: 'center' } }
 });
 
 function generarPdfCertificado(documento) {
@@ -50,20 +57,16 @@ function generarPdfCertificado(documento) {
 
       const cabecera = () => {
         const y = doc.y;
-        let tituloY = formato.titulo;
-        let finLogoPersonalizado = 0;
+        const tituloY = formato.titulo;
         if (marca) doc.image(path.join(__dirname, '../assets/documentos/certificados', `${marca}.png`), 0, 0, { width: doc.page.width, height: doc.page.height });
         if (documento.logo_personalizado) {
-          const imagenLogo = doc.openImage(documento.logo_personalizado);
-          const escala = Math.min(Math.min(190, ancho) / imagenLogo.width, 54 / imagenLogo.height);
-          const anchoLogo = imagenLogo.width * escala;
-          const altoLogo = imagenLogo.height * escala;
-          const altoCabecera = Math.max(88, Math.min(150, formato.titulo - 10));
-          doc.save().rect(0, 0, doc.page.width, altoCabecera).fill('#ffffff').restore();
-          doc.image(documento.logo_personalizado, (doc.page.width - anchoLogo) / 2, 12,
-            { width: anchoLogo, height: altoLogo });
-          finLogoPersonalizado = 12 + altoLogo;
-          tituloY = Math.max(tituloY, finLogoPersonalizado + 18);
+          const cajaLogo = formato.logoCaja || { x: (doc.page.width - 190) / 2, y: 12, width: 190, height: 54, horizontal: 'center', vertical: 'center' };
+          // Sólo se cubre el logo original, no la cabecera completa del certificado.
+          doc.save().rect(cajaLogo.x, cajaLogo.y, cajaLogo.width, cajaLogo.height).fill('#ffffff').restore();
+          dibujarLogoEnCaja(doc, documento.logo_personalizado, cajaLogo, {
+            horizontal: cajaLogo.horizontal || 'center',
+            vertical: cajaLogo.vertical || 'center'
+          });
         }
         if (lema) {
           const lemaY = documento.logo_personalizado
