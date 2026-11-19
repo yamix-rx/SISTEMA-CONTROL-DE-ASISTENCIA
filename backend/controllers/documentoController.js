@@ -1,6 +1,7 @@
 const documentos = require('../services/documentoService');
 const archivos = require('../services/documentoArchivoService');
 const generacion = require('../services/documentoGeneracionService');
+const logos = require('../services/documentoLogoService');
 const { generarPdf } = require('../services/documentoPdfService');
 
 function responderError(res, error) {
@@ -74,6 +75,16 @@ exports.catalogosGeneracion = async (req, res) => {
   try { return res.json({ ok: true, ...await generacion.catalogos() }); }
   catch (error) { return responderError(res, error); }
 };
+exports.subirLogo = async (req, res) => {
+  try {
+    const logo = await logos.guardar(req.body || {});
+    if (req.body) req.body.contenido_base64 = '[contenido omitido en auditoría]';
+    res.locals.auditoria = { tabla: 'logos_documentos', registroId: logo.id, nuevos: logo };
+    return res.status(201).json({ ok: true, logo });
+  }
+  catch (error) { return responderError(res, error); }
+};
+
 exports.guardarPlantilla = async (req, res) => {
   try {
     const plantilla = await generacion.guardarPlantilla(req.params.codigo, req.body || {});
@@ -89,6 +100,11 @@ exports.vistaGenerada = async (req, res) => {
 exports.pdfGenerado = async (req, res) => {
   try {
     const documento = await generacion.preparar(req.body || {});
+    if (documento.logo_personalizado_id) {
+      const logo = await logos.obtener(documento.logo_personalizado_id);
+      documento.logo_personalizado = logo.contenido;
+      documento.logo_personalizado_mime_type = logo.mime_type;
+    }
     return res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': archivos.disposicionArchivo(documento.nombre_archivo, true),
