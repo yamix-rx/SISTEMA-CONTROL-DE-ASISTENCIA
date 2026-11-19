@@ -11,6 +11,40 @@ const NECESARIAS = {
 async function migrar(pool, informar = console.log) {
   const [bases] = await pool.query('SELECT DATABASE() AS base_actual');
   if (!bases[0]?.base_actual) throw new Error('Configure DB_NAME con la base de datos existente antes de migrar.');
+  await pool.query(`CREATE TABLE IF NOT EXISTS logos_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    mime_type VARCHAR(30) NOT NULL,
+    contenido MEDIUMBLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_logos_documentos_nombre (nombre)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS plantillas_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    titulo VARCHAR(150) NOT NULL,
+    cuerpo_html LONGTEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+  const [plantillaColumnas] = await pool.query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plantillas_documentos'`);
+  if (!plantillaColumnas.some(columna => columna.COLUMN_NAME === 'logo_id')) {
+    await pool.query('ALTER TABLE plantillas_documentos ADD COLUMN logo_id INT NULL AFTER cuerpo_html');
+    informar('Columna agregada: plantillas_documentos.logo_id.');
+  }
+  const [indiceLogo] = await pool.query(`SELECT INDEX_NAME FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plantillas_documentos' AND INDEX_NAME = 'idx_plantillas_documentos_logo'`);
+  if (!indiceLogo.length) {
+    await pool.query('ALTER TABLE plantillas_documentos ADD INDEX idx_plantillas_documentos_logo (logo_id)');
+    informar('Índice de logos por plantilla creado.');
+  }
+  const [relacionLogo] = await pool.query(`SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plantillas_documentos'
+    AND COLUMN_NAME = 'logo_id' AND REFERENCED_TABLE_NAME = 'logos_documentos'`);
+  if (!relacionLogo.length) {
+    await pool.query('ALTER TABLE plantillas_documentos ADD CONSTRAINT fk_plantillas_documentos_logo FOREIGN KEY (logo_id) REFERENCES logos_documentos(id) ON DELETE SET NULL');
+    informar('Relación entre plantillas y logos creada.');
+  }
   const [columnas] = await pool.query(`SELECT TABLE_NAME AS tabla, COLUMN_NAME AS columna
     FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
     AND TABLE_NAME IN ('empleados', 'empresas', 'usuarios', 'tipo_documentos', 'documentos_empleado')`);
