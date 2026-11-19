@@ -1,6 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const PDFDocument = require('pdfkit');
+const { dibujarLogoPersonalizado } = require('./documentoLogoPdfService');
 
 // Las dimensiones de los sellos no son las del membrete. La altura del logo
 // se obtiene de su imagen para conservar la proporción de cada empresa.
@@ -19,7 +20,7 @@ function rutaFirma(clave) {
 }
 
 function generarPdfCarta(documento) {
-  if (documento.codigo === 'aceptacion' && Object.hasOwn(MARCAS, documento.logo || '')) {
+  if (documento.codigo === 'aceptacion' && !Buffer.isBuffer(documento.logo_personalizado_buffer) && Object.hasOwn(MARCAS, documento.logo || '')) {
     return require('./documentoAceptacionPdfService').generarPdfAceptacion(documento);
   }
   return new Promise((resolve, reject) => {
@@ -41,7 +42,10 @@ function generarPdfCarta(documento) {
       const tamano = documento.logo === 'nanas' ? 11 : 12;
       const espacio = height => { if (doc.y + height > doc.page.height - 45) doc.addPage(); };
       const marca = Object.hasOwn(MARCAS, documento.logo || '') ? MARCAS[documento.logo] : null;
-      if (marca) {
+      if (Buffer.isBuffer(documento.logo_personalizado_buffer)) {
+        dibujarLogoPersonalizado(doc, documento, { x: margen, y: 24, maxWidth: 220, maxHeight: 65, align: 'left' });
+        doc.y = 101;
+      } else if (marca) {
         const archivoLogo = path.join(__dirname, '../assets/documentos', `${documento.logo}.png`);
         const imagenLogo = doc.openImage(archivoLogo);
         const anchoLogo = marca.banda ? doc.page.width : marca.width;
